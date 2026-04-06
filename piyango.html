@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Animasyonlu Kare Ekleme</title>
+  <style>
+    :root{
+      --bg: #ff8c00;
+      --btn-bg: #0d6efd;
+      --btn-fg: #fff;
+      --gap: 12px;
+      --box-size: 50px;
+    }
+
+    html, body{
+      height:100%;
+      margin:0;
+      padding:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #0f172a 0%, #0e30aa 100%);
+      color:#fff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Üstte sabit buton */
+    .topbar {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      pointer-events: auto;
+    }
+
+    .btn {
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: crosshair;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(13,110,253,0.18), 0 2px 6px rgba(0,0,0,0.35);
+      transition: transform .12s ease, box-shadow .12s ease, opacity .12s;
+    }
+    .btn:active{ transform: translateY(1px) scale(.995); }
+    .btn:focus{ outline: 3px solid rgba(40, 201, 4, 0.25); }
+
+    /* ana container */
+    .mainentrance{
+      box-sizing: border-box;
+      margin: 80px auto; /* üstte butona alan bırak */
+      background-color: var(--bg);
+      width: min(1200px, 92%);
+      height: min(800px, 82vh);
+      display: grid;
+      /* grid ile responsive sütun sayısını otomatik hesapla:
+         her sütun 50px genişlikte olacak, sığabildiği kadar sütun gösterir */
+      grid-template-columns: repeat(auto-fill, var(--box-size));
+      gap: var(--gap);
+      justify-content: center; /* kutuları yatay ortala */
+      align-content: center;   /* dikey ortala */
+      padding: calc(var(--gap) * 2);
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 6px 20px rgba(255,255,255,0.03);
+      transition: background-color .25s;
+      overflow: auto;
+    }
+
+    /* kutular */
+    .box {
+      width: var(--box-size);
+      height: var(--box-size);
+      border-radius: 8px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 12px;
+      font-weight:700;
+      color: rgba(255,255,255,0.95);
+      user-select: none;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      transform-origin: center;
+      /* başlangıçta görünmez; JS eklerken animasyon oynatılacak */
+      opacity: 0;
+    }
+
+    /* pop-in animasyonu */
+    @keyframes popIn {
+      0% { transform: scale(0.2) translateY(8px); opacity: 0; filter: blur(6px); }
+      60% { transform: scale(1.06) translateY(-4px); opacity: 1; filter: blur(0); }
+      100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
+    }
+
+    /* hover efekti */
+    .box:hover {
+      transform: translateY(-6px) rotate(var(--r, 0deg));
+      transition: transform .26s cubic-bezier(.2,.9,.2,1), box-shadow .18s;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.5);
+      z-index: 5;
+    }
+
+    /* küçük ekranlardaki görünüm iyileştirme */
+    @media (max-width: 480px){
+      :root{ --gap:10px; }
+      .btn{ padding:8px 12px; border-radius:10px; }
+      .mainentrance{ padding: 14px; border-radius: 18px; }
+    }
+
+    /* yardımcı: sayıyı gösteren küçük etiket */
+    .label {
+      font-size: 11px;
+      opacity: .9;
+      text-shadow: none;
+    }
+
+    /* buton altındaki küçük açıklama */
+    .hint {
+      font-size: 12px;
+      color: rgba(255,255,255,0.75);
+      margin-left: 8px;
+      transform: translateY(2px);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <button id="addBtn" class="btn" aria-label="Kare ekle">+ Kare Ekle</button>
+    <button id="addManyBtn" class="btn" aria-label="Çoklu ekle" title="10 tane ekle">+10</button>
+    <button id="clearBtn" class="btn" aria-label="Temizle" title="Hepsini sil">Temizle</button>
+    <div class="hint">Her tıklamada bir 50×50 kare ekler. Responsive grid ile yerleşir.</div>
+  </div>
+
+  <main class="mainentrance" id="mainentrance" role="main" aria-live="polite">
+    <!-- kareler buraya JS ile eklenecek -->
+  </main>
+
+  <script>
+    (function(){
+      const main = document.getElementById('mainentrance');
+      const addBtn = document.getElementById('addBtn');
+      const addManyBtn = document.getElementById('addManyBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      let counter = 0;
+
+      // rastgele renk üret
+      function randomColor() {
+        // canlı, iyi görünen renk paleti (HSL)
+        const h = Math.floor(Math.random() * 360);
+        const s = 65 + Math.floor(Math.random() * 20); // doygunluk
+        const l = 45 + Math.floor(Math.random() * 8);  // aydınlık
+        return `hsl(${h} ${s}% ${l}%)`;
+      }
+
+      // kutu oluşturma fonksiyonu
+      function createBox(index){
+        const el = document.createElement('div');
+        el.className = 'box';
+        el.style.background = randomColor();
+        el.style.setProperty('--r', (Math.random()*30 - 15).toFixed(2) + 'deg'); // hover'da kullanılır
+        el.innerHTML = `<span class="label">${index}</span>`;
+
+        // rastgele animasyon gecikmesi, daha organik görünür
+        const delay = (Math.random() * 220).toFixed(0) + 'ms';
+        el.style.animation = `popIn 420ms cubic-bezier(.2,1.1,.25,1) ${delay} both`;
+
+        // küçük bir giriş hareketi için transform başlangıcı (JS ile)
+        // (animation ile zaten yapılan popIn daha belirgin olsun diye)
+        main.appendChild(el);
+
+        // fareyle çift tıklayınca kutuyu yok etme (küçük etkileşim)
+        el.addEventListener('dblclick', () => {
+          el.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.6)' }], { duration: 220, easing: 'ease-in' })
+            .onfinish = () => el.remove();
+        });
+
+        // erişilebilirlik: focus için outline
+        el.tabIndex = 0;
+        el.addEventListener('keydown', (e) => {
+          if(e.key === 'Enter' || e.key === ' '){
+            e.preventDefault();
+            // seçiliyi sil
+            el.remove();
+          }
+        });
+
+        return el;
+      }
+
+      // buton olayları
+      addBtn.addEventListener('click', () => {
+        counter++;
+        createBox(counter);
+        // küçük titreşim hissi
+        addBtn.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-3px)' }, { transform: 'translateY(0)' }], { duration: 180 });
+      });
+
+      addManyBtn.addEventListener('click', () => {
+        // 10 tane hızlıca ekle, aralarında çok küçük zaman farkı ile
+        for(let i=0;i<10;i++){
+          counter++;
+          // biraz gecikme eklemek istiyorsak setTimeout kullanabiliriz ama
+          // burada aynı anda eklemek yeterince hoş görünüyor çünkü her birinin delay'i farklı.
+          createBox(counter);
+        }
+        addManyBtn.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration: 160 });
+      });
+
+      clearBtn.addEventListener('click', () => {
+        // fade out animasyonu ile temizle
+        const kids = Array.from(main.querySelectorAll('.box'));
+        if(kids.length === 0) return;
+        kids.forEach((k, idx) => {
+          k.style.transition = 'opacity .28s ease, transform .28s ease';
+          k.style.transitionDelay = (idx * 14) + 'ms';
+          k.style.opacity = '0';
+          k.style.transform = 'scale(.6)';
+          setTimeout(() => k.remove(), 320 + idx*14);
+        });
+      });
+
+      // klavye kısayolları
+      window.addEventListener('keydown', (e) => {
+        if(e.key === 'a' && (e.ctrlKey || e.metaKey) ){
+          // ctrl/cmd + a -> kare ekle
+          e.preventDefault();
+          addBtn.click();
+        }
+        if(e.key === 'c' && (e.ctrlKey || e.metaKey) ){
+          // ctrl/cmd + c -> temizle
+          e.preventDefault();
+          clearBtn.click();
+        }
+      });
+
+      // isteğe bağlı: sayfa yüklenince birkaç örnek kutu ekle (süs amaçlı)
+      document.addEventListener('DOMContentLoaded', () => {
+        for(let i=0;i<6;i++){
+          counter++;
+          createBox(counter);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
