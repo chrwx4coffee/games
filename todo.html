@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern To-Do List</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --text-color: #1f2937;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .todo-container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 450px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            color: var(--text-color);
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        button#add-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, background-color 0.3s;
+        }
+
+        button#add-btn:hover {
+            background-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            background: #f9fafb;
+            margin-bottom: 10px;
+            padding: 12px 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+
+        li:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        li.completed {
+            border-left-color: #10b981;
+            opacity: 0.7;
+        }
+
+        li.completed span {
+            text-decoration: line-through;
+            color: #6b7280;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 5px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .delete-btn:hover { background: #fee2e2; color: #ef4444; }
+        .complete-btn:hover { background: #d1fae5; color: #10b981; }
+
+    </style>
+</head>
+<body>
+
+<div class="todo-container">
+    <header>
+        <h1>Görevlerim</h1>
+    </header>
+
+    <div class="input-group">
+        <input type="text" id="todo-input" placeholder="Yeni bir görev yazın...">
+        <button id="add-btn">Ekle</button>
+    </div>
+
+    <ul id="todo-list">
+        </ul>
+</div>
+
+<script>
+    const input = document.getElementById('todo-input');
+    const addBtn = document.getElementById('add-btn');
+    const todoList = document.getElementById('todo-list');
+
+    // Sayfa yüklendiğinde verileri getir
+    document.addEventListener('DOMContentLoaded', getTodos);
+
+    addBtn.addEventListener('click', addTodo);
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addTodo();
+    });
+
+    function addTodo() {
+        const text = input.value.trim();
+        if (text === "") return;
+
+        const todoObj = { text: text, completed: false };
+        createTodoElement(todoObj);
+        saveLocal(todoObj);
+        
+        input.value = "";
+    }
+
+    function createTodoElement(todo) {
+        const li = document.createElement('li');
+        if (todo.completed) li.classList.add('completed');
+
+        li.innerHTML = `
+            <span>${todo.text}</span>
+            <div class="actions">
+                <button class="btn-action complete-btn" onclick="toggleComplete(this)">✓</button>
+                <button class="btn-action delete-btn" onclick="removeTodo(this)">✕</button>
+            </div>
+        `;
+        todoList.appendChild(li);
+    }
+
+    function toggleComplete(btn) {
+        const li = btn.parentElement.parentElement;
+        li.classList.toggle('completed');
+        updateLocal();
+    }
+
+    function removeTodo(btn) {
+        const li = btn.parentElement.parentElement;
+        li.style.transform = "translateX(20px)";
+        li.style.opacity = "0";
+        setTimeout(() => {
+            li.remove();
+            updateLocal();
+        }, 200);
+    }
+
+    // LOCAL STORAGE İŞLEMLERİ
+    function saveLocal(todo) {
+        let todos = localStorage.getItem('todos') ? JSON.parse(localStorage.getItem('todos')) : [];
+        todos.push(todo);
+        localStorage.setItem('todos', JSON.stringify(todos));
+    }
+
+    function updateLocal() {
+        let todos = [];
+        document.querySelectorAll('li').forEach(li => {
+            todos.push({
+                text: li.querySelector('span').innerText,
+                completed: li.classList.contains('completed')
+            });
+        });
+        localStorage.setItem('todos', JSON.stringify(todos));
+    }
+
+    function getTodos() {
+        let todos = localStorage.getItem('todos') ? JSON.parse(localStorage.getItem('todos')) : [];
+        todos.forEach(todo => createTodoElement(todo));
+    }
+</script>
+
+</body>
+</html>
