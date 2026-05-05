@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Hafıza Oyunu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f0c29;
+            --container-bg: rgba(25, 25, 35, 0.4);
+            --primary-color: #00e5ff;
+            --secondary-color: #ff00ff;
+            --text-color: #ffffff;
+            --card-bg-front: rgba(255, 255, 255, 0.05);
+            --card-bg-back: rgba(255, 255, 255, 0.15);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --card-glow-front: rgba(0, 229, 255, 0.3);
+            --card-glow-back: rgba(255, 0, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-color), #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        /* Animated background elements */
+        .bg-circles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-color) 0%, transparent 70%);
+            opacity: 0.15;
+            animation: float 15s infinite ease-in-out alternate;
+        }
+
+        .circle:nth-child(1) { width: 400px; height: 400px; top: -100px; left: -100px; animation-delay: 0s; }
+        .circle:nth-child(2) { width: 300px; height: 300px; bottom: -50px; right: -50px; background: radial-gradient(circle, var(--secondary-color) 0%, transparent 70%); animation-delay: -5s; }
+        .circle:nth-child(3) { width: 250px; height: 250px; top: 40%; left: 60%; background: radial-gradient(circle, #ffeb3b 0%, transparent 70%); animation-delay: -10s; opacity: 0.1; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+
+        .game-wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: min(90vw, 500px);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            width: 100%;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 25px rgba(0, 229, 255, 0.4);
+            letter-spacing: 1px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 100%;
+            perspective: 1000px; /* 3D effect for flipping */
+        }
+
+        .card {
+            aspect-ratio: 1 / 1;
+            background: transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card-front {
+            background: var(--card-bg-front);
+            backdrop-filter: blur(5px);
+        }
+
+        .card-front:hover {
+            box-shadow: 0 0 15px var(--card-glow-front);
+            border-color: rgba(0, 229, 255, 0.4);
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* Question mark or pattern for front */
+        .card-front::after {
+            content: '?';
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.2);
+            font-weight: 800;
+        }
+
+        .card-back {
+            background: var(--card-bg-back);
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+        }
+
+        .card.matched .card-back {
+            box-shadow: 0 0 20px var(--card-glow-back), inset 0 0 15px rgba(255, 0, 255, 0.3);
+            border-color: var(--secondary-color);
+            background: rgba(255, 0, 255, 0.15);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.05); }
+            100% { transform: rotateY(180deg) scale(1); }
+        }
+
+        .controls {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        button {
+            background: linear-gradient(45deg, rgba(0, 229, 255, 0.2), rgba(255, 0, 255, 0.2));
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: all 0.5s ease;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            border-color: var(--primary-color);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 24px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .overlay h2 {
+            color: var(--primary-color);
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .overlay p {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .highlight {
+            color: var(--secondary-color);
+            font-weight: 800;
+            font-size: 1.4rem;
+            text-shadow: 0 0 10px rgba(255,0,255,0.5);
+        }
+
+        @media (max-width: 480px) {
+            .game-wrapper {
+                padding: 20px;
+                gap: 15px;
+            }
+            .grid {
+                gap: 8px;
+            }
+            .card-face {
+                font-size: 2rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-circles">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+    </div>
+
+    <div class="game-wrapper">
+        <div class="header">
+            <h1>Neon Hafıza</h1>
+            <div class="stats">
+                <div class="stat-box">
+                    <span class="stat-label">Hamle</span>
+                    <span class="stat-value" id="moves">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Süre</span>
+                    <span class="stat-value" id="time">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" id="grid">
+            <!-- Cards will be generated here -->
+        </div>
+
+        <div class="controls">
+            <button id="restartBtn">Yeniden Başlat</button>
+        </div>
+
+        <div class="overlay" id="winOverlay">
+            <h2>Tebrikler!</h2>
+            <p>Oyunu <span class="highlight" id="finalMoves">0</span> hamlede ve <span class="highlight" id="finalTime">00:00</span> sürede tamamladın.</p>
+            <button id="playAgainBtn">Tekrar Oyna</button>
+        </div>
+    </div>
+
+    <script>
+        const gridElement = document.getElementById('grid');
+        const movesElement = document.getElementById('moves');
+        const timeElement = document.getElementById('time');
+        const restartBtn = document.getElementById('restartBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const winOverlay = document.getElementById('winOverlay');
+        const finalMovesElement = document.getElementById('finalMoves');
+        const finalTimeElement = document.getElementById('finalTime');
+
+        // Game Configuration
+        const emojis = ['🚀', '🛸', '👾', '🤖', '⚡', '🔥', '💎', '🔮'];
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        
+        // Timer
+        let timerInterval;
+        let secondsElapsed = 0;
+        let isTimerRunning = false;
+
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            if (isTimerRunning) return;
+            isTimerRunning = true;
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                timeElement.textContent = formatTime(secondsElapsed);
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+        }
+
+        function resetTimer() {
+            stopTimer();
+            secondsElapsed = 0;
+            timeElement.textContent = "00:00";
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initGame() {
+            // Reset state
+            matchedPairs = 0;
+            moves = 0;
+            movesElement.textContent = moves;
+            flippedCards = [];
+            resetTimer();
+            winOverlay.classList.remove('active');
+            
+            // Clear grid
+            gridElement.innerHTML = '';
+
+            // Create pairs and shuffle
+            const gameEmojis = [...emojis, ...emojis];
+            const shuffledEmojis = shuffleArray(gameEmojis);
+
+            // Create card elements
+            shuffledEmojis.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.emoji = emoji;
+                card.dataset.index = index;
+
+                card.innerHTML = `
+                    <div class="card-face card-front"></div>
+                    <div class="card-face card-back">${emoji}</div>
+                `;
+
+                // Add staggered entrance animation
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                card.addEventListener('click', () => handleCardClick(card));
+                gridElement.appendChild(card);
+
+                // Trigger entrance animation
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                    
+                    // Reset transition to normal after entrance
+                    setTimeout(() => {
+                        card.style.transition = 'transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)';
+                    }, 500);
+                }, index * 50);
+            });
+        }
+
+        function handleCardClick(card) {
+            // Ignore if card is already flipped, matched, or if two cards are already flipped
+            if (card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length === 2) {
+                return;
+            }
+
+            // Start timer on first click
+            if (!isTimerRunning) {
+                startTimer();
+            }
+
+            // Flip card
+            card.classList.add('flipped');
+            flippedCards.push(card);
+
+            // Check match if 2 cards are flipped
+            if (flippedCards.length === 2) {
+                moves++;
+                movesElement.textContent = moves;
+                checkForMatch();
+            }
+        }
+
+        function checkForMatch() {
+            const [card1, card2] = flippedCards;
+            const match = card1.dataset.emoji === card2.dataset.emoji;
+
+            if (match) {
+                // Match found
+                matchedPairs++;
+                
+                // Add matched class for special styling/animation
+                setTimeout(() => {
+                    card1.classList.add('matched');
+                    card2.classList.add('matched');
+                }, 300);
+
+                flippedCards = [];
+
+                // Check win condition
+                if (matchedPairs === emojis.length) {
+                    handleWin();
+                }
+            } else {
+                // No match, flip back after delay
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        function handleWin() {
+            stopTimer();
+            setTimeout(() => {
+                finalMovesElement.textContent = moves;
+                finalTimeElement.textContent = formatTime(secondsElapsed);
+                winOverlay.classList.add('active');
+            }, 800); // Wait for last card animation
+        }
+
+        // Event Listeners
+        restartBtn.addEventListener('click', initGame);
+        playAgainBtn.addEventListener('click', initGame);
+
+        // Start game on load
+        window.addEventListener('DOMContentLoaded', initGame);
+
+    </script>
+</body>
+</html>
