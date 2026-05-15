@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Kuş (Flappy)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030014;
+            --container-bg: rgba(10, 10, 25, 0.8);
+            --bird-color: #ffeb3b;
+            --pipe-color: #00e5ff;
+            --danger-color: #ff1744;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1a1a3a 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            width: min(95vw, 420px);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--bird-color), var(--pipe-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(255, 235, 59, 0.3);
+            margin-bottom: 5px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: center;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 70px;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .score-current .stat-value { color: var(--bird-color); text-shadow: 0 0 15px rgba(255, 235, 59, 0.6); }
+        .score-best .stat-value { color: var(--pipe-color); text-shadow: 0 0 15px rgba(0, 229, 255, 0.6); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+            width: 100%;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: rgba(5, 5, 10, 0.9);
+            width: 100%;
+            height: 450px;
+            cursor: pointer;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.5rem;
+            color: var(--danger-color);
+            text-shadow: 0 0 20px rgba(255, 23, 68, 0.6);
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 229, 255, 0.1), rgba(255, 235, 59, 0.1));
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            background: rgba(0, 229, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            border-color: var(--pipe-color);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        @media (max-width: 480px) {
+            .wrapper { padding: 15px; border-radius: 15px; gap: 10px; width: 95vw; }
+            canvas { height: 400px; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <h1>Neon Kuş</h1>
+        
+        <div class="stats">
+            <div class="stat-box score-current">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box score-best">
+                <span class="stat-label">En İyi</span>
+                <span class="stat-value" id="bestScore">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="400" height="500"></canvas>
+            <div class="overlay" id="gameOverScreen">
+                <h2>Çakıldın!</h2>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+            <div class="overlay active" id="startScreen" style="background: rgba(0,0,0,0.6);">
+                <h2 style="color: #fff; text-shadow: 0 0 15px #fff;">Hazır Mısın?</h2>
+                <button class="btn" id="startBtn">Başla</button>
+            </div>
+        </div>
+        
+        <div class="hint">Ekrana Dokun, Mouse ile Tıkla veya Boşluk Tuşu</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('bestScore');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startScreen = document.getElementById('startScreen');
+        const restartBtn = document.getElementById('restartBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        // High Score
+        let bestScore = localStorage.getItem('neonBirdBest') || 0;
+        bestScoreEl.textContent = bestScore;
+
+        let frames = 0;
+        let animationId;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+
+        const bg = {
+            stars: [],
+            init() {
+                for(let i=0; i<50; i++){
+                    this.stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        r: Math.random() * 1.5,
+                        speed: Math.random() * 0.5 + 0.1
+                    });
+                }
+            },
+            draw() {
+                ctx.fillStyle = '#030014';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                this.stars.forEach(s => {
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+                    ctx.fill();
+                    if(gameState === 'PLAYING') s.x -= s.speed;
+                    if(s.x < 0) s.x = canvas.width;
+                });
+            }
+        };
+
+        bg.init();
+
+        const bird = {
+            x: 50,
+            y: 150,
+            w: 24,
+            h: 24,
+            gravity: 0.25,
+            jump: 5.5,
+            velocity: 0,
+            particles: [],
+            
+            draw() {
+                // Particles
+                this.particles.forEach((p, index) => {
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = '#ffeb3b';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    p.x -= 2; // move left with background
+                    p.y += p.vy;
+                    p.life -= 0.05;
+                    
+                    if (p.life <= 0) this.particles.splice(index, 1);
+                });
+                ctx.globalAlpha = 1;
+
+                ctx.save();
+                ctx.translate(this.x + this.w/2, this.y + this.h/2);
+                
+                // Rotation based on velocity
+                let rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
+                ctx.rotate(rotation);
+                
+                // Bird body
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ffeb3b';
+                ctx.fillStyle = '#ffeb3b';
+                ctx.beginPath();
+                ctx.roundRect(-this.w/2, -this.h/2, this.w, this.h, 6);
+                ctx.fill();
+
+                // Inner glow
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.roundRect(-this.w/4, -this.h/4, this.w/2, this.h/2, 3);
+                ctx.fill();
+                
+                ctx.restore();
+            },
+            
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+                
+                // Floor collision
+                if (this.y + this.h >= canvas.height) {
+                    this.y = canvas.height - this.h;
+                    gameOver();
+                }
+                
+                // Ceiling collision
+                if (this.y <= 0) {
+                    this.y = 0;
+                    this.velocity = 0;
+                }
+
+                // Add particles when jumping
+                if(this.velocity < 0 && frames % 2 === 0){
+                    this.particles.push({
+                        x: this.x + this.w/2,
+                        y: this.y + this.h,
+                        r: Math.random() * 3 + 1,
+                        vy: Math.random() * 2,
+                        life: 1
+                    });
+                }
+            },
+            
+            flap() {
+                this.velocity = -this.jump;
+                // Burst of particles
+                for(let i=0; i<5; i++){
+                    this.particles.push({
+                        x: this.x + this.w/2,
+                        y: this.y + this.h,
+                        r: Math.random() * 4 + 2,
+                        vy: Math.random() * 3,
+                        life: 1
+                    });
+                }
+            },
+
+            reset() {
+                this.y = 150;
+                this.velocity = 0;
+                this.particles = [];
+            }
+        };
+
+        const pipes = {
+            items: [],
+            dx: 2.5,
+            width: 50,
+            gap: 130, // vertical gap between top and bottom pipe
+            
+            draw() {
+                for (let i = 0; i < this.items.length; i++) {
+                    let p = this.items[i];
+                    
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00e5ff';
+                    
+                    // Gradient for pipes
+                    let grad = ctx.createLinearGradient(p.x, 0, p.x + this.width, 0);
+                    grad.addColorStop(0, 'rgba(0, 229, 255, 0.8)');
+                    grad.addColorStop(0.5, '#00e5ff');
+                    grad.addColorStop(1, 'rgba(0, 229, 255, 0.8)');
+                    
+                    ctx.fillStyle = grad;
+                    
+                    // Top pipe
+                    ctx.beginPath();
+                    ctx.roundRect(p.x, 0, this.width, p.top, [0, 0, 5, 5]);
+                    ctx.fill();
+                    
+                    // Top pipe cap
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(p.x - 2, p.top - 10, this.width + 4, 10);
+                    
+                    ctx.fillStyle = grad;
+                    // Bottom pipe
+                    ctx.beginPath();
+                    ctx.roundRect(p.x, canvas.height - p.bottom, this.width, p.bottom, [5, 5, 0, 0]);
+                    ctx.fill();
+
+                    // Bottom pipe cap
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(p.x - 2, canvas.height - p.bottom, this.width + 4, 10);
+                }
+                ctx.shadowBlur = 0;
+            },
+            
+            update() {
+                // Add new pipes
+                if (frames % 90 === 0) { // spawn rate
+                    let maxPos = canvas.height - 20 - this.gap - 20; // 20 min height for pipe
+                    let topH = Math.floor(Math.random() * maxPos) + 20;
+                    
+                    this.items.push({
+                        x: canvas.width,
+                        top: topH,
+                        bottom: canvas.height - (topH + this.gap),
+                        passed: false
+                    });
+                }
+                
+                for (let i = 0; i < this.items.length; i++) {
+                    let p = this.items[i];
+                    
+                    // Move pipe
+                    p.x -= this.dx;
+                    
+                    // Collision detection
+                    if (bird.x + bird.w > p.x && 
+                        bird.x < p.x + this.width && 
+                        (bird.y < p.top || bird.y + bird.h > canvas.height - p.bottom)) {
+                        gameOver();
+                    }
+                    
+                    // Score update
+                    if (p.x + this.width < bird.x && !p.passed) {
+                        score++;
+                        scoreEl.textContent = score;
+                        p.passed = true;
+                    }
+                    
+                    // Remove off-screen pipes
+                    if (p.x + this.width < 0) {
+                        this.items.shift();
+                        i--;
+                    }
+                }
+            },
+
+            reset() {
+                this.items = [];
+            }
+        };
+
+        let score = 0;
+
+        function draw() {
+            bg.draw();
+            pipes.draw();
+            bird.draw();
+        }
+
+        function update() {
+            bird.update();
+            pipes.update();
+        }
+
+        function loop() {
+            if (gameState === 'PLAYING') {
+                update();
+                draw();
+                frames++;
+                animationId = requestAnimationFrame(loop);
+            } else if (gameState === 'START') {
+                bg.draw();
+                bird.draw(); // Just draw floating bird
+                animationId = requestAnimationFrame(loop);
+            }
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            gameOverScreen.classList.add('active');
+            
+            // Particles explosion on bird
+            for(let i=0; i<30; i++) {
+                bird.particles.push({
+                    x: bird.x + bird.w/2,
+                    y: bird.y + bird.h/2,
+                    r: Math.random() * 5 + 2,
+                    vy: (Math.random() - 0.5) * 10,
+                    vx: (Math.random() - 0.5) * 10,
+                    life: 1,
+                    color: i%2==0 ? '#ffeb3b' : '#ff1744'
+                });
+            }
+            
+            // Draw one last frame to show explosion
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonBirdBest', bestScore);
+                bestScoreEl.textContent = bestScore;
+            }
+        }
+
+        function resetGame() {
+            bird.reset();
+            pipes.reset();
+            score = 0;
+            scoreEl.textContent = score;
+            frames = 0;
+            gameOverScreen.classList.remove('active');
+            startScreen.classList.remove('active');
+            gameState = 'PLAYING';
+            cancelAnimationFrame(animationId);
+            loop();
+        }
+
+        // Controls
+        function inputHandler(e) {
+            if(e.type === 'keydown' && e.code !== 'Space') return;
+            if(e.type !== 'keydown') e.preventDefault(); // Prevent double trigger on touch/click
+
+            if (gameState === 'PLAYING') {
+                bird.flap();
+            } else if (gameState === 'START') {
+                resetGame();
+            }
+        }
+
+        // Only attach to canvas to not trigger when clicking buttons
+        canvas.addEventListener('mousedown', inputHandler);
+        canvas.addEventListener('touchstart', inputHandler, {passive: false});
+        document.addEventListener('keydown', inputHandler);
+
+        restartBtn.addEventListener('click', resetGame);
+        startBtn.addEventListener('click', resetGame);
+
+        // Start animation loop for the floating effect before game starts
+        loop();
+        
+    </script>
+</body>
+</html>
