@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Neon Simon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --container-bg: rgba(20, 20, 25, 0.8);
+            --green: #00ff66;
+            --red: #ff0055;
+            --yellow: #ffea00;
+            --blue: #00e5ff;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #151520 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            position: relative;
+            width: min(95vw, 400px);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--blue), var(--red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            text-transform: uppercase;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #fff;
+        }
+        
+        .score-current .stat-value { color: var(--green); text-shadow: 0 0 10px rgba(0, 255, 102, 0.5); }
+        .score-best .stat-value { color: var(--yellow); text-shadow: 0 0 10px rgba(255, 234, 0, 0.5); }
+
+        .simon-board {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--border);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0,0,0,1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .pad {
+            border-radius: 10px;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: all 0.1s;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .pad.active {
+            opacity: 1;
+            transform: scale(1.02);
+        }
+
+        /* Pad Specifics */
+        .pad-green {
+            background: var(--green);
+            border-top-left-radius: 100%;
+        }
+        .pad-green.active { box-shadow: 0 0 40px var(--green), inset 0 0 20px rgba(255,255,255,0.8); }
+
+        .pad-red {
+            background: var(--red);
+            border-top-right-radius: 100%;
+        }
+        .pad-red.active { box-shadow: 0 0 40px var(--red), inset 0 0 20px rgba(255,255,255,0.8); }
+
+        .pad-yellow {
+            background: var(--yellow);
+            border-bottom-left-radius: 100%;
+        }
+        .pad-yellow.active { box-shadow: 0 0 40px var(--yellow), inset 0 0 20px rgba(255,255,255,0.8); }
+
+        .pad-blue {
+            background: var(--blue);
+            border-bottom-right-radius: 100%;
+        }
+        .pad-blue.active { box-shadow: 0 0 40px var(--blue), inset 0 0 20px rgba(255,255,255,0.8); }
+
+        /* Disable pointer events when not player's turn */
+        .simon-board.waiting .pad {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: var(--bg-color);
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            z-index: 5;
+        }
+
+        .status-text {
+            font-size: 1rem;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s, text-shadow 0.3s;
+            text-align: center;
+        }
+
+        .status-text.play {
+            color: var(--blue);
+            text-shadow: 0 0 10px var(--blue);
+        }
+
+        .status-text.watch {
+            color: var(--red);
+            text-shadow: 0 0 10px var(--red);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 12px 0;
+            width: 100%;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 5px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 24px;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.5rem;
+            color: var(--red);
+            text-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 480px) {
+            .wrapper { padding: 20px; }
+            h1 { font-size: 1.8rem; }
+            .simon-board { width: 250px; height: 250px; }
+            .center-circle { width: 100px; height: 100px; }
+            .status-text { font-size: 0.8rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <h1>Neon Simon</h1>
+        
+        <div class="stats">
+            <div class="stat-box score-current">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box score-best">
+                <span class="stat-label">En İyi</span>
+                <span class="stat-value" id="bestScore">0</span>
+            </div>
+        </div>
+
+        <div class="simon-board waiting" id="board">
+            <div class="pad pad-green" data-index="0"></div>
+            <div class="pad pad-red" data-index="1"></div>
+            <div class="pad pad-yellow" data-index="2"></div>
+            <div class="pad pad-blue" data-index="3"></div>
+            
+            <div class="center-circle">
+                <div class="status-text" id="statusText">BEKLENİYOR</div>
+            </div>
+        </div>
+        
+        <button class="btn" id="startBtn">Oyuna Başla</button>
+
+        <div class="overlay" id="gameOverScreen">
+            <h2>Yanlış Tuş!</h2>
+            <p style="margin-bottom: 20px; color: rgba(255,255,255,0.7);">Skorun: <span id="finalScore" style="color: #fff; font-weight: bold; font-size: 1.2rem;">0</span></p>
+            <button class="btn" id="restartBtn" style="width: 70%;">Tekrar Oyna</button>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const pads = document.querySelectorAll('.pad');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('bestScore');
+        const statusText = document.getElementById('statusText');
+        const startBtn = document.getElementById('startBtn');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreEl = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // Simple Audio Context for synthetic beeps
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Frequencies for Green, Red, Yellow, Blue
+        const frequencies = [329.63, 261.63, 220.00, 164.81];
+
+        function playSound(index) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frequencies[index], audioCtx.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        let sequence = [];
+        let playerStep = 0;
+        let score = 0;
+        let bestScore = localStorage.getItem('neonSimonBest') || 0;
+        bestScoreEl.textContent = bestScore;
+
+        function startGame() {
+            sequence = [];
+            score = 0;
+            playerStep = 0;
+            scoreEl.textContent = score;
+            startBtn.style.display = 'none'; // Hide button after start
+            nextRound();
+        }
+
+        function nextRound() {
+            playerStep = 0;
+            // Add a random number 0-3
+            sequence.push(Math.floor(Math.random() * 4));
+            
+            // Set board to waiting state
+            board.classList.add('waiting');
+            statusText.textContent = "İZLE";
+            statusText.className = "status-text watch";
+            
+            // Play sequence
+            playSequence();
+        }
+
+        function playSequence() {
+            let delay = 0;
+            
+            // Speed up based on score
+            const interval = Math.max(300, 800 - (score * 30));
+            
+            sequence.forEach((colorIndex, i) => {
+                setTimeout(() => {
+                    activatePad(colorIndex);
+                }, delay);
+                delay += interval;
+            });
+            
+            // After sequence finishes, allow player to play
+            setTimeout(() => {
+                board.classList.remove('waiting');
+                statusText.textContent = "SIRA SENDE";
+                statusText.className = "status-text play";
+            }, delay);
+        }
+
+        function activatePad(index) {
+            const pad = pads[index];
+            pad.classList.add('active');
+            playSound(index);
+            
+            setTimeout(() => {
+                pad.classList.remove('active');
+            }, 300); // Pad stays lit for 300ms
+        }
+
+        function handlePadClick(e) {
+            const index = parseInt(e.target.dataset.index);
+            
+            activatePad(index);
+            
+            // Check if correct
+            if (index === sequence[playerStep]) {
+                playerStep++;
+                
+                // If completed the sequence
+                if (playerStep === sequence.length) {
+                    score++;
+                    scoreEl.textContent = score;
+                    board.classList.add('waiting'); // Prevent clicks
+                    
+                    statusText.textContent = "HARİKA!";
+                    statusText.className = "status-text play";
+                    statusText.style.color = "#00ff66";
+
+                    setTimeout(() => {
+                        nextRound();
+                    }, 1000);
+                }
+            } else {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            // Play error sound (low buzz)
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+
+            statusText.textContent = "HATA!";
+            statusText.className = "status-text watch";
+            
+            finalScoreEl.textContent = score;
+            
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonSimonBest', bestScore);
+                bestScoreEl.textContent = bestScore;
+            }
+
+            setTimeout(() => {
+                gameOverScreen.classList.add('active');
+            }, 500);
+        }
+
+        function resetGame() {
+            gameOverScreen.classList.remove('active');
+            startBtn.style.display = 'block';
+            statusText.textContent = "BEKLENİYOR";
+            statusText.className = "status-text";
+            board.classList.add('waiting');
+            score = 0;
+            scoreEl.textContent = score;
+        }
+
+        // Event Listeners
+        pads.forEach(pad => {
+            // Support both click and touch for faster response
+            pad.addEventListener('mousedown', (e) => {
+                // Ignore if it's waiting
+                if (board.classList.contains('waiting')) return;
+                handlePadClick(e);
+            });
+            pad.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent double trigger
+                if (board.classList.contains('waiting')) return;
+                handlePadClick(e);
+            }, {passive: false});
+        });
+
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', resetGame);
+        
+    </script>
+</body>
+</html>
