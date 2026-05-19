@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Hedef</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #020110;
+            --container-bg: rgba(10, 10, 20, 0.7);
+            --primary: #00ffff;
+            --secondary: #ff00ff;
+            --danger: #ff1744;
+            --success: #00ff66;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0a0a20 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            width: min(95vw, 600px);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+
+        .score-current .stat-value { color: var(--primary); text-shadow: 0 0 15px rgba(0, 255, 255, 0.6); }
+        .score-accuracy .stat-value { color: var(--success); text-shadow: 0 0 15px rgba(0, 255, 102, 0.6); }
+        .score-lives .stat-value { color: var(--danger); text-shadow: 0 0 15px rgba(255, 23, 68, 0.6); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+            width: 100%;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: rgba(1, 5, 15, 0.9);
+            width: 100%;
+            height: 500px;
+            cursor: crosshair;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            text-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            border-color: var(--primary);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .wrapper { padding: 15px; border-radius: 15px; gap: 10px; width: 95vw; }
+            canvas { height: 400px; }
+            h1 { font-size: 1.8rem; }
+            .stats { gap: 10px; padding: 10px; }
+            .stat-value { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <h1>Neon Hedef</h1>
+        
+        <div class="stats">
+            <div class="stat-box score-current">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box score-accuracy">
+                <span class="stat-label">İsabet</span>
+                <span class="stat-value" id="accuracy">100%</span>
+            </div>
+            <div class="stat-box score-lives">
+                <span class="stat-label">Can</span>
+                <span class="stat-value" id="lives">3</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="600" height="500"></canvas>
+            <div class="overlay" id="gameOverScreen">
+                <h2>Oyun Bitti</h2>
+                <p style="margin-bottom: 20px; font-size: 1.2rem; color: #fff;">Son Skor: <span id="finalScore" style="color: var(--primary); font-weight: 800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+            <div class="overlay active" id="startScreen" style="background: rgba(0,0,0,0.6);">
+                <h2 style="color: var(--primary); text-shadow: 0 0 20px var(--primary);">Nişan Al</h2>
+                <p style="margin-bottom: 20px; font-size: 1rem; color: #aaa; text-align: center;">Hedefleri kaybolmadan önce vur.<br>Dış halka iç halkaya değdiğinde hedef kaybolur.</p>
+                <button class="btn" id="startBtn">Savaşa Katıl</button>
+            </div>
+        </div>
+        
+        <div class="hint">Ekrana Dokun veya Mouse ile Hedefleri Vur</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const accuracyEl = document.getElementById('accuracy');
+        const livesEl = document.getElementById('lives');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startScreen = document.getElementById('startScreen');
+        const finalScoreEl = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        // Responsive canvas setup
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width - 10; // -10 for padding
+            // Height remains fixed or css defined based on width
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // initial
+
+        let animationId;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let score = 0;
+        let hits = 0;
+        let totalClicks = 0;
+        let lives = 3;
+        let difficulty = 1;
+
+        let targets = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        // Colors palette for targets
+        const colors = ['#00ffff', '#ff00ff', '#00ff66', '#ffea00', '#ff1744'];
+
+        function spawnTarget() {
+            // Max radius
+            const baseRadius = 25;
+            const maxRadius = baseRadius + (Math.random() * 10);
+            
+            // Random position within bounds
+            const x = Math.random() * (canvas.width - maxRadius * 4) + maxRadius * 2;
+            const y = Math.random() * (canvas.height - maxRadius * 4) + maxRadius * 2;
+
+            // Duration based on difficulty (shrinks faster as it gets harder)
+            const duration = Math.max(60, 150 - (difficulty * 5)); 
+
+            targets.push({
+                x: x,
+                y: y,
+                innerRadius: maxRadius,
+                outerRadius: maxRadius * 2.5,
+                startOuterRadius: maxRadius * 2.5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                duration: duration,
+                currentFrame: 0,
+                active: true
+            });
+        }
+
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    decay: Math.random() * 0.04 + 0.02,
+                    color: color,
+                    r: Math.random() * 2 + 1
+                });
+            }
+        }
+
+        function createFloatingText(x, y, text, color) {
+            floatingTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1,
+                vy: -1
+            });
+        }
+
+        function drawTargets() {
+            for (let i = targets.length - 1; i >= 0; i--) {
+                let t = targets[i];
+                t.currentFrame++;
+                
+                // Shrink outer radius
+                const progress = t.currentFrame / t.duration;
+                t.outerRadius = t.startOuterRadius - ((t.startOuterRadius - t.innerRadius) * progress);
+
+                if (t.outerRadius <= t.innerRadius) {
+                    // Target expired
+                    targets.splice(i, 1);
+                    loseLife();
+                    continue;
+                }
+
+                // Draw inner circle
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = t.color;
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.strokeStyle = t.color;
+                ctx.lineWidth = 3;
+                
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.innerRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Draw dot in center
+                ctx.fillStyle = t.color;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.innerRadius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw outer ring
+                ctx.strokeStyle = t.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 1 - progress; // Fade out as it shrinks
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.outerRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.globalAlpha = 1; // Reset
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        function updateAndDrawFloatingTexts() {
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let f = floatingTexts[i];
+                f.y += f.vy;
+                f.life -= 0.02;
+
+                if (f.life <= 0) {
+                    floatingTexts.splice(i, 1);
+                    continue;
+                }
+
+                ctx.globalAlpha = f.life;
+                ctx.fillStyle = f.color;
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = f.color;
+                ctx.font = 'bold 16px Outfit';
+                ctx.textAlign = 'center';
+                ctx.fillText(f.text, f.x, f.y);
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        function draw() {
+            // Clear background with slight opacity for trails (optional, not used here for clean look)
+            ctx.fillStyle = '#01050f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawTargets();
+            updateAndDrawParticles();
+            updateAndDrawFloatingTexts();
+        }
+
+        function update() {
+            // Spawn logic
+            // Increase spawn rate based on difficulty
+            const spawnChance = 0.015 + (difficulty * 0.003); 
+            if (Math.random() < spawnChance && targets.length < 5) {
+                spawnTarget();
+            }
+
+            // Increase difficulty over time
+            difficulty += 0.001;
+        }
+
+        function loop() {
+            if (gameState === 'PLAYING') {
+                update();
+                draw();
+                animationId = requestAnimationFrame(loop);
+            }
+        }
+
+        function getClickPos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            
+            if (evt.touches) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            } else {
+                clientX = evt.clientX;
+                clientY = evt.clientY;
+            }
+
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handleInput(e) {
+            if (gameState !== 'PLAYING') return;
+            if (e.type !== 'mousedown') e.preventDefault(); // Prevent touch double firing
+            
+            const pos = getClickPos(e);
+            totalClicks++;
+            
+            let hitTarget = null;
+            let hitIndex = -1;
+
+            // Check collision with targets (from newest to oldest to hit top ones first)
+            for (let i = targets.length - 1; i >= 0; i--) {
+                const t = targets[i];
+                const dist = Math.hypot(pos.x - t.x, pos.y - t.y);
+                
+                // Allow a tiny bit of margin of error
+                if (dist <= t.innerRadius + 5) {
+                    hitTarget = t;
+                    hitIndex = i;
+                    break;
+                }
+            }
+
+            if (hitTarget) {
+                // Hit!
+                hits++;
+                
+                // Calculate points based on speed (how big outer ring was)
+                const maxPoints = 100;
+                const points = Math.floor((hitTarget.outerRadius / hitTarget.startOuterRadius) * maxPoints) + 10;
+                
+                score += points;
+                scoreEl.textContent = score;
+                
+                createParticles(hitTarget.x, hitTarget.y, hitTarget.color);
+                createFloatingText(hitTarget.x, hitTarget.y - hitTarget.innerRadius, `+${points}`, hitTarget.color);
+                
+                targets.splice(hitIndex, 1);
+            } else {
+                // Miss! (clicked empty space)
+                createFloatingText(pos.x, pos.y, "Iska!", "#ff1744");
+                // Optional: lose life on miss? No, usually aim trainers just lower accuracy.
+            }
+
+            updateAccuracy();
+        }
+
+        function loseLife() {
+            lives--;
+            livesEl.textContent = lives;
+            
+            // Screen flash red
+            ctx.fillStyle = 'rgba(255, 23, 68, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+
+        function updateAccuracy() {
+            if (totalClicks === 0) return;
+            const acc = Math.round((hits / totalClicks) * 100);
+            accuracyEl.textContent = `${acc}%`;
+            
+            if (acc < 50) accuracyEl.style.color = 'var(--danger)';
+            else if (acc < 80) accuracyEl.style.color = '#ffea00';
+            else accuracyEl.style.color = 'var(--success)';
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            finalScoreEl.textContent = score;
+            
+            setTimeout(() => {
+                gameOverScreen.classList.add('active');
+            }, 300);
+        }
+
+        function resetGame() {
+            score = 0;
+            hits = 0;
+            totalClicks = 0;
+            lives = 3;
+            difficulty = 1;
+            targets = [];
+            particles = [];
+            floatingTexts = [];
+            
+            scoreEl.textContent = score;
+            livesEl.textContent = lives;
+            accuracyEl.textContent = '100%';
+            accuracyEl.style.color = 'var(--success)';
+            
+            gameOverScreen.classList.remove('active');
+            startScreen.classList.remove('active');
+            gameState = 'PLAYING';
+            
+            cancelAnimationFrame(animationId);
+            loop();
+        }
+
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', handleInput, {passive: false});
+
+        restartBtn.addEventListener('click', resetGame);
+        startBtn.addEventListener('click', resetGame);
+
+        // Draw static start screen background
+        ctx.fillStyle = '#01050f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+    </script>
+</body>
+</html>
