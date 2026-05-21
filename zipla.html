@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Zıpla</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --player-color: #00ffcc;
+            --platform-color: #ff00ff;
+            --danger-color: #ff1744;
+            --moving-color: #ffea00;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #110525 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            width: min(95vw, 420px);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--player-color), var(--platform-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            margin-bottom: 0;
+            text-transform: uppercase;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 70px;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+
+        .score-current .stat-value { color: var(--player-color); text-shadow: 0 0 15px rgba(0, 255, 204, 0.6); }
+        .score-best .stat-value { color: var(--platform-color); text-shadow: 0 0 15px rgba(255, 0, 255, 0.6); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+            width: 100%;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: rgba(2, 1, 10, 0.9);
+            width: 100%;
+            height: 550px;
+            cursor: ew-resize;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--danger-color);
+            text-shadow: 0 0 20px rgba(255, 23, 68, 0.6);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.1), rgba(255, 0, 255, 0.1));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+            border-color: var(--player-color);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .wrapper { padding: 12px; border-radius: 15px; gap: 10px; width: 95vw; }
+            canvas { height: 450px; }
+            h1 { font-size: 1.8rem; }
+            .stat-value { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <h1>Neon Zıpla</h1>
+        
+        <div class="stats">
+            <div class="stat-box score-current">
+                <span class="stat-label">Yükseklik</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box score-best">
+                <span class="stat-label">Zirve</span>
+                <span class="stat-value" id="bestScore">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="400" height="600"></canvas>
+            <div class="overlay" id="gameOverScreen">
+                <h2>Düştün!</h2>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+            <div class="overlay active" id="startScreen" style="background: rgba(0,0,0,0.6);">
+                <h2 style="color: var(--player-color); text-shadow: 0 0 20px var(--player-color);">Yukarı Çık</h2>
+                <button class="btn" id="startBtn">Başla</button>
+            </div>
+        </div>
+        
+        <div class="hint">Yönlendirmek için mouse'u kaydır veya ekrana dokunup sürükle</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('bestScore');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startScreen = document.getElementById('startScreen');
+        const restartBtn = document.getElementById('restartBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        // Game Settings and State
+        let bestScore = Math.floor(localStorage.getItem('neonJumpBest')) || 0;
+        bestScoreEl.textContent = bestScore;
+
+        let animationId;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let score = 0;
+        let cameraY = 0;
+
+        // Player Object
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 100,
+            w: 24,
+            h: 24,
+            dy: 0,
+            gravity: 0.4,
+            jumpForce: -10,
+            color: '#00ffcc',
+
+            jump() {
+                this.dy = this.jumpForce;
+                createParticles(this.x + this.w/2, this.y + this.h, this.color, 8, "bounce");
+            },
+
+            update() {
+                this.dy += this.gravity;
+                this.y += this.dy;
+
+                // Screen wrap (horizontal)
+                if (this.x > canvas.width) this.x = -this.w;
+                if (this.x + this.w < 0) this.x = canvas.width;
+
+                // Trail effect when going up
+                if (this.dy < 0 && Math.random() < 0.4) {
+                    particles.push({
+                        x: this.x + this.w/2 + (Math.random()-0.5)*10,
+                        y: this.y + this.h,
+                        vx: 0,
+                        vy: Math.random() * 2,
+                        life: 1,
+                        decay: 0.05,
+                        color: this.color,
+                        r: 2
+                    });
+                }
+            },
+
+            draw() {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                
+                ctx.save();
+                ctx.translate(this.x + this.w/2, this.y + this.h/2);
+                
+                // Rotate slightly based on horizontal movement (inferred from mouse pos)
+                // For simplicity, let's just make it pulse or stay square
+                
+                ctx.beginPath();
+                ctx.roundRect(-this.w/2, -this.h/2, this.w, this.h, 6);
+                ctx.fill();
+
+                // Inner glow
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.roundRect(-this.w/4, -this.h/4, this.w/2, this.h/2, 3);
+                ctx.fill();
+                
+                ctx.restore();
+                ctx.shadowBlur = 0;
+            }
+        };
+
+        // Platforms
+        let platforms = [];
+        const PLATFORM_W = 60;
+        const PLATFORM_H = 12;
+
+        function createPlatform(y, type = 'normal') {
+            return {
+                x: Math.random() * (canvas.width - PLATFORM_W),
+                y: y,
+                w: PLATFORM_W,
+                h: PLATFORM_H,
+                type: type, // 'normal', 'moving', 'breakable'
+                dx: type === 'moving' ? (Math.random() > 0.5 ? 2 : -2) : 0,
+                broken: false,
+                color: type === 'normal' ? '#ff00ff' : (type === 'moving' ? '#ffea00' : '#ff1744')
+            };
+        }
+
+        function initPlatforms() {
+            platforms = [];
+            // Initial solid platform under player
+            platforms.push({
+                x: canvas.width/2 - PLATFORM_W/2,
+                y: canvas.height - 20,
+                w: PLATFORM_W,
+                h: PLATFORM_H,
+                type: 'normal',
+                dx: 0,
+                broken: false,
+                color: '#ff00ff'
+            });
+
+            for (let i = 0; i < 8; i++) {
+                platforms.push(createPlatform(canvas.height - 100 - i * 80));
+            }
+        }
+
+        function updateAndDrawPlatforms() {
+            for (let i = 0; i < platforms.length; i++) {
+                let p = platforms[i];
+                if (p.broken) continue;
+
+                // Move moving platforms
+                if (p.type === 'moving') {
+                    p.x += p.dx;
+                    if (p.x < 0 || p.x + p.w > canvas.width) p.dx *= -1;
+                }
+
+                // Draw Platform
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = p.color;
+                
+                const grad = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+                grad.addColorStop(0, p.color);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                
+                ctx.beginPath();
+                ctx.roundRect(p.x, p.y, p.w, p.h, 4);
+                ctx.fill();
+                
+                // Top bright line
+                ctx.fillStyle = '#fff';
+                ctx.globalAlpha = 0.5;
+                ctx.fillRect(p.x + 2, p.y + 1, p.w - 4, 2);
+                ctx.globalAlpha = 1;
+
+                ctx.shadowBlur = 0;
+
+                // Collision Detection (only when falling)
+                if (player.dy > 0 && 
+                    player.y + player.h >= p.y && 
+                    player.y + player.h <= p.y + p.h + player.dy &&
+                    player.x + player.w > p.x && 
+                    player.x < p.x + p.w) {
+                    
+                    if (p.type === 'breakable') {
+                        p.broken = true;
+                        createParticles(p.x + p.w/2, p.y, p.color, 15, "break");
+                        // Fall through
+                    } else {
+                        player.jump();
+                    }
+                }
+            }
+
+            // Recycle platforms that go off screen (below camera)
+            // But since camera moves up, elements move down relative to screen.
+            // Wait, we keep player relatively centered.
+            if (player.y < canvas.height / 2) {
+                let diff = (canvas.height / 2) - player.y;
+                player.y += diff;
+                score += diff / 10;
+                scoreEl.textContent = Math.floor(score);
+                
+                for (let i = 0; i < platforms.length; i++) {
+                    platforms[i].y += diff;
+                    // If platform goes off bottom
+                    if (platforms[i].y > canvas.height) {
+                        platforms.splice(i, 1);
+                        i--;
+                        
+                        // Spawn new platform at top
+                        // Probability gets harder based on score
+                        let r = Math.random();
+                        let type = 'normal';
+                        if (score > 100 && r < 0.2) type = 'moving';
+                        else if (score > 200 && r < 0.4) type = 'breakable';
+                        
+                        platforms.push(createPlatform(Math.random() * -50, type));
+                    }
+                }
+            }
+        }
+
+        // Particles
+        let particles = [];
+        function createParticles(x, y, color, count, type) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: type === "break" ? (Math.random() - 0.5) * 6 : (Math.random() - 0.5) * 3,
+                    vy: type === "break" ? (Math.random() - 0.5) * 6 : Math.random() * 2,
+                    life: 1,
+                    decay: Math.random() * 0.05 + 0.02,
+                    color: color,
+                    r: Math.random() * 3 + 1
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        // Background Grid (Moving down as we go up)
+        function drawBackground() {
+            ctx.fillStyle = '#030114';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            
+            // Vertical lines
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+
+            // Horizontal lines (moving)
+            let offset = (score * 10) % 40;
+            for(let i=0; i<canvas.height + 40; i+=40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i + offset);
+                ctx.lineTo(canvas.width, i + offset);
+                ctx.stroke();
+            }
+        }
+
+        function draw() {
+            drawBackground();
+            updateAndDrawParticles();
+            updateAndDrawPlatforms();
+            player.draw();
+        }
+
+        function update() {
+            player.update();
+
+            // Game Over (fall off screen)
+            if (player.y > canvas.height) {
+                gameOver();
+            }
+        }
+
+        function loop() {
+            if (gameState === 'PLAYING') {
+                update();
+                draw();
+                animationId = requestAnimationFrame(loop);
+            } else if (gameState === 'START') {
+                drawBackground();
+                player.draw();
+                animationId = requestAnimationFrame(loop);
+            }
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            
+            // Shatter player
+            createParticles(player.x + player.w/2, canvas.height - 10, player.color, 40, "break");
+            
+            ctx.fillStyle = 'rgba(255, 23, 68, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            updateAndDrawParticles();
+            
+            let finalScore = Math.floor(score);
+            if (finalScore > bestScore) {
+                bestScore = finalScore;
+                localStorage.setItem('neonJumpBest', bestScore);
+                bestScoreEl.textContent = bestScore;
+            }
+
+            setTimeout(() => {
+                gameOverScreen.classList.add('active');
+            }, 300);
+        }
+
+        function resetGame() {
+            score = 0;
+            scoreEl.textContent = '0';
+            particles = [];
+            
+            player.x = canvas.width / 2 - player.w/2;
+            player.y = canvas.height - 150;
+            player.dy = 0;
+
+            initPlatforms();
+
+            gameOverScreen.classList.remove('active');
+            startScreen.classList.remove('active');
+            gameState = 'PLAYING';
+            
+            cancelAnimationFrame(animationId);
+            loop();
+        }
+
+        // Controls
+        function setPlayerPos(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            let targetX = (clientX - rect.left) * scaleX - player.w/2;
+            // Smooth follow
+            player.x += (targetX - player.x) * 0.3;
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (gameState === 'PLAYING') {
+                setPlayerPos(e.clientX);
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (gameState === 'PLAYING') {
+                e.preventDefault();
+                setPlayerPos(e.touches[0].clientX);
+            }
+        }, {passive: false});
+
+        restartBtn.addEventListener('click', resetGame);
+        startBtn.addEventListener('click', resetGame);
+
+        // Init
+        initPlatforms();
+        loop();
+        
+    </script>
+</body>
+</html>
