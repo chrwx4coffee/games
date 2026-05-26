@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Orbit - Kütleçekiminden Kaçış Oyunu</title>
+    <!-- Outfit Font from Google Fonts for a premium look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #020111;
+            --primary-glow: #ff007f; /* Neon Magenta */
+            --secondary-glow: #00f2fe; /* Cyber Teal */
+            --accent-glow: #ffd700; /* Gold */
+            --danger-glow: #ff3300; /* Red Alert */
+            --container-bg: rgba(6, 3, 20, 0.75);
+            --border-light: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0a0424 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-light);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(0, 242, 254, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            width: min(95vw, 440px);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--secondary-glow), var(--primary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.3);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .score-box .stat-value {
+            color: var(--secondary-glow);
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+        }
+
+        .gems-box .stat-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .lives-box .stat-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(255, 0, 127, 0.4);
+            display: flex;
+            gap: 2px;
+            font-size: 1.3rem;
+            align-items: center;
+            height: 1.8rem;
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 15px;
+            background: rgba(2, 1, 15, 0.98);
+            width: 100%;
+            height: 480px;
+            cursor: pointer;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(3, 1, 12, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+
+        .screen-overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            font-weight: 400;
+            text-align: center;
+            padding: 0 20px;
+            line-height: 1.5;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--secondary-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.15), rgba(255, 0, 127, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+            padding: 13px 32px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.3), rgba(255, 0, 127, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 242, 254, 0.3);
+            border-color: var(--secondary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Threat flash indicator (Unstable planet countdown) */
+        .alert-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 14px;
+            background: rgba(255, 51, 0, 0.25);
+            border: 1px solid var(--danger-glow);
+            color: #ffffff;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 0 5px red;
+            box-shadow: 0 0 15px rgba(255, 51, 0, 0.4);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 5;
+        }
+
+        .alert-indicator.active {
+            opacity: 1;
+            animation: pulse-alert 0.5s infinite alternate;
+        }
+
+        @keyframes pulse-alert {
+            0% { box-shadow: 0 0 5px rgba(255, 51, 0, 0.4); }
+            100% { box-shadow: 0 0 20px rgba(255, 51, 0, 0.8); background: rgba(255, 51, 0, 0.4); }
+        }
+
+        @media (max-width: 480px) {
+            .wrapper {
+                padding: 16px;
+                border-radius: 20px;
+                gap: 12px;
+            }
+            canvas {
+                height: 400px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <div class="alert-indicator" id="alertIndicator">TEHLİKE: GEZEGEN ÇÖKÜYOR!</div>
+        
+        <h1>Neon Orbit</h1>
+        
+        <div class="stats-panel">
+            <div class="stat-box score-box">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box gems-box">
+                <span class="stat-label">Kristal</span>
+                <span class="stat-value" id="gems">0</span>
+            </div>
+            <div class="stat-box lives-box">
+                <span class="stat-label">Can</span>
+                <div class="stat-value" id="lives">❤️❤️❤️</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="400" height="520"></canvas>
+            
+            <!-- Start screen -->
+            <div class="screen-overlay active" id="startScreen">
+                <h2 style="color: var(--secondary-glow); text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);">Yörünge Atlama</h2>
+                <p>Boşluk tuşuna basarak veya ekrana dokunarak gemiyi fırlat. Gezegenlerin kütleçekim alanlarına tutunup yüksel!</p>
+                <button class="btn" id="startBtn">Sisteme Bağlan</button>
+            </div>
+
+            <!-- Game Over screen -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2>BAĞLANTI KOPTI!</h2>
+                <p>Kozmik Derinlik Skoru: <span id="finalScore">0</span></p>
+                <button class="btn" id="restartBtn">Yeniden Yükle</button>
+            </div>
+        </div>
+        
+        <div class="hint">Fırlatmak için ekrana <b>dokunun</b> veya <b>boşluk (Space)</b> tuşuna basın.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const gemsEl = document.getElementById('gems');
+        const livesEl = document.getElementById('lives');
+        const finalScoreEl = document.getElementById('finalScore');
+        
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const alertIndicator = document.getElementById('alertIndicator');
+
+        // Game Configuration constants
+        const GRAVITY_CONSTANT = 7.5; // Orbit capture radius coefficient
+        const SHIP_ROTATION_RADIUS = 24;
+
+        // Sound Engine (Web Audio API)
+        let audioCtx = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playLaunchSound() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.18);
+
+            gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function playLockSound() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+            osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.05); // G5
+
+            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.25);
+        }
+
+        function playCrystalSound() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(987.77, audioCtx.currentTime); // B5
+            osc1.frequency.exponentialRampToValueAtTime(1567.98, audioCtx.currentTime + 0.15); // G6
+
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(1046.50, audioCtx.currentTime); // C6
+            osc2.frequency.exponentialRampToValueAtTime(1975.53, audioCtx.currentTime + 0.15); // B6
+
+            gainNode.gain.setValueAtTime(0.14, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+
+            osc1.connect(gainNode);
+            osc2.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc1.start();
+            osc2.start();
+            osc1.stop(audioCtx.currentTime + 0.2);
+            osc2.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function playCrashSound() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const sampleRate = audioCtx.sampleRate;
+            const bufferSize = sampleRate * 0.8;
+            const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(600, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.6);
+
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+
+            noiseNode.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Bass pulse
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(20, audioCtx.currentTime + 0.6);
+
+            oscGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            oscGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+
+            osc.connect(oscGain);
+            oscGain.connect(audioCtx.destination);
+
+            noiseNode.start();
+            osc.start();
+            noiseNode.stop(audioCtx.currentTime + 0.7);
+            osc.stop(audioCtx.currentTime + 0.7);
+        }
+
+        let pulseOsc = null;
+        let pulseGain = null;
+        
+        function playThreatPulse(isActive, frequency = 2) {
+            initAudio();
+            if (!audioCtx) return;
+
+            if (!isActive) {
+                if (pulseOsc) {
+                    try { pulseOsc.stop(); } catch(e){}
+                    pulseOsc = null;
+                }
+                return;
+            }
+
+            if (pulseOsc) return; // Already pulsing
+
+            pulseOsc = audioCtx.createOscillator();
+            pulseGain = audioCtx.createGain();
+
+            pulseOsc.type = 'triangle';
+            pulseOsc.frequency.setValueAtTime(220, audioCtx.currentTime);
+
+            pulseGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+            
+            // Create a pulsing alarm volume
+            const oscTime = audioCtx.currentTime;
+            pulseGain.gain.linearRampToValueAtTime(0.08, oscTime + 0.1);
+            pulseGain.gain.linearRampToValueAtTime(0.0, oscTime + 0.25);
+            pulseGain.gain.linearRampToValueAtTime(0.08, oscTime + 0.4);
+            pulseGain.gain.linearRampToValueAtTime(0.0, oscTime + 0.55);
+
+            pulseOsc.connect(pulseGain);
+            pulseGain.connect(audioCtx.destination);
+
+            pulseOsc.start();
+            pulseOsc.stop(audioCtx.currentTime + 0.6);
+            
+            // Loop threat sounds manually with timeout
+            setTimeout(() => {
+                if (currentPlanet && currentPlanet.type === 'unstable' && gameState === 'PLAYING') {
+                    pulseOsc = null;
+                    playThreatPulse(true);
+                } else {
+                    playThreatPulse(false);
+                }
+            }, 600);
+        }
+
+
+        // Game state variables
+        let gameState = 'START';
+        let score = 0;
+        let gems = 0;
+        let lives = 3;
+        
+        let planets = [];
+        let asteroids = [];
+        let crystals = [];
+        let particles = [];
+        let stars = [];
+        let trail = [];
+
+        // Ship coordinates and vectors
+        const ship = {
+            x: 0,
+            y: 0,
+            r: 7,
+            vx: 0,
+            vy: 0,
+            state: 'ORBITING', // ORBITING, FLYING, RESPONDING
+            orbitAngle: 0,
+            orbitSpeed: 0.05,
+            orbitRadius: 0,
+            flightSpeed: 7.5
+        };
+
+        let currentPlanet = null;
+        let highestVisitedPlanetY = 0;
+        let lastVisitedPlanet = null;
+
+        // Camera scroll offset
+        let cameraY = 0;
+        let targetCameraY = 0;
+
+        // Populate cosmic background stars
+        for (let i = 0; i < 70; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 1.5 + 0.1,
+                opacity: Math.random() * 0.6 + 0.2
+            });
+        }
+
+        // Spawn a planet structure vertically
+        function spawnPlanet(yIndex) {
+            // Determine vertical Y position (planets spawn higher up)
+            const y = canvas.height * 0.6 - yIndex * 190;
+            
+            // Determine type of planet
+            let type = 'normal';
+            if (yIndex > 0) {
+                const rand = Math.random();
+                if (rand < 0.25) type = 'fast';
+                else if (rand < 0.45) type = 'unstable';
+                else if (rand < 0.70) type = 'asteroid';
+            }
+
+            const size = Math.random() * 10 + 26; // Radius
+            const direction = Math.random() < 0.5 ? 1 : -1;
+            const speed = type === 'fast' ? (Math.random() * 0.03 + 0.065) : (Math.random() * 0.02 + 0.032);
+            
+            // Hue shifts dynamically according to climbing index
+            const hue = (190 + yIndex * 22) % 360;
+
+            const planet = {
+                id: yIndex,
+                x: Math.random() * (canvas.width - 150) + 75,
+                y: y,
+                r: size,
+                gravityRadius: size * GRAVITY_CONSTANT,
+                hue: hue,
+                color: `hsl(${hue}, 90%, 60%)`,
+                speed: speed,
+                direction: direction,
+                type: type,
+                name: getPlanetName(yIndex),
+                // Unstable properties
+                unstableTimer: 3.5, // 3.5 seconds to escape
+                maxUnstableTimer: 3.5
+            };
+
+            planets.push(planet);
+
+            // Spawn obstacles if asteroid type
+            if (type === 'asteroid') {
+                const astCount = Math.floor(Math.random() * 2) + 1; // 1 or 2 obstacles
+                for (let a = 0; a < astCount; a++) {
+                    asteroids.push({
+                        planetId: planet.id,
+                        angle: (a * Math.PI) + Math.random(),
+                        orbitRadius: size + 45,
+                        speed: speed * 0.8,
+                        size: Math.random() * 3 + 5
+                    });
+                }
+            }
+
+            // Spawn gems floating around
+            if (yIndex > 0) {
+                // Spawn 1 or 2 gems between the last planet and the new one
+                const prev = planets[planets.length - 2];
+                const gemX = (prev.x + planet.x) / 2 + (Math.random() - 0.5) * 80;
+                const gemY = (prev.y + planet.y) / 2 + (Math.random() - 0.5) * 40;
+                
+                crystals.push({
+                    x: gemX,
+                    y: gemY,
+                    size: 6,
+                    collected: false,
+                    pulse: 0
+                });
+            }
+        }
+
+        // Fun retro Sci-Fi names generator
+        function getPlanetName(index) {
+            const prefixes = ['Nova', 'Cyber', 'Astro', 'Astra', 'Zephyr', 'Orion', 'Krypton', 'Nebula', 'Chronos', 'Solar'];
+            const suffixes = ['Prime', 'IX', 'Beta', 'Core', 'V', '7', 'Station', 'Alpha', 'Synth', 'Horizon'];
+            
+            if (index === 0) return 'Base Station';
+            const pre = prefixes[Math.floor(Math.random() * prefixes.length)];
+            const suf = suffixes[Math.floor(Math.random() * suffixes.length)];
+            return `${pre} ${suf}`;
+        }
+
+        // Project coordinate relative to Camera offset
+        function getScreenY(y) {
+            return y - cameraY;
+        }
+
+        // Particle generator on explosions
+        function spawnExplosionParticles(x, y, hue, count = 20) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3.5 + 1.5;
+                
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    hue: hue,
+                    life: 1.0,
+                    decay: Math.random() * 0.04 + 0.02,
+                    size: Math.random() * 3 + 2
+                });
+            }
+        }
+
+        function spawnSparkles(x, y, hue) {
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 1.5 + 0.5;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    hue: hue,
+                    life: 0.8,
+                    decay: 0.04,
+                    size: Math.random() * 2 + 1
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.fillStyle = `hsla(${p.hue}, 95%, 65%, ${p.life})`;
+                ctx.beginPath();
+                ctx.arc(p.x, getScreenY(p.y), p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Gemi Fırlatma (Tangent Launch)
+        function launchShip() {
+            if (ship.state !== 'ORBITING' || !currentPlanet) return;
+
+            playLaunchSound();
+            
+            // Tangent direction vectors
+            const angle = ship.orbitAngle;
+            const dir = currentPlanet.direction;
+
+            // ccw = counter-clockwise (1), cw = clockwise (-1)
+            // ccw tangent: vx = -sin(angle), vy = cos(angle)
+            // cw tangent: vx = sin(angle), vy = -cos(angle)
+            ship.vx = -Math.sin(angle) * dir * ship.flightSpeed;
+            ship.vy = Math.cos(angle) * dir * ship.flightSpeed;
+
+            ship.state = 'FLYING';
+            lastVisitedPlanet = currentPlanet;
+            currentPlanet = null;
+            
+            // Turn off alarms
+            alertIndicator.classList.remove('active');
+            playThreatPulse(false);
+        }
+
+        // Explode player
+        function triggerPlayerDeath() {
+            playCrashSound();
+            spawnExplosionParticles(ship.x, ship.y, 350, 25);
+            
+            lives--;
+            updateLivesDisplay();
+
+            if (lives <= 0) {
+                gameOver();
+            } else {
+                respawnAtLastPlanet();
+            }
+        }
+
+        function updateLivesDisplay() {
+            let hearts = '';
+            for (let i = 0; i < 3; i++) {
+                hearts += i < lives ? '❤️' : '🖤';
+            }
+            livesEl.innerHTML = hearts;
+        }
+
+        function respawnAtLastPlanet() {
+            ship.state = 'ORBITING';
+            currentPlanet = lastVisitedPlanet;
+            ship.orbitAngle = Math.random() * Math.PI * 2;
+            ship.vx = 0;
+            ship.vy = 0;
+            trail = [];
+            
+            if (currentPlanet) {
+                // Snap ship to orbit position
+                ship.orbitRadius = currentPlanet.r + SHIP_ROTATION_RADIUS;
+                ship.x = currentPlanet.x + Math.cos(ship.orbitAngle) * ship.orbitRadius;
+                ship.y = currentPlanet.y + Math.sin(ship.orbitAngle) * ship.orbitRadius;
+            }
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            alertIndicator.classList.remove('active');
+            playThreatPulse(false);
+            
+            finalScoreEl.textContent = score;
+            gameOverScreen.classList.add('active');
+        }
+
+        function resetGame() {
+            score = 0;
+            gems = 0;
+            lives = 3;
+            scoreEl.textContent = score;
+            gemsEl.textContent = gems;
+            updateLivesDisplay();
+
+            planets = [];
+            asteroids = [];
+            crystals = [];
+            particles = [];
+            trail = [];
+            
+            cameraY = 0;
+            targetCameraY = 0;
+
+            // Spawn base planet
+            spawnPlanet(0);
+            
+            // Spawn initial stack of planets above
+            for (let i = 1; i <= 4; i++) {
+                spawnPlanet(i);
+            }
+
+            // Position ship at base planet
+            currentPlanet = planets[0];
+            lastVisitedPlanet = planets[0];
+            highestVisitedPlanetY = planets[0].y;
+            
+            ship.state = 'ORBITING';
+            ship.orbitAngle = -Math.PI / 2;
+            ship.orbitRadius = currentPlanet.r + SHIP_ROTATION_RADIUS;
+            
+            gameOverScreen.classList.remove('active');
+            startScreen.classList.remove('active');
+            
+            gameState = 'PLAYING';
+        }
+
+        // Draw HUD indicators like planet naming or warnings
+        function drawPlanetLabels() {
+            planets.forEach(p => {
+                const screenY = getScreenY(p.y);
+                
+                // Only draw if visible
+                if (screenY > -50 && screenY < canvas.height + 50) {
+                    ctx.textAlign = 'center';
+                    
+                    // Planet name
+                    ctx.font = 'bold 10px Outfit';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+                    ctx.fillText(p.name, p.x, screenY - p.r - 28);
+
+                    // Planet type label
+                    if (p.type !== 'normal') {
+                        ctx.font = '600 8px Outfit';
+                        if (p.type === 'unstable') {
+                            ctx.fillStyle = 'rgba(255, 51, 0, 0.7)';
+                            ctx.fillText('DENGESİZ', p.x, screenY - p.r - 18);
+                        } else if (p.type === 'asteroid') {
+                            ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+                            ctx.fillText('ASTEROİT KALKANI', p.x, screenY - p.r - 18);
+                        } else if (p.type === 'fast') {
+                            ctx.fillStyle = 'rgba(0, 242, 254, 0.7)';
+                            ctx.fillText('HIZLI DÖNÜŞ', p.x, screenY - p.r - 18);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Physics Updates
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // 1. Update active ship physics
+            if (ship.state === 'ORBITING' && currentPlanet) {
+                // Increment orbit angle
+                ship.orbitAngle += currentPlanet.speed * currentPlanet.direction;
+                
+                // Calculate position based on orbit
+                ship.orbitRadius = currentPlanet.r + SHIP_ROTATION_RADIUS;
+                ship.x = currentPlanet.x + Math.cos(ship.orbitAngle) * ship.orbitRadius;
+                ship.y = currentPlanet.y + Math.sin(ship.orbitAngle) * ship.orbitRadius;
+
+                // Handle Unstable Planet Countdown
+                if (currentPlanet.type === 'unstable') {
+                    currentPlanet.unstableTimer -= 0.016; // 60 FPS delta approx
+                    
+                    // Trigger alarms on screen
+                    alertIndicator.classList.add('active');
+                    alertIndicator.textContent = `GEZEGEN ÇÖKÜYOR: ${Math.max(0, currentPlanet.unstableTimer).toFixed(1)}s`;
+                    playThreatPulse(true);
+
+                    if (currentPlanet.unstableTimer <= 0) {
+                        // Explode unstable planet!
+                        playCrashSound();
+                        spawnExplosionParticles(currentPlanet.x, currentPlanet.y, currentPlanet.hue, 350);
+                        
+                        // Destroy planet
+                        planets.splice(planets.indexOf(currentPlanet), 1);
+                        
+                        alertIndicator.classList.remove('active');
+                        playThreatPulse(false);
+                        
+                        // Throw player out violently or kill them
+                        triggerPlayerDeath();
+                        return;
+                    }
+                }
+            } 
+            else if (ship.state === 'FLYING') {
+                // Linear motion
+                ship.x += ship.vx;
+                ship.y += ship.vy;
+
+                // Store trails
+                trail.push({ x: ship.x, y: ship.y, life: 1.0 });
+                if (trail.length > 18) {
+                    trail.shift();
+                }
+
+                // Check wall bounds (Horizontal screen bounce!)
+                if (ship.x - ship.r <= 0) {
+                    ship.x = ship.r + 2;
+                    ship.vx = -ship.vx * 0.9;
+                    spawnSparkles(ship.x, ship.y, 190);
+                    playChopSound();
+                } 
+                else if (ship.x + ship.r >= canvas.width) {
+                    ship.x = canvas.width - ship.r - 2;
+                    ship.vx = -ship.vx * 0.9;
+                    spawnSparkles(ship.x, ship.y, 190);
+                    playChopSound();
+                }
+
+                // Check fell down (camera bottom limit)
+                if (getScreenY(ship.y) > canvas.height + 150) {
+                    triggerPlayerDeath();
+                    return;
+                }
+
+                // Check captures
+                for (let i = 0; i < planets.length; i++) {
+                    const p = planets[i];
+                    
+                    // Check if close enough to gravity lock
+                    const dx = ship.x - p.x;
+                    const dy = ship.y - p.y;
+                    const dist = Math.hypot(dx, dy);
+
+                    // If inside capture zone
+                    if (dist <= p.gravityRadius) {
+                        // Enter Orbit!
+                        currentPlanet = p;
+                        ship.state = 'ORBITING';
+                        
+                        // Compute lock angle
+                        ship.orbitAngle = Math.atan2(dy, dx);
+                        playLockSound();
+                        
+                        // Scoring and advancing
+                        score += 15;
+                        
+                        if (p.y < highestVisitedPlanetY) {
+                            highestVisitedPlanetY = p.y;
+                            score += 25; // Bonus for climbing
+                            
+                            // Spawn more planets high above
+                            const nextIndex = planets[planets.length - 1].id + 1;
+                            spawnPlanet(nextIndex);
+                        }
+
+                        scoreEl.textContent = score;
+                        break;
+                    }
+                }
+            }
+
+            // Update Orbiting Obstacles (Asteroids)
+            asteroids.forEach(a => {
+                // Find parent planet
+                const parent = planets.find(p => p.id === a.planetId);
+                if (parent) {
+                    a.angle += a.speed;
+                    a.x = parent.x + Math.cos(a.angle) * a.orbitRadius;
+                    a.y = parent.y + Math.sin(a.angle) * a.orbitRadius;
+
+                    // Collision detection with spaceship
+                    const dist = Math.hypot(ship.x - a.x, ship.y - a.y);
+                    if (dist <= ship.r + a.size) {
+                        triggerPlayerDeath();
+                    }
+                }
+            });
+
+            // Update Crystals floating around
+            crystals.forEach(c => {
+                if (!c.collected) {
+                    c.pulse += 0.05;
+                    
+                    // Collision check
+                    const dist = Math.hypot(ship.x - c.x, ship.y - c.y);
+                    if (dist <= ship.r + c.size + 4) {
+                        c.collected = true;
+                        gems++;
+                        score += 50;
+                        gemsEl.textContent = gems;
+                        scoreEl.textContent = score;
+                        playCrystalSound();
+                        spawnSparkles(c.x, c.y, 45); // Golden spark
+                    }
+                }
+            });
+
+            // Update Camera vertical smooth scrolling
+            if (currentPlanet) {
+                targetCameraY = currentPlanet.y - canvas.height * 0.65;
+            } else if (ship.state === 'FLYING') {
+                targetCameraY = ship.y - canvas.height * 0.45;
+            }
+            
+            // Lerp camera
+            cameraY += (targetCameraY - cameraY) * 0.075;
+        }
+
+        // Draw everything
+        function draw() {
+            // Draw background grad Shifted with climbing
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            const currentHue = (200 + Math.floor(-cameraY * 0.1)) % 360;
+            grad.addColorStop(0, `hsl(${currentHue}, 70%, 4%)`);
+            grad.addColorStop(1, `hsl(${(currentHue + 40) % 360}, 80%, 1%)`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw cosmic background stars
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            stars.forEach(s => {
+                // Parallax depth offset based on camera scrolling
+                const sY = (s.y - cameraY * 0.1) % canvas.height;
+                ctx.beginPath();
+                ctx.arc(s.x, sY < 0 ? sY + canvas.height : sY, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 1. Draw gravity fields (radiuses) and planetary spheres
+            planets.forEach(p => {
+                const screenY = getScreenY(p.y);
+                
+                // Draw gravity lock zone (Faint outer neon ring)
+                ctx.strokeStyle = `hsla(${p.hue}, 90%, 60%, 0.06)`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(p.x, screenY, p.gravityRadius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Unstable threat pulse radius
+                if (p.type === 'unstable') {
+                    const timerRatio = p.unstableTimer / p.maxUnstableTimer;
+                    ctx.strokeStyle = `rgba(255, 51, 0, ${0.12 * (1 - timerRatio)})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(p.x, screenY, p.gravityRadius * (1 - timerRatio), 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Planets sphere neon glow
+                ctx.shadowBlur = p.type === 'unstable' ? (20 + Math.sin(Date.now() * 0.01) * 8) : 15;
+                ctx.shadowColor = p.type === 'unstable' ? 'red' : p.color;
+                
+                // Planet Fill Gradient
+                const radGrad = ctx.createRadialGradient(p.x - p.r*0.3, screenY - p.r*0.3, 2, p.x, screenY, p.r);
+                if (p.type === 'unstable') {
+                    radGrad.addColorStop(0, '#ffa68d');
+                    radGrad.addColorStop(1, '#ff2200');
+                } else {
+                    radGrad.addColorStop(0, `hsl(${p.hue}, 90%, 75%)`);
+                    radGrad.addColorStop(1, `hsl(${p.hue}, 90%, 48%)`);
+                }
+                
+                ctx.fillStyle = radGrad;
+                ctx.beginPath();
+                ctx.arc(p.x, screenY, p.r, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Outer ring for design
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(p.x, screenY, p.r, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.shadowBlur = 0; // Reset
+            });
+
+            // 2. Draw Floating Gems
+            crystals.forEach(c => {
+                if (!c.collected) {
+                    const screenY = getScreenY(c.y);
+                    const scalePulse = 1 + Math.sin(c.pulse) * 0.15;
+                    
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#ffd700';
+                    ctx.fillStyle = '#ffd700';
+                    
+                    // Draw Diamond Shape
+                    ctx.beginPath();
+                    ctx.moveTo(c.x, screenY - c.size * scalePulse);
+                    ctx.lineTo(c.x + c.size * scalePulse, screenY);
+                    ctx.lineTo(c.x, screenY + c.size * scalePulse);
+                    ctx.lineTo(c.x - c.size * scalePulse, screenY);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            // 3. Draw Obstacles (Asteroids)
+            asteroids.forEach(a => {
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'red';
+                ctx.fillStyle = '#ff5533';
+                ctx.beginPath();
+                ctx.arc(a.x, getScreenY(a.y), a.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            // 4. Draw Trails & Spaceship
+            if (ship.state === 'FLYING') {
+                // Draw plasma trail
+                trail.forEach((t, idx) => {
+                    const opacity = idx / trail.length * 0.45;
+                    ctx.fillStyle = `rgba(0, 242, 254, ${opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(t.x, getScreenY(t.y), ship.r * (idx / trail.length), 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            // Draw player ship
+            if (ship.state !== 'EXPLODED') {
+                const screenY = getScreenY(ship.y);
+                
+                // Outer glow
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#00f2fe';
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(ship.x, screenY, ship.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw tangent alignment visual helpers if orbiting (Help player visual range)
+                if (ship.state === 'ORBITING' && currentPlanet) {
+                    const dir = currentPlanet.direction;
+                    const angle = ship.orbitAngle;
+                    
+                    // compute tangent vector
+                    const tx = -Math.sin(angle) * dir;
+                    const ty = Math.cos(angle) * dir;
+
+                    ctx.strokeStyle = 'rgba(0, 242, 254, 0.45)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([3, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(ship.x, screenY);
+                    ctx.lineTo(ship.x + tx * 35, screenY + ty * 35);
+                    ctx.stroke();
+                    ctx.setLineDash([]); // Reset
+                }
+                
+                ctx.shadowBlur = 0;
+            }
+
+            // 5. Draw labels and particles
+            drawPlanetLabels();
+            updateAndDrawParticles();
+        }
+
+        // 60FPS animation loop
+        function tick() {
+            update();
+            draw();
+            requestAnimationFrame(tick);
+        }
+
+        // Input triggers
+        function handleInput(e) {
+            e.preventDefault();
+            if (gameState === 'PLAYING') {
+                launchShip();
+            } else if (gameState === 'START') {
+                initAudio();
+                resetGame();
+            }
+        }
+
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', handleInput, { passive: false });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.code === 'Space') {
+                handleInput(e);
+            }
+        });
+
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initAudio();
+            resetGame();
+        });
+
+        restartBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initAudio();
+            resetGame();
+        });
+
+        // Initialize frame
+        draw();
+        requestAnimationFrame(tick);
+    </script>
+</body>
+</html>
