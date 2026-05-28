@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Path - 3D İzometrik Siber Yol Oyunu</title>
+    <!-- Outfit Font from Google Fonts for a premium look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #020015;
+            --primary-glow: #00f2fe; /* Cyber Teal */
+            --secondary-glow: #ff007f; /* Neon Pink */
+            --accent-glow: #ffd700; /* Gold */
+            --perfect-color: #00ffcc; /* Bright Turquoise */
+            --container-bg: rgba(6, 3, 20, 0.78);
+            --border-light: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0b0324 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-light);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(0, 242, 254, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            width: min(95vw, 440px);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.3);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .score-box .stat-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+        }
+
+        .distance-box .stat-value {
+            color: var(--perfect-color);
+            text-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
+        }
+
+        .best-box .stat-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 15px;
+            background: rgba(2, 0, 18, 0.98);
+            width: 100%;
+            height: 460px;
+            cursor: pointer;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(4, 1, 15, 0.93);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--secondary-glow);
+            text-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+
+        .screen-overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            font-weight: 400;
+            text-align: center;
+            padding: 0 20px;
+            line-height: 1.5;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--primary-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.15), rgba(255, 0, 127, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+            padding: 13px 32px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.3), rgba(255, 0, 127, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 242, 254, 0.3);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        @media (max-width: 480px) {
+            .wrapper {
+                padding: 16px;
+                border-radius: 20px;
+                gap: 12px;
+            }
+            canvas {
+                height: 380px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <h1>Cyber Path</h1>
+        
+        <div class="stats-panel">
+            <div class="stat-box score-box">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box distance-box">
+                <span class="stat-label">Mesafe</span>
+                <span class="stat-value" id="distance">0m</span>
+            </div>
+            <div class="stat-box best-box">
+                <span class="stat-label">En İyi</span>
+                <span class="stat-value" id="bestScore">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="400" height="480"></canvas>
+            
+            <!-- Start screen -->
+            <div class="screen-overlay active" id="startScreen">
+                <h2 style="color: var(--primary-glow); text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);">Siber Yol</h2>
+                <p>Boşluk tuşuna basarak veya ekrana dokunarak kürenin yönünü 90 derece döndür. Arkandan çöken küplere dikkat et!</p>
+                <button class="btn" id="startBtn">Bağlantıyı Kur</button>
+            </div>
+
+            <!-- Game Over screen -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2>VERİ KOPTI!</h2>
+                <p>Kat Edilen Mesafe: <span id="finalScore">0</span></p>
+                <button class="btn" id="restartBtn">Yeniden Bağlan</button>
+            </div>
+        </div>
+        
+        <div class="hint">Yön değiştirmek için ekrana <b>dokunun</b> veya <b>boşluk (Space)</b> tuşuna basın.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const distanceEl = document.getElementById('distance');
+        const bestScoreEl = document.getElementById('bestScore');
+        const finalScoreEl = document.getElementById('finalScore');
+        
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // Block & Ball dimensions
+        const CUBE_SIZE = 36; // Size of cube in 3D units
+        const BALL_RADIUS = 8;
+
+        // Sound Engine (Web Audio API)
+        let audioCtx = null;
+        let rollingOsc = null;
+        let rollingGain = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Turning Click Sound
+        function playClickSound() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(650, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.08);
+
+            gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+
+        // Crystal Collect sound
+        function playCrystalSound() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            osc1.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.15); // A6
+
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(1108.73, audioCtx.currentTime); // C#6
+            osc2.frequency.exponentialRampToValueAtTime(2217.46, audioCtx.currentTime + 0.15); // C#7
+
+            gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.16);
+
+            osc1.connect(gainNode);
+            osc2.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc1.start();
+            osc2.start();
+            osc1.stop(audioCtx.currentTime + 0.16);
+            osc2.stop(audioCtx.currentTime + 0.16);
+        }
+
+        // Cyber explosion when falling
+        function playCrashSound() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const sampleRate = audioCtx.sampleRate;
+            const bufferSize = sampleRate * 0.8;
+            const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noiseSource = audioCtx.createBufferSource();
+            noiseSource.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(700, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(15, audioCtx.currentTime + 0.6);
+
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+
+            noiseSource.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Bass sweep
+            const bass = audioCtx.createOscillator();
+            const bassGain = audioCtx.createGain();
+            bass.type = 'sawtooth';
+            bass.frequency.setValueAtTime(90, audioCtx.currentTime);
+            bass.frequency.linearRampToValueAtTime(20, audioCtx.currentTime + 0.6);
+
+            bassGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+            bassGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+
+            bass.connect(bassGain);
+            bassGain.connect(audioCtx.destination);
+
+            noiseSource.start();
+            bass.start();
+            noiseSource.stop(audioCtx.currentTime + 0.7);
+            bass.stop(audioCtx.currentTime + 0.7);
+        }
+
+        // Continuous rolling motor hum
+        function playRollingSound(isActive) {
+            initAudio();
+            if (!audioCtx) return;
+
+            if (!isActive) {
+                if (rollingOsc) {
+                    try { rollingOsc.stop(); } catch(e){}
+                    rollingOsc = null;
+                }
+                return;
+            }
+
+            if (rollingOsc) return; // Already running
+
+            rollingOsc = audioCtx.createOscillator();
+            rollingGain = audioCtx.createGain();
+            
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 140;
+
+            rollingOsc.type = 'triangle';
+            rollingOsc.frequency.setValueAtTime(55, audioCtx.currentTime); // Deep A1 hum
+
+            // Add vibrato/oscillation to represent rolling vibrations
+            const lfo = audioCtx.createOscillator();
+            const lfoGain = audioCtx.createGain();
+            lfo.type = 'sine';
+            lfo.frequency.value = 12; // 12Hz vibration
+            lfoGain.gain.value = 4; // +/- 4Hz frequency sweep
+            
+            lfo.connect(lfoGain);
+            lfoGain.connect(rollingOsc.frequency);
+
+            rollingGain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+            rollingOsc.connect(filter);
+            filter.connect(rollingGain);
+            rollingGain.connect(audioCtx.destination);
+
+            lfo.start();
+            rollingOsc.start();
+        }
+
+        function adjustRollingPitch(speed) {
+            if (rollingOsc && audioCtx) {
+                // Pitch rises slightly with roll speed
+                const pitch = 55 + speed * 12;
+                rollingOsc.frequency.setTargetAtTime(pitch, audioCtx.currentTime, 0.1);
+            }
+        }
+
+
+        // Game state variables
+        let bestScore = localStorage.getItem('cyberPathBest') || 0;
+        bestScoreEl.textContent = bestScore;
+
+        let gameState = 'START';
+        let score = 0;
+        let distance = 0;
+
+        let pathBlocks = [];
+        let particles = [];
+        let stars = [];
+        let trail = [];
+
+        // Player Space Sphere
+        const player = {
+            x: 0,
+            y: 0,
+            z: 0,
+            r: BALL_RADIUS,
+            vx: 0,
+            vy: 0,
+            vz: 0,
+            state: 'ROLLING', // ROLLING, FALLING
+            rollSpeed: 2.2,
+            targetDirection: 'NE', // NW or NE
+            gridX: 0,
+            gridY: 0
+        };
+
+        // Procedural generator trackers
+        let lastGridX = 0;
+        let lastGridY = 0;
+        let activeDirection = 'NE'; // NW or NE
+        let startHue = 190; // Cyber Teal
+
+        // 3D Isometric projection camera parameters
+        let cameraX = 0;
+        let cameraY = 0;
+        let cameraZ = 0;
+
+        // Generate ambient background digital stars
+        for (let i = 0; i < 50; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height * 0.5,
+                r: Math.random() * 1.5 + 0.1,
+                alpha: Math.random() * 0.4 + 0.1
+            });
+        }
+
+        // Project 3D Coordinates relative to Camera to 2D Screen
+        function project(x, y, z) {
+            const relX = x - cameraX;
+            const relY = y - cameraY;
+            const relZ = z - cameraZ;
+
+            // Isometric project angles: cos(30) = 0.866, sin(30) = 0.5
+            const isoX = (relX - relY) * 0.866;
+            const isoY = (relX + relY) * 0.5 - relZ;
+
+            return {
+                x: canvas.width / 2 + isoX,
+                y: canvas.height * 0.58 - isoY
+            };
+        }
+
+        // Draw 3D Isometric Cube Prism
+        function drawCube(x, y, z, w, d, h, hue) {
+            // Top face coordinates
+            const p1 = project(x - w/2, y - d/2, z + h/2); // Back
+            const p2 = project(x + w/2, y - d/2, z + h/2); // Right
+            const p3 = project(x + w/2, y + d/2, z + h/2); // Front
+            const p4 = project(x - w/2, y + d/2, z + h/2); // Left
+
+            // Bottom coordinates
+            const p2_bot = project(x + w/2, y - d/2, z - h/2); // Right bottom
+            const p3_bot = project(x + w/2, y + d/2, z - h/2); // Front bottom
+            const p4_bot = project(x - w/2, y + d/2, z - h/2); // Left bottom
+
+            // Colors tailored HSL
+            const topColor = `hsla(${hue}, 88%, 62%, 0.9)`;
+            const leftColor = `hsla(${hue}, 80%, 42%, 0.9)`;
+            const rightColor = `hsla(${hue}, 75%, 28%, 0.9)`;
+
+            // 1. Draw Top Face
+            ctx.fillStyle = topColor;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.closePath();
+            ctx.fill();
+
+            // 2. Draw Left Face
+            ctx.fillStyle = leftColor;
+            ctx.beginPath();
+            ctx.moveTo(p4.x, p4.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p3_bot.x, p3_bot.y);
+            ctx.lineTo(p4_bot.x, p4_bot.y);
+            ctx.closePath();
+            ctx.fill();
+
+            // 3. Draw Right Face
+            ctx.fillStyle = rightColor;
+            ctx.beginPath();
+            ctx.moveTo(p3.x, p3.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p2_bot.x, p2_bot.y);
+            ctx.lineTo(p3_bot.x, p3_bot.y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Accent light stroke borders
+            ctx.strokeStyle = `rgba(255, 255, 255, 0.2)`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        // Procedural generator: Spawns blocks infinitely
+        function generateNextPathSection(count = 15) {
+            for (let i = 0; i < count; i++) {
+                // Occasionally switch active generating direction
+                if (i > 0 && Math.random() < 0.28) {
+                    activeDirection = activeDirection === 'NE' ? 'NW' : 'NE';
+                }
+
+                if (activeDirection === 'NE') {
+                    lastGridX++;
+                } else {
+                    lastGridY++;
+                }
+
+                // Dynamic Hue shifting based on path growth
+                const hue = (startHue + (lastGridX + lastGridY) * 2.5) % 360;
+                
+                // Crystals spawn occasionally
+                const spawnCrystal = i > 0 && Math.random() < 0.18;
+
+                pathBlocks.push({
+                    gx: lastGridX,
+                    gy: lastGridY,
+                    x: lastGridX * CUBE_SIZE,
+                    y: lastGridY * CUBE_SIZE,
+                    z: 0,
+                    w: CUBE_SIZE,
+                    d: CUBE_SIZE,
+                    h: CUBE_SIZE,
+                    hue: hue,
+                    // Falling collapse simulation parameters
+                    visited: false,
+                    fallTime: null,
+                    fallZ: 0,
+                    fallVy: 0,
+                    // Crystal
+                    hasCrystal: spawnCrystal,
+                    crystalCollected: false,
+                    crystalPulse: Math.random() * Math.PI
+                });
+            }
+        }
+
+        // Switch rolling direction
+        function switchDirection() {
+            if (gameState !== 'PLAYING' || player.state !== 'ROLLING') return;
+
+            playClickSound();
+
+            if (player.targetDirection === 'NE') {
+                player.targetDirection = 'NW';
+                player.vx = 0;
+                player.vy = player.rollSpeed;
+            } else {
+                player.targetDirection = 'NE';
+                player.vx = player.rollSpeed;
+                player.vy = 0;
+            }
+        }
+
+        // Particle generator on crystal pick-ups
+        function spawnSparkParticles(x, y, z, hue) {
+            const count = 10;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 2.0 + 1.2;
+                particles.push({
+                    x: x,
+                    y: y,
+                    z: z + 6,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    vz: Math.random() * 2.5 + 1.0, // Upwards fly
+                    hue: hue,
+                    life: 1.0,
+                    decay: Math.random() * 0.04 + 0.02,
+                    size: Math.random() * 3 + 1.2
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.z += p.vz;
+                p.vz -= 0.15; // Gravity pull in 3D
+                p.life -= p.decay;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                const screenPos = project(p.x, p.y, p.z);
+                
+                ctx.fillStyle = `hsla(${p.hue}, 95%, 65%, ${p.life})`;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = `hsl(${p.hue}, 95%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            playCrashSound();
+            playRollingSound(false);
+
+            // High Score
+            const finalDist = Math.floor(distance);
+            if (finalDist > bestScore) {
+                bestScore = finalDist;
+                localStorage.setItem('cyberPathBest', bestScore);
+                bestScoreEl.textContent = bestScore;
+            }
+
+            finalScoreEl.textContent = `${finalDist}m`;
+            gameOverScreen.classList.add('active');
+        }
+
+        function resetGame() {
+            score = 0;
+            distance = 0;
+            scoreEl.textContent = score;
+            distanceEl.textContent = '0m';
+
+            pathBlocks = [];
+            particles = [];
+            trail = [];
+            
+            lastGridX = 0;
+            lastGridY = 0;
+            activeDirection = 'NE';
+            startHue = Math.random() * 360;
+
+            // Generate initial straight 10 cubes line (NW direction)
+            for (let i = 0; i < 9; i++) {
+                lastGridY = i;
+                const hue = (startHue + i * 2.5) % 360;
+                pathBlocks.push({
+                    gx: 0,
+                    gy: lastGridY,
+                    x: 0,
+                    y: lastGridY * CUBE_SIZE,
+                    z: 0,
+                    w: CUBE_SIZE,
+                    d: CUBE_SIZE,
+                    h: CUBE_SIZE,
+                    hue: hue,
+                    visited: false,
+                    fallTime: null,
+                    fallZ: 0,
+                    fallVy: 0,
+                    hasCrystal: false,
+                    crystalCollected: false,
+                    crystalPulse: Math.random() * Math.PI
+                });
+            }
+
+            // Generate procedurally another 20 ahead
+            generateNextPathSection(25);
+
+            // Ball initial snap
+            player.x = 0;
+            player.y = 0;
+            player.z = CUBE_SIZE/2 + BALL_RADIUS - 2; // Sit exactly on top of block
+            player.state = 'ROLLING';
+            player.rollSpeed = 2.4;
+            player.targetDirection = 'NW';
+            player.vx = 0;
+            player.vy = player.rollSpeed;
+            player.vz = 0;
+
+            cameraX = 0;
+            cameraY = 0;
+            cameraZ = 0;
+
+            gameOverScreen.classList.remove('active');
+            startScreen.classList.remove('active');
+            
+            gameState = 'PLAYING';
+            playRollingSound(true);
+        }
+
+        // Draw dynamic cyberpunk network background grid lines
+        function drawDigitalGrid() {
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.05)';
+            ctx.lineWidth = 1.0;
+
+            const size = 280;
+            const step = 40;
+            
+            // X alignment grid lines
+            for (let g = -size; g <= size; g += step) {
+                const pStart = project(g + cameraX, -size + cameraY, -120);
+                const pEnd = project(g + cameraX, size + cameraY, -120);
+                ctx.beginPath();
+                ctx.moveTo(pStart.x, pStart.y);
+                ctx.lineTo(pEnd.x, pEnd.y);
+                ctx.stroke();
+            }
+
+            // Y alignment grid lines
+            for (let g = -size; g <= size; g += step) {
+                const pStart = project(-size + cameraX, g + cameraY, -120);
+                const pEnd = project(size + cameraX, g + cameraY, -120);
+                ctx.beginPath();
+                ctx.moveTo(pStart.x, pStart.y);
+                ctx.lineTo(pEnd.x, pEnd.y);
+                ctx.stroke();
+            }
+        }
+
+        // Physics Updates
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // 1. Move Player
+            if (player.state === 'ROLLING') {
+                player.x += player.vx;
+                player.y += player.vy;
+
+                // Adjust speed slowly as game gets further
+                player.rollSpeed = Math.min(4.8, 2.4 + (distance * 0.008));
+                if (player.targetDirection === 'NE') {
+                    player.vx = player.rollSpeed;
+                } else {
+                    player.vy = player.rollSpeed;
+                }
+
+                adjustRollingPitch(player.rollSpeed);
+
+                // Increment distance
+                distance += player.rollSpeed * 0.085;
+                distanceEl.textContent = `${Math.floor(distance)}m`;
+
+                // Add ball trails
+                trail.push({ x: player.x, y: player.y, z: player.z, life: 1.0 });
+                if (trail.length > 15) {
+                    trail.shift();
+                }
+
+                // Check Grid capture
+                player.gridX = Math.round(player.x / CUBE_SIZE);
+                player.gridY = Math.round(player.y / CUBE_SIZE);
+
+                // Check block underneath
+                const blockUnder = pathBlocks.find(b => b.gx === player.gridX && b.gy === player.gridY);
+                
+                if (blockUnder) {
+                    // Safe! Let's trigger block decay collapsing
+                    if (!blockUnder.visited) {
+                        blockUnder.visited = true;
+                        blockUnder.fallTime = Date.now() + 450; // Collapse starts in 450ms
+                    }
+
+                    // Check crystals collision
+                    if (blockUnder.hasCrystal && !blockUnder.crystalCollected) {
+                        // Check distance to center of block
+                        const dToCenter = Math.hypot(player.x - blockUnder.x, player.y - blockUnder.y);
+                        if (dToCenter < BALL_RADIUS + 12) {
+                            blockUnder.crystalCollected = true;
+                            score += 100;
+                            scoreEl.textContent = score;
+                            playCrystalSound();
+                            spawnSparkParticles(blockUnder.x, blockUnder.y, CUBE_SIZE/2, 300); // Pink splash
+                        }
+                    }
+                } 
+                else {
+                    // Stepped off the path! Fall down
+                    player.state = 'FALLING';
+                    playRollingSound(false);
+                }
+
+                // Generate infinite path sections ahead
+                const ballIndexOnPath = pathBlocks.findIndex(b => b.gx === player.gridX && b.gy === player.gridY);
+                if (ballIndexOnPath !== -1 && pathBlocks.length - ballIndexOnPath < 18) {
+                    generateNextPathSection(15);
+                }
+            } 
+            else if (player.state === 'FALLING') {
+                // Free fall
+                player.z += player.vz;
+                player.vz -= 0.35; // Heavy gravity pull
+
+                // Decay trail
+                if (trail.length > 0) trail.shift();
+
+                if (player.z < -450) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // 2. Collapsing Blocks Physics simulation
+            pathBlocks.forEach(b => {
+                if (b.fallTime && Date.now() > b.fallTime) {
+                    b.fallZ += b.fallVy;
+                    b.fallVy -= 0.35; // Gravity collapse
+                }
+            });
+
+            // Remove collapsed blocks that fell way below screen
+            for (let i = pathBlocks.length - 1; i >= 0; i--) {
+                const b = pathBlocks[i];
+                if (b.fallZ < -350) {
+                    pathBlocks.splice(i, 1);
+                }
+            }
+
+            // 3. Smooth Camera Follow (LERP)
+            cameraX += (player.x - cameraX) * 0.082;
+            cameraY += (player.y - cameraY) * 0.082;
+            cameraZ += (player.z - cameraZ) * 0.082;
+        }
+
+        // Draw everything
+        function draw() {
+            // Ambient sky color gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            const currentHue = (startHue + Math.floor(distance * 0.2)) % 360;
+            
+            grad.addColorStop(0, `hsl(${currentHue}, 75%, 4%)`);
+            grad.addColorStop(1, `hsl(${(currentHue + 40) % 360}, 80%, 1%)`);
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Stars background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            stars.forEach(s => {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw cosmic networks grid
+            drawDigitalGrid();
+
+            // Draw 3D path Blocks (drawn back-to-front painters algorithm)
+            // Due to NW/NE isometric directions, blocks with smaller grid coordinate (gx + gy) are further back
+            // So sorting from smallest gx+gy to largest is mathematically correct for 3D sorting!
+            const sortedBlocks = [...pathBlocks].sort((a, b) => (a.gx + a.gy) - (b.gx + b.gy));
+
+            sortedBlocks.forEach(b => {
+                // Apply fall coordinates
+                const drawZ = b.z + b.fallZ;
+                drawCube(b.x, b.y, drawZ, b.w, b.d, b.h, b.hue);
+
+                // Draw floating gem crystal if exists
+                if (b.hasCrystal && !b.crystalCollected) {
+                    b.crystalPulse += 0.06;
+                    const scaleZ = Math.sin(b.crystalPulse) * 4;
+                    const screenPos = project(b.x, b.y, drawZ + CUBE_SIZE/2 + 8 + scaleZ);
+                    
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = `hsl(300, 95%, 65%)`;
+                    ctx.fillStyle = `hsl(300, 95%, 65%)`;
+                    
+                    // Draw diamond
+                    const size = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(screenPos.x, screenPos.y - size);
+                    ctx.lineTo(screenPos.x + size, screenPos.y);
+                    ctx.lineTo(screenPos.x, screenPos.y + size);
+                    ctx.lineTo(screenPos.x - size, screenPos.y);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            // Draw ball trail
+            trail.forEach((t, idx) => {
+                const opacity = idx / trail.length * 0.35;
+                const screenPos = project(t.x, t.y, t.z);
+                ctx.fillStyle = `rgba(0, 242, 254, ${opacity})`;
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, player.r * (idx / trail.length), 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw sphere player
+            if (player.state !== 'EXPLODED') {
+                const screenPos = project(player.x, player.y, player.z);
+
+                // Glowing neon sphere
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2fe';
+                
+                // Radial sphere light shading
+                const ballGrad = ctx.createRadialGradient(screenPos.x - player.r*0.2, screenPos.y - player.r*0.2, 1, screenPos.x, screenPos.y, player.r);
+                ballGrad.addColorStop(0, '#ffffff');
+                ballGrad.addColorStop(0.3, '#dbffff');
+                ballGrad.addColorStop(1, '#00c3ff');
+
+                ctx.fillStyle = ballGrad;
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, player.r, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // White accent ring
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.0;
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, player.r, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw spark particles
+            updateAndDrawParticles();
+        }
+
+        // 60FPS animation loop
+        function tick() {
+            update();
+            draw();
+            requestAnimationFrame(tick);
+        }
+
+        // Trigger input direction change
+        function handleInput(e) {
+            e.preventDefault();
+            if (gameState === 'PLAYING') {
+                switchDirection();
+            } else if (gameState === 'START') {
+                initAudio();
+                resetGame();
+            }
+        }
+
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', handleInput, { passive: false });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.code === 'Space') {
+                handleInput(e);
+            }
+        });
+
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initAudio();
+            resetGame();
+        });
+
+        restartBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initAudio();
+            resetGame();
+        });
+
+        // Initialize frame
+        draw();
+        requestAnimationFrame(tick);
+    </script>
+</body>
+</html>
