@@ -1320,6 +1320,10 @@
             resetGame();
         });
 
+        // Build initial road track so that the start screen renders correctly on load without crash
+        buildRoadTrack();
+        spawnTrafficCars();
+
         // Initialize frame drawing
         draw();
         requestAnimationFrame(tick);

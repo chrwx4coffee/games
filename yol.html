@@ -1048,6 +1048,38 @@
             resetGame();
         });
 
+        // Build initial starting path for the start screen visual rendering on load
+        lastGridX = 0;
+        lastGridY = 0;
+        activeDirection = 'NE';
+        startHue = Math.random() * 360;
+        for (let i = 0; i < 9; i++) {
+            lastGridY = i;
+            const hue = (startHue + i * 2.5) % 360;
+            pathBlocks.push({
+                gx: 0,
+                gy: lastGridY,
+                x: 0,
+                y: lastGridY * CUBE_SIZE,
+                z: 0,
+                w: CUBE_SIZE,
+                d: CUBE_SIZE,
+                h: CUBE_SIZE,
+                hue: hue,
+                visited: false,
+                fallTime: null,
+                fallZ: 0,
+                fallVy: 0,
+                hasCrystal: false,
+                crystalCollected: false,
+                crystalPulse: Math.random() * Math.PI
+            });
+        }
+        generateNextPathSection(25);
+        player.x = 0;
+        player.y = 0;
+        player.z = CUBE_SIZE/2 + BALL_RADIUS - 2;
+
         // Initialize frame
         draw();
         requestAnimationFrame(tick);
