@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neon Girdap // Cyber Vortex Escape</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --neon-cyan: #00f0ff;
+      --neon-magenta: #ff007f;
+      --neon-yellow: #ffea00;
+      --neon-green: #39ff14;
+      --bg-dark: #05050f;
+      --panel-bg: rgba(10, 10, 25, 0.75);
+      --panel-border: rgba(0, 240, 255, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Outfit', sans-serif;
+      color: #ffffff;
+    }
+
+    /* CRT Tarama Çizgileri ve Hafif Flicker Efekti */
+    body::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      z-index: 999;
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.98; }
+      50% { opacity: 1; }
+      100% { opacity: 0.99; }
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: flicker 0.15s infinite;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Cyberglass HUD */
+    .hud-panel {
+      position: absolute;
+      top: 24px;
+      padding: 12px 24px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15), inset 0 0 10px rgba(0, 240, 255, 0.05);
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .hud-left {
+      left: 24px;
+    }
+
+    .hud-right {
+      right: 24px;
+    }
+
+    .hud-value-container {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hud-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+    }
+
+    .hud-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+    }
+
+    .hud-value.magenta {
+      color: var(--neon-magenta);
+      text-shadow: 0 0 12px rgba(255, 0, 127, 0.6);
+    }
+
+    .hud-value.yellow {
+      color: var(--neon-yellow);
+      text-shadow: 0 0 12px rgba(255, 234, 0, 0.6);
+    }
+
+    /* Kalkan Enerji Barı */
+    .shield-bar-container {
+      width: 120px;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 6px;
+      position: relative;
+    }
+
+    .shield-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
+      box-shadow: 0 0 10px var(--neon-cyan);
+      transition: width 0.3s ease;
+    }
+
+    /* Can Hücreleri */
+    .lives-container {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .life-cell {
+      width: 14px;
+      height: 20px;
+      background: rgba(255, 0, 127, 0.2);
+      border: 1px solid var(--neon-magenta);
+      border-radius: 3px;
+      box-shadow: inset 0 0 5px rgba(255, 0, 127, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .life-cell.active {
+      background: var(--neon-magenta);
+      box-shadow: 0 0 12px var(--neon-magenta), inset 0 0 4px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Cyber Popups & Screens */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(3, 3, 10, 0.85);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+      transition: all 0.5s cubic-bezier(0.1, 0.8, 0.3, 1);
+    }
+
+    .screen-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.05);
+    }
+
+    .panel-box {
+      max-width: 600px;
+      width: 100%;
+      background: rgba(12, 12, 30, 0.8);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.1);
+      position: relative;
+    }
+
+    .panel-box::before {
+      content: "";
+      position: absolute;
+      top: -2px; left: 20px; right: 20px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon-magenta), transparent);
+    }
+
+    h1.game-title {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 30%, var(--neon-cyan) 70%, var(--neon-magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      color: var(--neon-magenta);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+      text-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
+    }
+
+    .game-rules {
+      text-align: left;
+      margin: 24px auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 14px;
+      line-height: 1.6;
+      color: #ccc;
+    }
+
+    .game-rules ul {
+      list-style-type: none;
+    }
+
+    .game-rules li {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .game-rules li::before {
+      content: "⚡";
+      color: var(--neon-yellow);
+      text-shadow: 0 0 8px var(--neon-yellow);
+    }
+
+    /* Cyber Button */
+    .cyber-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--neon-magenta), #9000a8);
+      border: none;
+      padding: 16px 48px;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      box-shadow: 0 0 20px rgba(255, 0, 127, 0.4), 0 0 40px rgba(255, 0, 127, 0.1);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+      outline: none;
+    }
+
+    .cyber-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 30px rgba(255, 0, 127, 0.7), 0 0 50px rgba(255, 0, 127, 0.3);
+      letter-spacing: 3px;
+    }
+
+    .cyber-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
+    }
+
+    /* High Score */
+    .high-score-board {
+      margin-top: 24px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--neon-cyan);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Mobil Kontroller */
+    .mobile-controls {
+      display: none;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40%;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .touch-zone {
+      width: 50%;
+      height: 100%;
+      float: left;
+      pointer-events: auto;
+      cursor: pointer;
+      opacity: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.05);
+      font-size: 40px;
+      font-family: 'Share Tech Mono', monospace;
+      transition: opacity 0.3s;
+    }
+
+    .touch-zone:active {
+      opacity: 1;
+      background: linear-gradient(to right, rgba(0, 240, 255, 0.08), transparent);
+    }
+
+    .touch-zone.touch-right:active {
+      background: linear-gradient(to left, rgba(0, 240, 255, 0.08), transparent);
+    }
+
+    @media (max-width: 768px) {
+      .mobile-controls {
+        display: block;
+      }
+      .hud-panel {
+        padding: 8px 16px;
+        gap: 16px;
+        top: 12px;
+      }
+      .hud-left { left: 12px; }
+      .hud-right { right: 12px; }
+      .hud-value { font-size: 18px; }
+      h1.game-title { font-size: 32px; letter-spacing: 3px; }
+      .panel-box { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Sol HUD: Can ve Kalkan -->
+    <div class="hud-panel hud-left">
+      <div class="hud-value-container">
+        <span class="hud-label">Enerji Hücreleri</span>
+        <div class="lives-container" id="lives-box">
+          <div class="life-cell active"></div>
+          <div class="life-cell active"></div>
+          <div class="life-cell active"></div>
+        </div>
+      </div>
+      <div class="hud-value-container">
+        <span class="hud-label">Kozmik Kalkan</span>
+        <div class="shield-bar-container">
+          <div class="shield-bar-fill" id="shield-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sağ HUD: Skor ve Hız -->
+    <div class="hud-panel hud-right">
+      <div class="hud-value-container">
+        <span class="hud-label">Girdap Skoru</span>
+        <span class="hud-value magenta" id="score-val">000000</span>
+      </div>
+      <div class="hud-value-container">
+        <span class="hud-label">Girdap Hızı</span>
+        <span class="hud-value yellow" id="speed-val">100 km/s</span>
+      </div>
+    </div>
+
+    <!-- Giriş Ekranı (Başlangıç) -->
+    <div class="screen-overlay" id="start-screen">
+      <div class="panel-box">
+        <h1 class="game-title">Neon Girdap</h1>
+        <div class="subtitle">// Quantum Wormhole Escape</div>
+        
+        <div class="game-rules">
+          <ul>
+            <li><strong>YÖNLENDİRME:</strong> Sol / Sağ Ok tuşları veya <b>A / D</b> ile girdabın 360° dairesel çeperinde hareket edin.</li>
+            <li><strong>ENGELLER:</strong> Size doğru yaklaşan pembe/kırmızı neon engellerin açık kısımlarından sıyrılın.</li>
+            <li><strong>KRİSTALLER:</strong> Kalkanı doldurmak ve yüksek puan almak için parıldayan sarı kristalleri toplayın.</li>
+            <li><strong>MÜZİK VE SES:</strong> Tam deneyim için kulaklıklarınızı takın ve sesi açın!</li>
+          </ul>
+        </div>
+
+        <button class="cyber-btn" id="start-btn">Bağlantıyı Kur</button>
+        
+        <div class="high-score-board" id="high-score-display">
+          EN YÜKSEK SEVİYE SKORU: 000000
+        </div>
+      </div>
+    </div>
+
+    <!-- Oyun Bitti Ekranı -->
+    <div class="screen-overlay hidden" id="gameover-screen">
+      <div class="panel-box">
+        <h1 class="game-title" style="background: linear-gradient(135deg, #fff 30%, var(--neon-magenta) 70%, #9000a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sinyal Kesildi</h1>
+        <div class="subtitle" style="color: var(--neon-cyan);">// Quantum Tunnel Desynchronized</div>
+
+        <div style="margin: 30px 0; font-family: 'Share Tech Mono', monospace;">
+          <div style="font-size: 16px; color: #888;">ELDE EDİLEN SKOR</div>
+          <div style="font-size: 42px; font-weight: 900; color: var(--neon-yellow); text-shadow: 0 0 15px rgba(255, 234, 0, 0.4);" id="final-score">000000</div>
+          <div style="font-size: 14px; color: var(--neon-cyan); margin-top: 10px;" id="new-record-lbl"></div>
+        </div>
+
+        <button class="cyber-btn" id="restart-btn">Yeniden Bağlan</button>
+      </div>
+    </div>
+
+    <!-- Mobil Touch Bölgeleri -->
+    <div class="mobile-controls">
+      <div class="touch-zone touch-left" id="touch-left">◀ SOL</div>
+      <div class="touch-zone touch-right" id="touch-right" style="float: right;">SAĞ ▶</div>
+    </div>
+  </div>
+
+  <script>
+    // --- SES MOTORU (WEB AUDIO API SYNTHESIZER) ---
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterVolume = null;
+        this.bpm = 120;
+        this.schedulerInterval = null;
+        this.nextNoteTime = 0.0;
+        this.beatIndex = 0;
+        this.isRunning = false;
+        
+        // Trance Bassline Notaları (A2, C3, G2, F2 frekansları)
+        this.bassFrequencies = [
+          110.00, 110.00, 110.00, 110.00, // A2
+          130.81, 130.81, 130.81, 130.81, // C3
+          98.00,  98.00,  98.00,  98.00,  // G2
+          87.31,  87.31,  87.31,  87.31   // F2
+        ];
+      }
+
+      init() {
+        if (this.ctx) return;
+        
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContextClass();
+        
+        this.masterVolume = this.ctx.createGain();
+        this.masterVolume.gain.setValueAtTime(0.2, this.ctx.currentTime); // Dengeli master ses
+        this.masterVolume.connect(this.ctx.destination);
+      }
+
+      start() {
+        this.init();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        if (this.isRunning) return;
+        
+        this.isRunning = true;
+        this.nextNoteTime = this.ctx.currentTime;
+        this.beatIndex = 0;
+        
+        // 16'lık nota temposuna göre döngü zamanlayıcı (120 BPM'de 16'lık nota ~125ms)
+        this.schedulerInterval = setInterval(() => {
+          this.scheduler();
+        }, 50);
+      }
+
+      stop() {
+        this.isRunning = false;
+        if (this.schedulerInterval) {
+          clearInterval(this.schedulerInterval);
+          this.schedulerInterval = null;
+        }
+      }
+
+      scheduler() {
+        while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+          this.scheduleNextNote(this.beatIndex, this.nextNoteTime);
+          
+          // Bir sonraki nota zamanını hesapla (16'lık nota süresi = 60 / BPM / 4)
+          const secondsPerBeat = 60.0 / this.bpm;
+          const noteLength = secondsPerBeat / 4.0;
+          this.nextNoteTime += noteLength;
+          
+          this.beatIndex = (this.beatIndex + 1) % 16;
+        }
+      }
+
+      scheduleNextNote(beat, time) {
+        if (!this.isRunning) return;
+        
+        // 1. Kick Drum (Her 4 notada bir - beat 0, 4, 8, 12)
+        if (beat % 4 === 0) {
+          this.playKick(time);
+        }
+        
+        // 2. Siberpunk Trance Bassline (Düzgün 16'lık ritimde sürekli çalar)
+        this.playBassNote(beat, time);
+      }
+
+      playKick(time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        // Klasik Analog Kick Sentezi: Frekansın hızla aşağı kayması (150Hz -> 40Hz)
+        osc.frequency.setValueAtTime(150, time);
+        osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.3);
+        
+        gain.gain.setValueAtTime(1.2, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+        
+        osc.start(time);
+        osc.stop(time + 0.3);
+      }
+
+      playBassNote(beat, time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.type = 'sawtooth';
+        
+        // Melodiye uygun frekansı seç
+        const freq = this.bassFrequencies[beat];
+        osc.frequency.setValueAtTime(freq, time);
+        
+        // Filtre zarfı (Retro asit-synth tınısı)
+        filter.type = 'lowpass';
+        filter.Q.setValueAtTime(6, time);
+        filter.frequency.setValueAtTime(200, time);
+        filter.frequency.exponentialRampToValueAtTime(1200, time + 0.05);
+        filter.frequency.exponentialRampToValueAtTime(100, time + 0.12);
+        
+        // Ses genliği zarfı (Gecikmesiz hızlı sönümleme)
+        gain.gain.setValueAtTime(0.5, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+        
+        osc.start(time);
+        osc.stop(time + 0.15);
+      }
+
+      // Kristal Toplama Ses Efekti (Arpejli Pluck Synth)
+      playCollect() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const playPluck = (freq, delay) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          
+          osc.connect(gain);
+          gain.connect(this.masterVolume);
+          
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + delay);
+          
+          gain.gain.setValueAtTime(0.6, now + delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
+          
+          osc.start(now + delay);
+          osc.stop(now + delay + 0.2);
+        };
+        
+        // Hızlı C-E-G Majör Arpeji (Gelecek hissi veren kristal tınısı)
+        playPluck(523.25, 0.0);   // C5
+        playPluck(659.25, 0.05);  // E5
+        playPluck(783.99, 0.1);   // G5
+      }
+
+      // Çarpışma Patlama Ses Efekti (Retro Low Gürültü + Filtrelenmiş Patlama)
+      playCrash() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        // 1. Patlama Gürültüsü (Beyaz gürültü filtresi)
+        const bufferSize = this.ctx.sampleRate * 0.4; // 0.4 saniye
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        
+        const noiseNode = this.ctx.createBufferSource();
+        noiseNode.buffer = buffer;
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, now);
+        filter.frequency.linearRampToValueAtTime(80, now + 0.35);
+        
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(1.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        
+        noiseNode.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        noiseNode.start(now);
+        noiseNode.stop(now + 0.4);
+        
+        // 2. Ekstra bas sarsıntısı için alt dalga osilatörü
+        const subOsc = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+        subOsc.type = 'sawtooth';
+        subOsc.frequency.setValueAtTime(90, now);
+        subOsc.frequency.linearRampToValueAtTime(30, now + 0.3);
+        
+        subGain.gain.setValueAtTime(1.0, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        
+        subOsc.connect(subGain);
+        subGain.connect(this.masterVolume);
+        
+        subOsc.start(now);
+        subOsc.stop(now + 0.3);
+      }
+
+      // Kalkan Devreye Girme Ses Efekti (Lazer Yükselimi + Modülasyon)
+      playShield() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(1800, now + 0.4);
+        
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.8, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+
+      // Hızlanma / Aşama Atlama Lazer Efekti
+      playLevelUp() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(400, now);
+        
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.start(now);
+        osc.stop(now + 0.5);
+      }
+    }
+
+    const audio = new AudioEngine();
+
+    // --- OYUN MOTORU VE GRAFİKLER ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Cihaz piksel oranına göre Canvas boyutlandırma (Keskin grafikler)
+    let dpr = window.devicePixelRatio || 1;
+    let width, height;
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Oyun Durumları
+    let isPlaying = false;
+    let score = 0;
+    let speed = 100; // Başlangıç hızı km/s
+    let targetSpeed = 100;
+    let scoreMultiplier = 1;
+    let lives = 3;
+    let shield = 0; // 0 ila 100 arası
+    let hasShield = false;
+    let time = 0;
+    let gameOver = false;
+    let screenShake = 0;
+    
+    // Girdap Bükülme Değişkenleri
+    let bendXAmount = 90;
+    let bendYAmount = 60;
+
+    // Oyuncu Değişkenleri
+    const player = {
+      angle: 0, // 0 - 2PI dairesel açısı
+      targetAngle: 0,
+      radiusOffset: 25, // Tünel merkezinden ne kadar uzakta olacağı (çeper)
+      visualRadius: 10, // Topun boyutu
+      color: '#00f0ff',
+      trail: [],
+      particles: [],
+      shieldChargePulse: 0
+    };
+
+    // Tünel Bölümleri (Pseudo-3D concentric rings)
+    const rings = [];
+    const maxRings = 40;
+    const ringSpacing = 16; // Halkalar arası derinlik
+    const camDepth = 250; // Kamera odağı
+
+    // Engeller ve Kristaller Listeleri
+    let obstacles = [];
+    let crystals = [];
+    
+    // Yıldız Parçacıkları (Tüneldeki derinlik hissi veren akan tozlar)
+    const stars = [];
+    const maxStars = 80;
+
+    // Kontroller
+    const keys = {};
+    window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+    window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+    // Mobil Dokunmatik Durumları
+    let touchLeft = false;
+    let touchRight = false;
+    
+    const tl = document.getElementById('touch-left');
+    const tr = document.getElementById('touch-right');
+
+    function setupTouchEvents(element, setter) {
+      element.addEventListener('touchstart', (e) => { e.preventDefault(); setter(true); });
+      element.addEventListener('touchend', (e) => { e.preventDefault(); setter(false); });
+      element.addEventListener('mousedown', (e) => { e.preventDefault(); setter(true); });
+      element.addEventListener('mouseup', (e) => { e.preventDefault(); setter(false); });
+      element.addEventListener('mouseleave', () => setter(false));
+    }
+    setupTouchEvents(tl, (val) => { touchLeft = val; });
+    setupTouchEvents(tr, (val) => { touchRight = val; });
+
+    // --- BAŞLANGIÇ ALTYAPISI ---
+    // Tünel Halkalarını Başlangıçta Hazırla (İlk açılışta çökmemesi için kritik!)
+    function buildInitialTunnel() {
+      rings.length = 0;
+      for (let i = 0; i < maxRings; i++) {
+        rings.push({
+          z: i * ringSpacing,
+          colorHue: (i * 8) % 360
+        });
+      }
+      
+      // Yıldızları oluştur
+      stars.length = 0;
+      for (let i = 0; i < maxStars; i++) {
+        stars.push({
+          angle: Math.random() * Math.PI * 2,
+          distance: 0.1 + Math.random() * 0.9, // Çepere olan uzaklığı
+          z: Math.random() * (maxRings * ringSpacing),
+          color: Math.random() > 0.5 ? 'var(--neon-cyan)' : 'var(--neon-magenta)'
+        });
+      }
+
+      // Önceden boş listeleri hazırla
+      obstacles = [];
+      crystals = [];
+    }
+
+    // Oyun ilk açıldığında gösterilecek statik/otomatik tünel animasyonu (Start screen bg)
+    let bgAnimTime = 0;
+    function renderStaticStartScreenBg() {
+      if (isPlaying) return;
+      
+      bgAnimTime += 0.01;
+      ctx.fillStyle = '#030308';
+      ctx.fillRect(0, 0, width, height);
+
+      // Statik arka plan tünelini çiz
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const baseRadius = Math.min(width, height) * 0.45;
+
+      // Halkaları arkadan öne çiz (Painter's algorithm)
+      for (let i = maxRings - 1; i >= 0; i--) {
+        const ring = rings[i];
+        const scale = camDepth / (camDepth + ring.z);
+        const r = baseRadius * scale;
+
+        // Tünel merkezinin kıvrımı (Math.sin ve cos dalgası)
+        const cx = centerX + Math.sin(bgAnimTime + ring.z * 0.008) * 80;
+        const cy = centerY + Math.cos(bgAnimTime * 0.8 + ring.z * 0.006) * 50;
+
+        ctx.strokeStyle = `hsla(${(ring.colorHue + bgAnimTime * 20) % 360}, 90%, 55%, ${0.15 + (1 - scale) * 0.45})`;
+        ctx.lineWidth = 1.5 + (1 - scale) * 2;
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      requestAnimationFrame(renderStaticStartScreenBg);
+    }
+
+    // --- OYUN DÖNGÜSÜ ELEMANLARI ---
+    
+    // Obje Üreticiler (Spawn Obstacles & Crystals)
+    let obstacleSpawnTimer = 0;
+    let crystalSpawnTimer = 0;
+    
+    function spawnObstacle() {
+      if (gameOver) return;
+      // Engel genişliği: zorluğa göre 60 derece ila 160 derece arası
+      const angleWidth = (Math.PI / 3) + Math.random() * (Math.PI * 0.5);
+      const startAngle = Math.random() * Math.PI * 2;
+      
+      obstacles.push({
+        z: maxRings * ringSpacing, // Tünelin en arkasından başlar
+        startAngle: startAngle,
+        angleWidth: angleWidth,
+        colorHue: Math.random() > 0.5 ? 340 : 0 // Pembe veya Kırmızı engeller
+      });
+    }
+
+    function spawnCrystal() {
+      if (gameOver) return;
+      crystals.push({
+        z: maxRings * ringSpacing,
+        angle: Math.random() * Math.PI * 2,
+        color: '#ffea00',
+        collected: false
+      });
+    }
+
+    // Yeni Oyuna Başlangıç Sıfırlaması
+    function startNewGame() {
+      // Ses motorunu aktifleştir
+      audio.start();
+
+      score = 0;
+      speed = 100;
+      targetSpeed = 100;
+      scoreMultiplier = 1;
+      lives = 3;
+      shield = 0;
+      hasShield = false;
+      time = 0;
+      gameOver = false;
+      screenShake = 0;
+      
+      player.angle = 0;
+      player.targetAngle = 0;
+      player.trail = [];
+      player.particles = [];
+
+      buildInitialTunnel();
+      updateHUD();
+      
+      isPlaying = true;
+      
+      // İlk engelleri üret
+      obstacleSpawnTimer = 0;
+      crystalSpawnTimer = 0;
+
+      // HTML Panelleri Gizle
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('gameover-screen').classList.add('hidden');
+
+      // Oyun Döngüsünü Başlat
+      requestAnimationFrame(gameTick);
+    }
+
+    // Arayüz Değerlerini Güncelle
+    function updateHUD() {
+      document.getElementById('score-val').innerText = String(score).padStart(6, '0');
+      document.getElementById('speed-val').innerText = `${Math.floor(speed)} km/s`;
+      
+      // Kalkan barı dolumu
+      const shieldFill = document.getElementById('shield-fill');
+      shieldFill.style.width = `${shield}%`;
+      if (shield >= 100) {
+        shieldFill.style.boxShadow = '0 0 15px #39ff14';
+        shieldFill.style.background = 'var(--neon-green)';
+      } else {
+        shieldFill.style.boxShadow = '0 0 8px var(--neon-cyan)';
+        shieldFill.style.background = 'linear-gradient(90deg, var(--neon-cyan), var(--neon-green))';
+      }
+
+      // Can Hücreleri Durumu
+      const cells = document.querySelectorAll('#lives-box .life-cell');
+      cells.forEach((cell, idx) => {
+        if (idx < lives) {
+          cell.classList.add('active');
+        } else {
+          cell.classList.remove('active');
+        }
+      });
+    }
+
+    // --- GÜNCELLEME VE FİZİK DÖNGÜSÜ ---
+    function update(dt) {
+      if (gameOver) return;
+
+      time += dt;
+
+      // Hız artış ivmesi
+      speed = speed * 0.995 + targetSpeed * 0.005;
+      targetSpeed = 100 + score * 0.05; // Puan arttıkça hedef hız yükselir
+      if (targetSpeed > 350) targetSpeed = 350; // Hız sınırı
+
+      audio.bpm = 120 + Math.floor((speed - 100) * 0.15); // Hızlandıkça ritim tempo kazanır!
+
+      // Puanlama
+      score += Math.floor(dt * 10 * scoreMultiplier);
+      if (score % 200 === 0) {
+        updateHUD();
+      }
+
+      // Ekran sarsıntısı sönümleme
+      if (screenShake > 0) {
+        screenShake -= 0.1;
+        if (screenShake < 0) screenShake = 0;
+      }
+
+      // --- OYUNCU HAREKETİ ---
+      let moveSpeed = 0.08; // Dönüş hassasiyeti
+      if (keys['ArrowLeft'] || keys['KeyA'] || touchLeft) {
+        player.targetAngle -= moveSpeed;
+      }
+      if (keys['ArrowRight'] || keys['KeyD'] || touchRight) {
+        player.targetAngle += moveSpeed;
+      }
+
+      // Pürüzsüz açı interpolasyonu (Leke efekti ve yumuşak hareket)
+      player.angle = player.angle * 0.7 + player.targetAngle * 0.3;
+      
+      // Açı sınırlarını 0-2PI arasında tut (Modulo)
+      player.angle = (player.angle + Math.PI * 2) % (Math.PI * 2);
+      player.targetAngle = (player.targetAngle + Math.PI * 2) % (Math.PI * 2);
+
+      // Oyuncu partikül izini güncelle
+      player.trail.push({ angle: player.angle, time: time });
+      if (player.trail.length > 25) {
+        player.trail.shift();
+      }
+
+      // Oyuncu çemberinden uçuşan parıldayan partiküller (Orb charges)
+      if (Math.random() > 0.4) {
+        player.particles.push({
+          angle: player.angle + (Math.random() * 0.4 - 0.2),
+          radialOffset: player.radiusOffset + (Math.random() * 15 - 7),
+          size: 1 + Math.random() * 3,
+          speedZ: 2 + Math.random() * 4,
+          life: 1.0,
+          color: Math.random() > 0.5 ? 'var(--neon-cyan)' : 'var(--neon-green)'
+        });
+      }
+
+      // Oyuncu partiküllerinin güncellenmesi
+      for (let i = player.particles.length - 1; i >= 0; i--) {
+        const p = player.particles[i];
+        p.life -= 0.03;
+        p.radialOffset += Math.random() * 2 - 1; // Dalgalanma
+        if (p.life <= 0) {
+          player.particles.splice(i, 1);
+        }
+      }
+
+      // --- TÜNEL HAREKETİ ---
+      // Tünel halkalarının Z derinliğini azaltarak oyuncuya yaklaştır
+      const tunnelForwardStep = (speed * 0.08) * dt;
+      for (let i = 0; i < maxRings; i++) {
+        rings[i].z -= tunnelForwardStep;
+        
+        // Kamera gerisine düşen halkayı en arkaya geri taşı (Recycle)
+        if (rings[i].z <= 0) {
+          rings[i].z += maxRings * ringSpacing;
+          rings[i].colorHue = (rings[i].colorHue + 15) % 360;
+        }
+      }
+
+      // Yıldız partiküllerinin güncellenmesi
+      for (let i = 0; i < maxStars; i++) {
+        stars[i].z -= tunnelForwardStep * 1.5; // Yıldızlar derinlik hissi için daha hızlı akar!
+        if (stars[i].z <= 0) {
+          stars[i].z += maxRings * ringSpacing;
+          stars[i].angle = Math.random() * Math.PI * 2;
+        }
+      }
+
+      // --- OBJE SPAWN ZAMANLAYICISI ---
+      obstacleSpawnTimer += dt;
+      const obstacleSpawnInterval = Math.max(0.6, 2.0 - (speed * 0.004)); // Hızlandıkça daha sık engel
+      if (obstacleSpawnTimer >= obstacleSpawnInterval) {
+        spawnObstacle();
+        obstacleSpawnTimer = 0;
+      }
+
+      crystalSpawnTimer += dt;
+      const crystalSpawnInterval = 1.4;
+      if (crystalSpawnTimer >= crystalSpawnInterval) {
+        spawnCrystal();
+        crystalSpawnTimer = 0;
+      }
+
+      // --- ENGELLERİN GÜNCELLEMESİ ---
+      const playerZ = 30; // Oyuncunun tünelde bulunduğu sabit derinlik halkası
+
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        obs.z -= tunnelForwardStep;
+
+        // Oyuncu hizasına ulaştığında ÇARPIŞMA kontrolü yap!
+        const obsDepthThickness = 12; // Engelin Z kalınlığı
+        if (obs.z <= playerZ && obs.z + obsDepthThickness >= playerZ) {
+          // Oyuncunun açısının engel açısına denk gelip gelmediği kontrolü
+          let diff = Math.abs(player.angle - obs.startAngle);
+          // Dairesel farkı bul
+          if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+          const span = obs.angleWidth / 2;
+          if (diff <= span) {
+            // Çarpışma Gerçekleşti!
+            triggerCrash();
+            obstacles.splice(i, 1);
+            continue;
+          }
+        }
+
+        // Kamera gerisinde kalan engelleri sil
+        if (obs.z <= 0) {
+          obstacles.splice(i, 1);
+        }
+      }
+
+      // --- KRİSTALLERİN GÜNCELLEMESİ ---
+      for (let i = crystals.length - 1; i >= 0; i--) {
+        const cry = crystals[i];
+        cry.z -= tunnelForwardStep;
+
+        // Toplama Çarpışması Kontrolü
+        if (Math.abs(cry.z - playerZ) < 10) {
+          let diff = Math.abs(player.angle - cry.angle);
+          if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+          if (diff < 0.25) { // 0.25 radyanlık yakınlık yeterli
+            collectCrystal();
+            crystals.splice(i, 1);
+            continue;
+          }
+        }
+
+        // Kamera gerisinde kalanları temizle
+        if (cry.z <= 0) {
+          crystals.splice(i, 1);
+        }
+      }
+    }
+
+    // --- REAKSİYON FONKSİYONLARI ---
+
+    // Engel Çarpışması Reaksiyonu
+    function triggerCrash() {
+      // Ekran sarsıntısı tetikle
+      screenShake = 8;
+      
+      // Kalkan var mı kontrol et
+      if (hasShield) {
+        hasShield = false;
+        shield = 0;
+        audio.playCrash(); // Hafif patlama
+        spawnExplosionParticles(player.angle, 'var(--neon-cyan)');
+        updateHUD();
+        return;
+      }
+
+      // Canı azalt
+      lives--;
+      audio.playCrash(); // Büyük patlama
+      spawnExplosionParticles(player.angle, 'var(--neon-magenta)');
+      
+      if (lives <= 0) {
+        triggerGameOver();
+      } else {
+        updateHUD();
+      }
+    }
+
+    // Kristal Toplama Reaksiyonu
+    function collectCrystal() {
+      score += 250;
+      audio.playCollect();
+
+      // Kalkan Enerjisi Yükle
+      if (!hasShield) {
+        shield += 20; // 5 kristalde kalkan aktifleşir
+        if (shield >= 100) {
+          shield = 100;
+          hasShield = true;
+          audio.playShield(); // Kalkan aktif sesi
+        }
+      }
+
+      // Toplama partikülleri saç
+      for (let i = 0; i < 15; i++) {
+        player.particles.push({
+          angle: player.angle + (Math.random() * 0.6 - 0.3),
+          radialOffset: player.radiusOffset + (Math.random() * 20 - 10),
+          size: 2 + Math.random() * 4,
+          speedZ: -4 - Math.random() * 4, // Geriye doğru fırlar gibi
+          life: 1.0,
+          color: 'var(--neon-yellow)'
+        });
+      }
+
+      // Skor katsayısını geçici olarak artır
+      scoreMultiplier = 2;
+      setTimeout(() => { scoreMultiplier = 1; }, 2000);
+
+      updateHUD();
+    }
+
+    // Çarpışma Patlama Efekt Partikülleri
+    function spawnExplosionParticles(angle, color) {
+      for (let i = 0; i < 40; i++) {
+        player.particles.push({
+          angle: angle + (Math.random() * Math.PI - Math.PI/2),
+          radialOffset: player.radiusOffset + (Math.random() * 30 - 15),
+          size: 2 + Math.random() * 6,
+          speedZ: (Math.random() * 15 - 7.5),
+          life: 1.5,
+          color: color
+        });
+      }
+    }
+
+    // Oyunu Bitirme Aşaması
+    function triggerGameOver() {
+      gameOver = true;
+      isPlaying = false;
+      audio.stop();
+
+      // En yüksek skoru yerel hafızaya kaydet
+      const currentHighScore = localStorage.getItem('vortex_high_score') || 0;
+      let newRecordText = "";
+      if (score > currentHighScore) {
+        localStorage.setItem('vortex_high_score', score);
+        newRecordText = "⚡ YENİ REKOR BAĞLANTISI SAĞLANDI! ⚡";
+      }
+
+      document.getElementById('final-score').innerText = String(score).padStart(6, '0');
+      document.getElementById('new-record-lbl').innerText = newRecordText;
+      document.getElementById('gameover-screen').classList.remove('hidden');
+    }
+
+    // --- CHROME & SAFARI SES AKTİF ETME İLİŞKİSİ ---
+    document.getElementById('start-btn').addEventListener('click', () => {
+      startNewGame();
+    });
+
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      startNewGame();
+    });
+
+    // En yüksek skoru ana ekranda göster
+    function displayHighScore() {
+      const highScore = localStorage.getItem('vortex_high_score') || 0;
+      document.getElementById('high-score-display').innerText = `EN YÜKSEK SEVİYE SKORU: ${String(highScore).padStart(6, '0')}`;
+    }
+    displayHighScore();
+
+    // --- ÇİZİM VE GÖRSEL MOTOR (RENDER) ---
+    
+    function gameTick() {
+      if (!isPlaying) return;
+
+      // 60FPS zamanlama sabiti (Yaklaşık dt = 1)
+      update(1.0);
+      draw();
+
+      requestAnimationFrame(gameTick);
+    }
+
+    function draw() {
+      // Temizleme ve CRT karanlığı
+      ctx.fillStyle = '#050512';
+      ctx.fillRect(0, 0, width, height);
+
+      // Ekran sarsıntısı matrisi
+      ctx.save();
+      if (screenShake > 0) {
+        const shakeX = (Math.random() * 2 - 1) * screenShake;
+        const shakeY = (Math.random() * 2 - 1) * screenShake;
+        ctx.translate(shakeX, shakeY);
+      }
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const baseRadius = Math.min(width, height) * 0.45; // Çözünürlük bağımsız taban halka yarıçapı
+
+      // --- 1. YILDIZLAR VE ARKA PLAN UZAY TOZLARI ---
+      for (let i = 0; i < maxStars; i++) {
+        const star = stars[i];
+        const scale = camDepth / (camDepth + star.z);
+        
+        // Tünelin dinamik merkez kaymasını al (Yıldızların tünelden akması hissi için)
+        const bendX = Math.sin(time * 0.015 + star.z * 0.008) * bendXAmount;
+        const bendY = Math.cos(time * 0.012 + star.z * 0.006) * bendYAmount;
+
+        const sx = centerX + bendX * scale + (Math.cos(star.angle) * baseRadius * star.distance) * scale;
+        const sy = centerY + bendY * scale + (Math.sin(star.angle) * baseRadius * star.distance) * scale;
+        const sSize = 1.5 * scale;
+
+        if (sx > 0 && sx < width && sy > 0 && sy < height) {
+          ctx.fillStyle = star.color;
+          ctx.fillRect(sx, sy, sSize, sSize);
+        }
+      }
+
+      // --- 2. TÜNEL HALKALARI VE BAĞLANTI İZLERİ ---
+      // Painters algorithm: Arkadan öne (max Z'den min Z'ye) doğru çiziyoruz.
+      // Oyuncu Z = 30 derinliğinde. Derinliği buna denk düşen objeleri doğru sırayla yerleştirmeliyiz.
+      
+      const elementsToDraw = [];
+
+      // Tünel halkalarını topla
+      for (let i = 0; i < maxRings; i++) {
+        elementsToDraw.push({ type: 'ring', z: rings[i].z, data: rings[i] });
+      }
+      
+      // Engelleri ekle
+      for (let i = 0; i < obstacles.length; i++) {
+        elementsToDraw.push({ type: 'obstacle', z: obstacles[i].z, data: obstacles[i] });
+      }
+
+      // Kristalleri ekle
+      for (let i = 0; i < crystals.length; i++) {
+        elementsToDraw.push({ type: 'crystal', z: crystals[i].z, data: crystals[i] });
+      }
+
+      // Oyuncuyu da Z sıralamasına sok (z = 30)
+      elementsToDraw.push({ type: 'player', z: 30, data: player });
+
+      // Z derinliğine göre azalan sırada sırala (En uzak olan en önce çizilecek)
+      elementsToDraw.sort((a, b) => b.z - a.z);
+
+      // Sırayla Çizim Yap
+      for (let i = 0; i < elementsToDraw.length; i++) {
+        const item = elementsToDraw[i];
+        const scale = camDepth / (camDepth + item.z);
+        const r = baseRadius * scale;
+
+        // Bükülme koordinat hesabı
+        const bendX = Math.sin(time * 0.015 + item.z * 0.008) * bendXAmount;
+        const bendY = Math.cos(time * 0.012 + item.z * 0.006) * bendYAmount;
+        const cx = centerX + bendX * scale;
+        const cy = centerY + bendY * scale;
+
+        if (item.type === 'ring') {
+          // Konsantrik Tünel Çemberi Çizimi
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = `hsla(${item.data.colorHue}, 90%, 55%, ${0.12 + (1 - scale) * 0.6})`;
+          ctx.lineWidth = 1.0 + (1 - scale) * 3;
+          
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Tünel dilimleri arası birleştirme çizgileri (3D derinlik ağ tasarımı)
+          // Her 4 halkada bir ve 8 farklı açıda bağlantı çizgisi çizerek ağ örüyoruz
+          if (item.data.z % 64 === 0) {
+            ctx.strokeStyle = `hsla(${item.data.colorHue}, 90%, 55%, 0.08)`;
+            ctx.lineWidth = 0.5;
+            for (let a = 0; a < 8; a++) {
+              const ang = (a / 8) * Math.PI * 2;
+              const nextScale = camDepth / (camDepth + item.z + ringSpacing);
+              const nextR = baseRadius * nextScale;
+              
+              const nextBendX = Math.sin(time * 0.015 + (item.z + ringSpacing) * 0.008) * bendXAmount;
+              const nextBendY = Math.cos(time * 0.012 + (item.z + ringSpacing) * 0.006) * bendYAmount;
+              
+              const ncx = centerX + nextBendX * nextScale;
+              const ncy = centerY + nextBendY * nextScale;
+
+              ctx.beginPath();
+              ctx.moveTo(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
+              ctx.lineTo(ncx + Math.cos(ang) * nextR, ncy + Math.sin(ang) * nextR);
+              ctx.stroke();
+            }
+          }
+        } 
+        
+        else if (item.type === 'obstacle') {
+          // NEON ENGEL ÇİZİMİ (3D Duvar Segmenti)
+          const obs = item.data;
+          
+          const start = obs.startAngle - obs.angleWidth / 2;
+          const end = obs.startAngle + obs.angleWidth / 2;
+          
+          // Parlama Efekti
+          ctx.save();
+          ctx.shadowColor = `hsl(${obs.colorHue}, 100%, 50%)`;
+          ctx.shadowBlur = 15;
+          ctx.strokeStyle = `hsl(${obs.colorHue}, 100%, 55%)`;
+          ctx.lineWidth = 10 * scale; // Yaklaştıkça kalınlaşan neon bar
+          ctx.lineCap = 'round';
+          
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, start, end);
+          ctx.stroke();
+          
+          // Engelin 3D Cam Hissiyatı (Hafif dolgu rengi)
+          ctx.fillStyle = `hsla(${obs.colorHue}, 100%, 50%, 0.15)`;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy); // Merkeze doğru çizerek dilim şeklinde doldur
+          ctx.arc(cx, cy, r, start, end);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        } 
+        
+        else if (item.type === 'crystal') {
+          // GEOMETRİK KRİSTAL ÇİZİMİ (Dönen Neon Elmas)
+          const cry = item.data;
+          
+          const cryX = cx + Math.cos(cry.angle) * r;
+          const cryY = cy + Math.sin(cry.angle) * r;
+          const crySize = 12 * scale; // Yakınlık ölçeği
+
+          ctx.save();
+          ctx.translate(cryX, cryY);
+          ctx.rotate(time * 0.05 + cry.angle); // Dönme hareketi
+          
+          // Sarı Parlama
+          ctx.shadowColor = 'var(--neon-yellow)';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = 'var(--neon-yellow)';
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1;
+
+          // 3D Elmas Şekli (Çift üçgen)
+          ctx.beginPath();
+          ctx.moveTo(0, -crySize);
+          ctx.lineTo(crySize * 0.6, 0);
+          ctx.lineTo(0, crySize);
+          ctx.lineTo(-crySize * 0.6, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        } 
+        
+        else if (item.type === 'player') {
+          // OYUNCU (KÜRESEL ENERJİ ORB) VE İZİ
+          
+          // 1. Dairesel Hareket Kuyruğu (Trail)
+          ctx.save();
+          for (let k = 0; k < player.trail.length; k++) {
+            const tr = player.trail[k];
+            const trScale = camDepth / (camDepth + playerZ); // Oyuncu derinliği sabit
+            
+            const trBendX = Math.sin(time * 0.015 + playerZ * 0.008) * bendXAmount;
+            const trBendY = Math.cos(time * 0.012 + playerZ * 0.006) * bendYAmount;
+            const trcx = centerX + trBendX * trScale;
+            const trcy = centerY + trBendY * trScale;
+            const trR = baseRadius * trScale;
+
+            const tx = trcx + Math.cos(tr.angle) * trR;
+            const ty = trcy + Math.sin(tr.angle) * trR;
+            const trAlpha = k / player.trail.length;
+
+            ctx.fillStyle = `rgba(0, 240, 255, ${trAlpha * 0.35})`;
+            ctx.beginPath();
+            ctx.arc(tx, ty, player.visualRadius * trAlpha * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // 2. Oyuncu Küre Çizimi (Neon Küre)
+          const px = cx + Math.cos(player.angle) * r;
+          const py = cy + Math.sin(player.angle) * r;
+          
+          ctx.save();
+          ctx.shadowColor = player.color;
+          ctx.shadowBlur = 20;
+          ctx.fillStyle = '#fff'; // Merkez beyaz
+          ctx.strokeStyle = player.color;
+          ctx.lineWidth = 3;
+          
+          ctx.beginPath();
+          ctx.arc(px, py, player.visualRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+
+          // 3. Kalkan Aktifse Dış Halka Kalkanı Çizimi
+          if (hasShield) {
+            ctx.save();
+            ctx.shadowColor = 'var(--neon-green)';
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = 'var(--neon-green)';
+            ctx.lineWidth = 2 + Math.sin(time * 0.2) * 1;
+            
+            ctx.beginPath();
+            ctx.arc(px, py, player.visualRadius * 2.0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // 4. Oyuncu Partikülleri (Etrafa saçılan neon kıvılcımlar)
+          ctx.save();
+          for (let k = 0; k < player.particles.length; k++) {
+            const p = player.particles[k];
+            // Partikülün Z derinliğini kamera projeksiyonuna yansıt
+            const pZ = playerZ + p.speedZ;
+            const pScale = camDepth / (camDepth + pZ);
+            
+            const pBendX = Math.sin(time * 0.015 + pZ * 0.008) * bendXAmount;
+            const pBendY = Math.cos(time * 0.012 + pZ * 0.006) * bendYAmount;
+            const pcx = centerX + pBendX * pScale;
+            const pcy = centerY + pBendY * pScale;
+            const pR = baseRadius * pScale;
+
+            const pX = pcx + Math.cos(p.angle) * pR;
+            const pY = pcy + Math.sin(p.angle) * pR;
+
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath();
+            ctx.arc(pX, pY, p.size * pScale, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
+
+      ctx.restore(); // Sarsıntı matrisi sıfırlama
+    }
+
+    // --- SIFIRLAMA VE YÜKLEME HAZIRLIĞI ---
+    buildInitialTunnel();
+    renderStaticStartScreenBg();
+
+  </script>
+</body>
+</html>
