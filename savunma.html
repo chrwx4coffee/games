@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Matris Savunması // Cyber Tower Defense</title>
+  <!-- Outfit ve Share Tech Mono Google Yazı Tipleri -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --neon-cyan: #00f0ff;
+      --neon-magenta: #ff007f;
+      --neon-yellow: #ffea00;
+      --neon-green: #39ff14;
+      --neon-purple: #bd00ff;
+      --bg-dark: #020206;
+      --panel-bg: rgba(8, 8, 18, 0.9);
+      --panel-border: rgba(0, 240, 255, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Outfit', sans-serif;
+      color: #ffffff;
+      display: flex;
+    }
+
+    /* CRT Tarama Çizgileri ve Hafif Titreme */
+    body::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+      z-index: 999;
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.99; }
+      50% { opacity: 1; }
+      100% { opacity: 0.98; }
+    }
+
+    #app-container {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      animation: flicker 0.25s infinite;
+    }
+
+    /* Sol Menü: Taret Satın Alma ve HUD */
+    #sidebar {
+      width: 320px;
+      height: 100%;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--panel-border);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 10;
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    h1.game-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 10%, var(--neon-cyan) 60%, var(--neon-magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+    }
+
+    .subtitle {
+      font-size: 11px;
+      color: var(--neon-magenta);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: -16px;
+      margin-bottom: 4px;
+      text-shadow: 0 0 8px rgba(255, 0, 127, 0.4);
+    }
+
+    /* Sistem Canı */
+    .status-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .hp-label-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--neon-cyan);
+    }
+
+    .hp-bar-container {
+      width: 100%;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 0, 127, 0.3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .hp-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--neon-magenta), #ff0044);
+      box-shadow: 0 0 10px var(--neon-magenta);
+      transition: width 0.3s ease;
+    }
+
+    /* İstatistikler */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-value.cyan {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    }
+
+    .stat-value.yellow {
+      color: var(--neon-yellow);
+      text-shadow: 0 0 10px rgba(255, 234, 0, 0.4);
+    }
+
+    /* Taret Market Menüsü */
+    .shop-header {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--neon-green);
+      text-transform: uppercase;
+      margin-bottom: -10px;
+      text-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+    }
+
+    .shop-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .shop-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.25s ease;
+    }
+
+    .shop-item:hover {
+      background: rgba(0, 240, 255, 0.05);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+    }
+
+    .shop-item.active {
+      background: rgba(0, 240, 255, 0.12);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), inset 0 0 8px rgba(0, 240, 255, 0.1);
+    }
+
+    .turret-icon {
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .shop-item.active .turret-icon {
+      background: rgba(0, 240, 255, 0.2);
+    }
+
+    .turret-info {
+      flex-grow: 1;
+    }
+
+    .turret-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .shop-item.active .turret-name {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 5px var(--neon-cyan);
+    }
+
+    .turret-cost {
+      font-size: 11px;
+      color: var(--neon-yellow);
+    }
+
+    /* Kule Seçim/Yükseltme Detay Paneli */
+    #detail-panel {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+
+    #detail-panel.hidden {
+      display: none;
+    }
+
+    .detail-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+    }
+
+    .detail-stats {
+      font-size: 11px;
+      color: #aaa;
+      line-height: 1.4;
+    }
+
+    .detail-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .panel-btn {
+      flex-grow: 1;
+      padding: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .btn-upgrade {
+      background: var(--neon-green);
+      color: #000;
+    }
+
+    .btn-upgrade:hover {
+      box-shadow: 0 0 15px var(--neon-green);
+      transform: translateY(-2px);
+    }
+
+    .btn-sell {
+      background: var(--neon-magenta);
+      color: #fff;
+    }
+
+    .btn-sell:hover {
+      box-shadow: 0 0 15px var(--neon-magenta);
+      transform: translateY(-2px);
+    }
+
+    /* Sağ Alan: Canvas Konteyneri */
+    #canvas-container {
+      flex-grow: 1;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle, #080816 0%, #010103 100%);
+      padding: 20px;
+      position: relative;
+    }
+
+    canvas {
+      background: #020208;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.1);
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    /* Popups/Overlays */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(3, 3, 10, 0.88);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+      transition: all 0.4s cubic-bezier(0.1, 0.8, 0.3, 1);
+    }
+
+    .screen-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.05);
+    }
+
+    .panel-box {
+      max-width: 550px;
+      width: 100%;
+      background: rgba(10, 10, 25, 0.85);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 0 45px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.1);
+      position: relative;
+    }
+
+    .panel-box::before {
+      content: "";
+      position: absolute;
+      top: -2px; left: 25px; right: 25px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon-magenta), transparent);
+    }
+
+    h2.overlay-title {
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 20%, var(--neon-cyan) 60%, var(--neon-magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+      margin-bottom: 12px;
+    }
+
+    .game-rules {
+      text-align: left;
+      margin: 20px auto;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 13px;
+      line-height: 1.6;
+      color: #bbb;
+    }
+
+    .game-rules ul {
+      list-style-type: none;
+    }
+
+    .game-rules li {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .game-rules li::before {
+      content: "⚡";
+      color: var(--neon-yellow);
+      text-shadow: 0 0 8px var(--neon-yellow);
+    }
+
+    .cyber-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--neon-magenta), var(--neon-purple));
+      border: none;
+      padding: 14px 44px;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      box-shadow: 0 0 20px rgba(255, 0, 127, 0.4), 0 0 40px rgba(255, 0, 127, 0.1);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      outline: none;
+    }
+
+    .cyber-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 30px rgba(255, 0, 127, 0.7), 0 0 50px rgba(255, 0, 127, 0.3);
+      letter-spacing: 3px;
+    }
+
+    .high-score-board {
+      margin-top: 24px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--neon-cyan);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Dalga Başlatma Paneli */
+    #wave-trigger-panel {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10;
+      pointer-events: auto;
+    }
+
+    .wave-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #000;
+      background: var(--neon-cyan);
+      border: none;
+      padding: 12px 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      transition: all 0.2s;
+    }
+
+    .wave-btn:hover {
+      box-shadow: 0 0 30px var(--neon-cyan);
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-container">
+    
+    <!-- SOL PANEL: KONTROLLER VE MARKET -->
+    <div id="sidebar">
+      <div>
+        <h1 class="game-title">Matris Savunması</h1>
+        <div class="subtitle">// Cyber Defense Protocol</div>
+      </div>
+
+      <!-- Çekirdek Güvenlik Durumu -->
+      <div class="status-box">
+        <div class="hp-label-container">
+          <span>Çekirdek Bütünlüğü</span>
+          <span id="hp-val">100/100</span>
+        </div>
+        <div class="hp-bar-container">
+          <div class="hp-bar-fill" id="hp-fill"></div>
+        </div>
+
+        <div class="stat-row" style="margin-top: 14px;">
+          <span class="stat-label">Matris Kredisi</span>
+          <span class="stat-value yellow" id="credits-val">300 C</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Sistem Skoru</span>
+          <span class="stat-value cyan" id="score-val">000000</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Aktif Dalga</span>
+          <span class="stat-value" id="wave-val">0 / 30</span>
+        </div>
+      </div>
+
+      <div class="shop-header">Düğümleri Seçin</div>
+      
+      <!-- Taret Dükkanı -->
+      <div class="shop-list" id="shop-box">
+        <!-- Siber Lazer -->
+        <div class="shop-item" data-type="laser">
+          <div class="turret-icon" style="color: var(--neon-cyan)">🧬</div>
+          <div class="turret-info">
+            <div class="turret-name">Siber Lazer</div>
+            <div class="turret-cost">100 Kredi</div>
+          </div>
+        </div>
+        <!-- Gatling -->
+        <div class="shop-item" data-type="gatling">
+          <div class="turret-icon" style="color: var(--neon-yellow)">🔫</div>
+          <div class="turret-info">
+            <div class="turret-name">Gatling Taret</div>
+            <div class="turret-cost">150 Kredi</div>
+          </div>
+        </div>
+        <!-- EMP Kulesi -->
+        <div class="shop-item" data-type="emp">
+          <div class="turret-icon" style="color: var(--neon-purple)">⭕</div>
+          <div class="turret-info">
+            <div class="turret-name">EMP Jeneratörü</div>
+            <div class="turret-cost">220 Kredi</div>
+          </div>
+        </div>
+        <!-- Plazma Topu -->
+        <div class="shop-item" data-type="plasma">
+          <div class="turret-icon" style="color: var(--neon-magenta)">💣</div>
+          <div class="turret-info">
+            <div class="turret-name">Plazma Topu</div>
+            <div class="turret-cost">300 Kredi</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kule Detay / Geliştirme Bölümü -->
+      <div id="detail-panel" class="hidden">
+        <div class="detail-title" id="det-title">Lazer Turret</div>
+        <div class="detail-stats" id="det-stats">
+          Seviye: 1<br>Hasar: 15<br>Menzil: 120
+        </div>
+        <div class="detail-buttons">
+          <button class="panel-btn btn-upgrade" id="btn-upgrade">Geliştir (100C)</button>
+          <button class="panel-btn btn-sell" id="btn-sell">Geri Dönüştür</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAĞ PANEL: CANVAS VE OYUN ALANI -->
+    <div id="canvas-container">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- Dalga Tetikleme Düğmesi -->
+      <div id="wave-trigger-panel">
+        <button class="wave-btn" id="wave-btn">Dalga Gönder</button>
+      </div>
+
+      <!-- Giriş Ekranı (Başlangıç) -->
+      <div class="screen-overlay" id="start-screen">
+        <div class="panel-box">
+          <h2 class="overlay-title">Matris Savunması</h2>
+          <div class="subtitle" style="margin-bottom: 24px;">// Terminal Security Protocol</div>
+
+          <div class="game-rules">
+            <ul>
+              <li><strong>İZGARA (GRID) İNŞASI:</strong> Sol menüden bir taret türü seçip boş grid karelerine tıklayarak inşa edin.</li>
+              <li><strong>DÜĞÜM GELİŞTİRME:</strong> İnşa ettiğiniz tarete tıklayarak menzilini görebilir, geliştirebilir veya geri dönüştürebilirsiniz.</li>
+              <li><strong>VİRÜSLER:</strong> Winding yeşil yoldan ilerleyen veri virüslerinin CPU'ya sızmasını engelleyin.</li>
+              <li><strong>TEKNO BASSLINE:</strong> En iyi siberpunk hissi için sesi açın!</li>
+            </ul>
+          </div>
+
+          <button class="cyber-btn" id="start-btn">Sistemi Başlat</button>
+          
+          <div class="high-score-board" id="high-score-display">
+            EN YÜKSEK DALGA SKORU: DALGA 0
+          </div>
+        </div>
+      </div>
+
+      <!-- Oyun Bitti Ekranı -->
+      <div class="screen-overlay hidden" id="gameover-screen">
+        <div class="panel-box">
+          <h2 class="overlay-title" style="background: linear-gradient(135deg, #fff 10%, var(--neon-magenta) 70%, var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">CPU Hacklendi</h2>
+          <div class="subtitle" style="color: var(--neon-cyan);">// Mainframe Core Compromised</div>
+
+          <div style="margin: 30px 0; font-family: 'Share Tech Mono', monospace; display: flex; justify-content: space-around;">
+            <div>
+              <div style="font-size: 14px; color: #888;">ULAŞILAN DALGA</div>
+              <div style="font-size: 36px; font-weight: 900; color: var(--neon-yellow); text-shadow: 0 0 15px rgba(255, 234, 0, 0.4);" id="final-wave">DALGA 0</div>
+            </div>
+            <div>
+              <div style="font-size: 14px; color: #888;">ELDE EDİLEN SKOR</div>
+              <div style="font-size: 36px; font-weight: 900; color: var(--neon-magenta); text-shadow: 0 0 15px rgba(255, 0, 127, 0.4);" id="final-score">000000</div>
+            </div>
+          </div>
+          <div style="font-size: 14px; color: var(--neon-green); margin-bottom: 24px;" id="new-record-lbl"></div>
+
+          <button class="cyber-btn" id="restart-btn">Güvenliği Yenile</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SES SENTEZLEYİCİ MOTORU (WEB AUDIO API) ---
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterVolume = null;
+        this.bpm = 120;
+        this.schedulerInterval = null;
+        this.nextNoteTime = 0.0;
+        this.beatIndex = 0;
+        this.isRunning = false;
+        
+        // Siberpunk Techno Bassline Notaları (Akor Dizisi: A2, Eb2, G2, F2)
+        this.bassFrequencies = [
+          110.00, 110.00, 110.00, 110.00, // A2
+          77.78,  77.78,  77.78,  77.78,  // Eb2
+          98.00,  98.00,  98.00,  98.00,  // G2
+          87.31,  87.31,  87.31,  87.31   // F2
+        ];
+      }
+
+      init() {
+        if (this.ctx) return;
+        
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContextClass();
+        
+        this.masterVolume = this.ctx.createGain();
+        this.masterVolume.gain.setValueAtTime(0.12, this.ctx.currentTime); // Dengeli master ses
+        this.masterVolume.connect(this.ctx.destination);
+      }
+
+      start() {
+        this.init();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        if (this.isRunning) return;
+        
+        this.isRunning = true;
+        this.nextNoteTime = this.ctx.currentTime;
+        this.beatIndex = 0;
+        
+        this.schedulerInterval = setInterval(() => {
+          this.scheduler();
+        }, 50);
+      }
+
+      stop() {
+        this.isRunning = false;
+        if (this.schedulerInterval) {
+          clearInterval(this.schedulerInterval);
+          this.schedulerInterval = null;
+        }
+      }
+
+      scheduler() {
+        while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+          this.scheduleNextNote(this.beatIndex, this.nextNoteTime);
+          
+          const secondsPerBeat = 60.0 / this.bpm;
+          const noteLength = secondsPerBeat / 4.0; // 16'lık vuruş
+          this.nextNoteTime += noteLength;
+          
+          this.beatIndex = (this.beatIndex + 1) % 16;
+        }
+      }
+
+      scheduleNextNote(beat, time) {
+        if (!this.isRunning) return;
+        
+        // Kick Drum (Her 4 vuruşta bir - beat 0, 4, 8, 12)
+        if (beat % 4 === 0) {
+          this.playKick(time);
+        }
+        
+        // Bassline (Acid-saw arpej)
+        this.playBassNote(beat, time);
+      }
+
+      playKick(time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.frequency.setValueAtTime(130, time);
+        osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.22);
+        
+        gain.gain.setValueAtTime(1.0, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+        
+        osc.start(time);
+        osc.stop(time + 0.22);
+      }
+
+      playBassNote(beat, time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.type = 'sawtooth';
+        
+        const freq = this.bassFrequencies[beat];
+        osc.frequency.setValueAtTime(freq, time);
+        
+        filter.type = 'lowpass';
+        filter.Q.setValueAtTime(5, time);
+        filter.frequency.setValueAtTime(200, time);
+        filter.frequency.exponentialRampToValueAtTime(750, time + 0.05);
+        filter.frequency.exponentialRampToValueAtTime(120, time + 0.1);
+        
+        gain.gain.setValueAtTime(0.4, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+        
+        osc.start(time);
+        osc.stop(time + 0.12);
+      }
+
+      // Taret Yerleştirme Sesi (Parıldayan siber tını)
+      playBuild() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const playPluck = (freq, delay) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          
+          osc.connect(gain);
+          gain.connect(this.masterVolume);
+          
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + delay);
+          
+          gain.gain.setValueAtTime(0.6, now + delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
+          
+          osc.start(now + delay);
+          osc.stop(now + delay + 0.18);
+        };
+        
+        playPluck(523.25, 0.0);  // C5
+        playPluck(659.25, 0.04); // E5
+        playPluck(783.99, 0.08); // G5
+        playPluck(1046.5, 0.12); // C6
+      }
+
+      // Gatling Atış Sesi (Hızlı mekanik tıkırtılar)
+      playGatling() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.linearRampToValueAtTime(80, now + 0.05);
+        
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+
+      // Plazma Topu Fırlatma Sesi
+      playPlasmaLaunch() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.linearRampToValueAtTime(50, now + 0.2);
+        
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.start(now);
+        osc.stop(now + 0.22);
+      }
+
+      // Plazma Splash Patlama Sesi
+      playPlasmaExplode() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const bufferSize = this.ctx.sampleRate * 0.25;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        
+        const noiseNode = this.ctx.createBufferSource();
+        noiseNode.buffer = buffer;
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(600, now);
+        filter.frequency.linearRampToValueAtTime(50, now + 0.22);
+        
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.7, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        
+        noiseNode.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        noiseNode.start(now);
+        noiseNode.stop(now + 0.25);
+      }
+
+      // EMP Dalga Sesi (Frekansı azalan Mor Dalga)
+      playEMP() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.35);
+        
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.start(now);
+        osc.stop(now + 0.38);
+      }
+
+      // Virüs Sızma Alarm Sesi (Düşük testere dişi siren)
+      playLeak() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(90, now + 0.3);
+        
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        osc.start(now);
+        osc.stop(now + 0.32);
+      }
+    }
+
+    const audio = new AudioEngine();
+
+    // --- CANVAS VE EKRAN KURULUMU ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Kule savunma için sabit çözünürlük matrisi (960x640)
+    const baseWidth = 960;
+    const baseHeight = 640;
+    canvas.width = baseWidth;
+    canvas.height = baseHeight;
+
+    // Grid boyutları (15 sütun x 10 satır. 64x64 hücre boyutu)
+    const cols = 15;
+    const rows = 10;
+    const cellSize = 64;
+
+    // Harita Yapısı ve Winding Yol Waypoint'leri (Sırayla takip edilecek piksel koordinatları)
+    const waypoints = [
+      { x: 0 * cellSize + 32, y: 1 * cellSize + 32 },  // Başlangıç (0, 1)
+      { x: 4 * cellSize + 32, y: 1 * cellSize + 32 },  // (4, 1)
+      { x: 4 * cellSize + 32, y: 4 * cellSize + 32 },  // (4, 4)
+      { x: 8 * cellSize + 32, y: 4 * cellSize + 32 },  // (8, 4)
+      { x: 8 * cellSize + 32, y: 2 * cellSize + 32 },  // (8, 2)
+      { x: 11 * cellSize + 32, y: 2 * cellSize + 32 }, // (11, 2)
+      { x: 11 * cellSize + 32, y: 7 * cellSize + 32 }, // (11, 7)
+      { x: 6 * cellSize + 32, y: 7 * cellSize + 32 },  // (6, 7)
+      { x: 6 * cellSize + 32, y: 9 * cellSize + 32 },  // (6, 9)
+      { x: 14 * cellSize + 32, y: 9 * cellSize + 32 }  // Bitiş (14, 9) CPU çekirdeği
+    ];
+
+    // Yol hücrelerinin set haline getirilmesi (Kule yerleşimini önlemek için)
+    const pathCells = new Set();
+    function precalculatePathCells() {
+      pathCells.clear();
+      // Ardışık waypoint'ler arasındaki grid hücrelerini bulup set içine ekleyelim
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const start = waypoints[i];
+        const end = waypoints[i + 1];
+        
+        const startC = Math.floor(start.x / cellSize);
+        const startR = Math.floor(start.y / cellSize);
+        const endC = Math.floor(end.x / cellSize);
+        const endR = Math.floor(end.y / cellSize);
+
+        const minC = Math.min(startC, endC);
+        const maxC = Math.max(startC, endC);
+        const minR = Math.min(startR, endR);
+        const maxR = Math.max(startR, endR);
+
+        for (let c = minC; c <= maxC; c++) {
+          for (let r = minR; r <= maxR; r++) {
+            pathCells.add(`${c},${r}`);
+          }
+        }
+      }
+    }
+    precalculatePathCells();
+
+    // Oyun Değişkenleri
+    let isPlaying = false;
+    let gameOver = false;
+    let score = 0;
+    let credits = 300;
+    let baseHp = 100;
+    let wave = 0;
+    let isWaveActive = false;
+    let systemTime = 0;
+    let screenShake = 0;
+
+    // Listeler
+    let enemies = [];
+    let towers = [];
+    let bullets = [];
+    let particles = [];
+    let empWaves = []; // EMP patlama halkaları
+
+    // Taret Türü Seçimi
+    let selectedShopType = null; // 'laser', 'gatling', 'emp', 'plasma'
+    let selectedTower = null; // Ekranda üzerine tıklanan taret nesnesi
+
+    // Kule Fiyatları ve Özellikleri
+    const turretSpecs = {
+      laser: {
+        cost: 100,
+        name: "Siber Lazer",
+        icon: "🧬",
+        color: "var(--neon-cyan)",
+        baseRange: 130,
+        baseCooldown: 1, // Kesintisiz ışın hasarı
+        baseDamage: 0.8
+      },
+      gatling: {
+        cost: 150,
+        name: "Gatling Taret",
+        icon: "🔫",
+        color: "var(--neon-yellow)",
+        baseRange: 150,
+        baseCooldown: 12, // 0.2 saniyede bir atış
+        baseDamage: 8
+      },
+      emp: {
+        cost: 220,
+        name: "EMP Jeneratörü",
+        icon: "⭕",
+        color: "var(--neon-purple)",
+        baseRange: 110,
+        baseCooldown: 90, // 1.5 saniyede bir puls
+        baseDamage: 25
+      },
+      plasma: {
+        cost: 300,
+        name: "Plazma Topu",
+        icon: "💣",
+        color: "var(--neon-magenta)",
+        baseRange: 180,
+        baseCooldown: 70, // 1.1 saniyede bir atış
+        baseDamage: 35
+      }
+    };
+
+    // --- MARKET VE ARAYÜZ ETKİLEŞİMİ ---
+    const shopItems = document.querySelectorAll('.shop-item');
+    shopItems.forEach(item => {
+      item.addEventListener('click', () => {
+        if (!isPlaying || gameOver) return;
+        
+        // Seçiliyse kaldır, değilse seç
+        const type = item.getAttribute('data-type');
+        if (selectedShopType === type) {
+          selectedShopType = null;
+          item.classList.remove('active');
+        } else {
+          shopItems.forEach(i => i.classList.remove('active'));
+          selectedShopType = type;
+          item.classList.add('active');
+          
+          // Seçili taret detayını kapat
+          closeDetailPanel();
+        }
+      });
+    });
+
+    // Kule İnşa Tıklaması
+    gameCanvas.addEventListener('click', (e) => {
+      if (!isPlaying || gameOver) return;
+
+      // Canvas tıklama koordinatını piksele dök
+      const rect = gameCanvas.getBoundingClientRect();
+      const clickX = ((e.clientX - rect.left) / rect.width) * baseWidth;
+      const clickY = ((e.clientY - rect.top) / rect.height) * baseHeight;
+
+      const col = Math.floor(clickX / cellSize);
+      const row = Math.floor(clickY / cellSize);
+
+      // Sınır dışı ise iptal
+      if (col < 0 || col >= cols || row < 0 || row >= rows) return;
+
+      // 1. Tıklanan yerde zaten kule var mı kontrol et
+      const existingTurret = towers.find(t => t.col === col && t.row === row);
+      if (existingTurret) {
+        selectedTower = existingTurret;
+        showDetailPanel(existingTurret);
+        selectedShopType = null;
+        shopItems.forEach(i => i.classList.remove('active'));
+        return;
+      }
+
+      // Kule seçilmediyse kapat
+      closeDetailPanel();
+
+      // 2. Yola tıklanmışsa kule yerleşemez
+      if (pathCells.has(`${col},${row}`)) return;
+
+      // 3. Taret yerleştirme işlemi
+      if (selectedShopType) {
+        const spec = turretSpecs[selectedShopType];
+        if (credits >= spec.cost) {
+          credits -= spec.cost;
+          
+          towers.push({
+            col: col,
+            row: row,
+            x: col * cellSize + 32,
+            y: row * cellSize + 32,
+            type: selectedShopType,
+            level: 1,
+            range: spec.baseRange,
+            damage: spec.baseDamage,
+            cooldown: spec.baseCooldown,
+            timer: 0,
+            angle: 0
+          });
+
+          audio.playBuild();
+          updateHUD();
+
+          // İnşadan sonra seçimi temizleme
+          selectedShopType = null;
+          shopItems.forEach(i => i.classList.remove('active'));
+        }
+      }
+    });
+
+    // Detay/Yükseltme Paneli Kontrolü
+    function showDetailPanel(turret) {
+      selectedTower = turret;
+      const spec = turretSpecs[turret.type];
+      const upgradeCost = Math.floor(spec.cost * turret.level * 1.3);
+
+      document.getElementById('det-title').innerText = `${spec.name} (LVL ${turret.level})`;
+      
+      let dmgLabel = turret.type === 'laser' ? 'Saniye Hasarı' : 'Vuruş Hasarı';
+      document.getElementById('det-stats').innerHTML = `
+        Menzil: ${Math.round(turret.range)}px<br>
+        ${dmgLabel}: ${turret.damage.toFixed(1)}<br>
+        Atış Beklemesi: ${(turret.cooldown / 60).toFixed(2)}sn
+      `;
+
+      const upgBtn = document.getElementById('btn-upgrade');
+      upgBtn.innerText = `Geliştir (${upgradeCost}C)`;
+      upgBtn.disabled = credits < upgradeCost;
+
+      document.getElementById('detail-panel').classList.remove('hidden');
+    }
+
+    function closeDetailPanel() {
+      selectedTower = null;
+      document.getElementById('detail-panel').classList.add('hidden');
+    }
+
+    // Geliştir (Upgrade) Düğmesi
+    document.getElementById('btn-upgrade').addEventListener('click', () => {
+      if (!selectedTower) return;
+      const spec = turretSpecs[selectedTower.type];
+      const upgradeCost = Math.floor(spec.cost * selectedTower.level * 1.3);
+
+      if (credits >= upgradeCost) {
+        credits -= upgradeCost;
+        selectedTower.level++;
+        
+        // Özellikleri artır (%40 güçlenme)
+        selectedTower.range += 20;
+        selectedTower.damage *= 1.4;
+        
+        // Gatling/Plazma atış süresini kısalt
+        if (selectedTower.type === 'gatling' || selectedTower.type === 'plasma') {
+          selectedTower.cooldown = Math.max(5, Math.floor(selectedTower.cooldown * 0.9));
+        }
+
+        audio.playBuild();
+        updateHUD();
+        showDetailPanel(selectedTower); // Paneli güncelle
+      }
+    });
+
+    // Geri Dönüştür (Sell) Düğmesi
+    document.getElementById('btn-sell').addEventListener('click', () => {
+      if (!selectedTower) return;
+      const spec = turretSpecs[selectedTower.type];
+      
+      // Toplam harcanan kredinin %70'ini geri ver
+      let refund = 0;
+      for (let lvl = 1; lvl <= selectedTower.level; lvl++) {
+        if (lvl === 1) refund += spec.cost;
+        else refund += Math.floor(spec.cost * (lvl - 1) * 1.3);
+      }
+      refund = Math.floor(refund * 0.7);
+      credits += refund;
+
+      // Tareti sil
+      towers = towers.filter(t => t !== selectedTower);
+
+      audio.playBuild();
+      updateHUD();
+      closeDetailPanel();
+    });
+
+    // --- YENİ DALGA BAŞLATMA ---
+    document.getElementById('wave-btn').addEventListener('click', () => {
+      if (isWaveActive || !isPlaying || gameOver) return;
+      startNextWave();
+    });
+
+    function startNextWave() {
+      wave++;
+      isWaveActive = true;
+      document.getElementById('wave-btn').disabled = true;
+      document.getElementById('wave-btn').innerText = "Dalga Aktif";
+
+      // Dalga özelliklerini hesapla
+      let count = 10 + wave * 2;
+      let hp = 30 + wave * 15 + Math.pow(wave, 1.6);
+      let speed = 1.0 + Math.min(2.0, wave * 0.05);
+      
+      let spawnInterval = Math.max(12, 45 - wave * 1.5); // Dalga hızlandıkça düşmanlar daha sık spawn olur
+
+      let spawned = 0;
+      const spawnTimer = setInterval(() => {
+        if (!isPlaying || gameOver) {
+          clearInterval(spawnTimer);
+          return;
+        }
+
+        // Düşman tipi belirleme (Zamanla daha güçlü virüsler)
+        let type = 'data';
+        let enemyHp = hp;
+        let enemySpeed = speed;
+        let radius = 10;
+        let color = 'var(--neon-magenta)';
+        let creditReward = 8 + wave;
+
+        const rand = Math.random();
+        if (wave > 3 && rand > 0.8) {
+          // Bit Runner: Hızlı, zayıf
+          type = 'runner';
+          enemyHp = hp * 0.4;
+          enemySpeed = speed * 1.6;
+          radius = 8;
+          color = 'var(--neon-purple)';
+        } else if (wave > 6 && rand > 0.9) {
+          // Malware Tank: Çok yavaş, canı çok yüksek
+          type = 'tank';
+          enemyHp = hp * 3.5;
+          enemySpeed = speed * 0.5;
+          radius = 16;
+          color = 'var(--neon-yellow)';
+          creditReward = 20 + wave * 2;
+        }
+
+        enemies.push({
+          x: waypoints[0].x,
+          y: waypoints[0].y,
+          pathIndex: 1, // İkinci waypoint'e gidecek
+          type: type,
+          hp: enemyHp,
+          maxHp: enemyHp,
+          speed: enemySpeed,
+          radius: radius,
+          color: color,
+          creditReward: creditReward
+        });
+
+        spawned++;
+        if (spawned >= count) {
+          clearInterval(spawnTimer);
+        }
+      }, spawnInterval * 16.6); // Tick cinsinden interval
+
+      updateHUD();
+    }
+
+    // --- BAŞLANGIÇ YÜKLEMESİ ---
+    function startNewGame() {
+      // Sesi aktif et
+      audio.start();
+
+      // Durumları Sıfırla
+      score = 0;
+      credits = 250;
+      baseHp = 100;
+      wave = 0;
+      isWaveActive = false;
+      systemTime = 0;
+      screenShake = 0;
+
+      enemies = [];
+      towers = [];
+      bullets = [];
+      particles = [];
+      empWaves = [];
+
+      selectedShopType = null;
+      selectedTower = null;
+
+      // HUD Güncellemeleri
+      updateHUD();
+      closeDetailPanel();
+      document.getElementById('wave-btn').disabled = false;
+      document.getElementById('wave-btn').innerText = "Dalga Gönder";
+
+      shopItems.forEach(i => i.classList.remove('active'));
+
+      // Ekranları Gizle/Göster
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('gameover-screen').classList.add('hidden');
+
+      isPlaying = true;
+      requestAnimationFrame(gameTick);
+    }
+
+    // HUD Paneli Değerlerini Ekrana Yansıt
+    function updateHUD() {
+      document.getElementById('score-val').innerText = String(score).padStart(6, '0');
+      document.getElementById('credits-val').innerText = `${credits} C`;
+      document.getElementById('wave-val').innerText = `${wave} / 30`;
+      document.getElementById('hp-val').innerText = `${Math.floor(baseHp)}/100`;
+      document.getElementById('hp-fill').style.width = `${Math.max(0, baseHp)}%`;
+
+      // Detay paneli açıksa upgrade düğmesini güncelle
+      if (selectedTower) {
+        showDetailPanel(selectedTower);
+      }
+    }
+
+    // --- OYUN GÜNCELLEME DÖNGÜSÜ ---
+    function update() {
+      if (gameOver || !isPlaying) return;
+
+      systemTime++;
+
+      if (screenShake > 0) {
+        screenShake -= 0.12;
+        if (screenShake < 0) screenShake = 0;
+      }
+
+      // Dalga Durum Kontrolü (Tüm düşmanlar öldüyse ve yeni düşman spawnı bittiyse dalgayı sonlandır)
+      if (isWaveActive && enemies.length === 0) {
+        isWaveActive = false;
+        credits += 50 + wave * 5; // Dalga tamamlama bonusu
+        updateHUD();
+        document.getElementById('wave-btn').disabled = false;
+        document.getElementById('wave-btn').innerText = "Dalga Gönder";
+        audio.playBuild(); // Dalga sonu hafif tebrik tınısı
+      }
+
+      // --- 1. DÜŞMAN HAREKETİ ---
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        const target = waypoints[enemy.pathIndex];
+
+        // Hedefe doğru git
+        const dx = target.x - enemy.x;
+        const dy = target.y - enemy.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < enemy.speed) {
+          enemy.x = target.x;
+          enemy.y = target.y;
+          enemy.pathIndex++;
+
+          // Sızma gerçekleşti mi? (Son waypoint'e ulaşıldı)
+          if (enemy.pathIndex >= waypoints.length) {
+            baseHp -= enemy.type === 'tank' ? 15 : 5;
+            audio.playLeak();
+            screenShake = 4;
+            enemies.splice(i, 1);
+            
+            if (baseHp <= 0) {
+              baseHp = 0;
+              triggerGameOver();
+            }
+            updateHUD();
+            continue;
+          }
+        } else {
+          enemy.x += (dx / dist) * enemy.speed;
+          enemy.y += (dy / dist) * enemy.speed;
+        }
+
+        // Yavaşlatma etkilerini sönümle (EMP yavaşlığı)
+        if (enemy.speedMultiplier && enemy.speedMultiplier < 1) {
+          enemy.speedMultiplier += 0.005; // Zamanla normal hızına döner
+          if (enemy.speedMultiplier > 1) enemy.speedMultiplier = 1;
+        }
+      }
+
+      // --- 2. TARETLERİN HEDEF ALMASI VE ATEŞ SİSTEMİ ---
+      towers.forEach(turret => {
+        // Hedef bul (Menzildeki ve yolda en fazla ilerlemiş düşmanı seç)
+        const target = getTurretTarget(turret);
+
+        if (target) {
+          // Namlu açısı hesapla (Dönüş animasyonu için)
+          const targetAngle = Math.atan2(target.y - turret.y, target.x - turret.x);
+          turret.angle = turret.angle * 0.7 + targetAngle * 0.3; // Yumuşak namlu dönüşü
+
+          // Kule tipine göre atış davranışları
+          if (turret.type === 'laser') {
+            // Kesintisiz Lazer Işını Hasarı
+            target.hp -= turret.damage;
+            // Lazer sesi (Her 15 karede bir ufak humm)
+            if (systemTime % 18 === 0) {
+              audio.playGatling();
+            }
+
+            // Hasar partikülleri saç
+            if (Math.random() > 0.6) {
+              particles.push({
+                x: target.x,
+                y: target.y,
+                vx: (Math.random() * 4 - 2),
+                vy: (Math.random() * 4 - 2),
+                color: 'var(--neon-cyan)',
+                size: 1 + Math.random() * 2,
+                life: 0.8
+              });
+            }
+          } 
+          
+          else if (turret.type === 'gatling') {
+            // Hızlı Neon Mermi Atışı
+            turret.timer++;
+            if (turret.timer >= turret.cooldown) {
+              bullets.push({
+                x: turret.x,
+                y: turret.y,
+                vx: Math.cos(targetAngle) * 8,
+                vy: Math.sin(targetAngle) * 8,
+                type: 'gatling',
+                damage: turret.damage,
+                radius: 3,
+                color: 'var(--neon-yellow)',
+                life: 60
+              });
+              audio.playGatling();
+              turret.timer = 0;
+            }
+          } 
+          
+          else if (turret.type === 'emp') {
+            // EMP Mor Şok Dalga Nabzı
+            turret.timer++;
+            if (turret.timer >= turret.cooldown) {
+              empWaves.push({
+                x: turret.x,
+                y: turret.y,
+                maxRadius: turret.range,
+                currentRadius: 5,
+                damage: turret.damage,
+                life: 1.0
+              });
+              audio.playEMP();
+              turret.timer = 0;
+            }
+          } 
+          
+          else if (turret.type === 'plasma') {
+            // Alan Hasarlı Yavaş Plazma Küresi
+            turret.timer++;
+            if (turret.timer >= turret.cooldown) {
+              bullets.push({
+                x: turret.x,
+                y: turret.y,
+                vx: Math.cos(targetAngle) * 4,
+                vy: Math.sin(targetAngle) * 4,
+                type: 'plasma',
+                damage: turret.damage,
+                radius: 7,
+                color: 'var(--neon-magenta)',
+                life: 120
+              });
+              audio.playPlasmaLaunch();
+              turret.timer = 0;
+            }
+          }
+        }
+      });
+
+      // --- 3. MERMİLERİN HAREKETİ VE HASAR SİSTEMİ ---
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        b.life--;
+
+        // Mermi çarpışma kontrolü
+        for (let j = enemies.length - 1; j >= 0; j--) {
+          const enemy = enemies[j];
+          const bdx = enemy.x - b.x;
+          const bdy = enemy.y - b.y;
+          const dist = Math.sqrt(bdx * bdx + bdy * bdy);
+
+          if (dist < enemy.radius + b.radius) {
+            if (b.type === 'gatling') {
+              enemy.hp -= b.damage;
+              bullets.splice(i, 1);
+            } 
+            else if (b.type === 'plasma') {
+              // Plazma Alan Patlaması
+              triggerPlasmaExplosion(b);
+              bullets.splice(i, 1);
+            }
+            
+            // Çarpma kıvılcımları
+            for (let p = 0; p < 6; p++) {
+              particles.push({
+                x: b.x,
+                y: b.y,
+                vx: (Math.random() * 4 - 2),
+                vy: (Math.random() * 4 - 2),
+                color: b.color,
+                size: 2 + Math.random() * 2,
+                life: 0.8
+              });
+            }
+            break;
+          }
+        }
+
+        // Ömrü biten mermiyi sil
+        if (b.life <= 0 && bullets[i] === b) {
+          bullets.splice(i, 1);
+        }
+      }
+
+      // --- 4. EMP HAFİF ŞOK DALGASI HAREKETİ ---
+      for (let i = empWaves.length - 1; i >= 0; i--) {
+        const wave = empWaves[i];
+        wave.currentRadius += 4;
+
+        // Dalga menziline giren tüm virüslere hasar ve yavaşlatma ver
+        enemies.forEach(enemy => {
+          const edx = enemy.x - wave.x;
+          const edy = enemy.y - wave.y;
+          const dist = Math.sqrt(edx * edx + edy * edy);
+
+          // Dalganın tam genişleme sınırında yakalanıp yakalanmadığı kontrolü
+          if (dist <= wave.currentRadius && dist >= wave.currentRadius - 10) {
+            enemy.hp -= wave.damage * 0.1; // Dalga yayıldıkça hasar devam eder
+            enemy.speedMultiplier = 0.4; // %60 yavaşlatma
+          }
+        });
+
+        if (wave.currentRadius >= wave.maxRadius) {
+          empWaves.splice(i, 1);
+        }
+      }
+
+      // --- 5. ENGELLERİN/DÜŞMANLARIN TEMİZLİĞİ VE SKOR ---
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        if (enemy.hp <= 0) {
+          score += 15 * wave;
+          credits += enemy.creditReward;
+          
+          // Ölüm kıvılcımları
+          for (let p = 0; p < 15; p++) {
+            particles.push({
+              x: enemy.x,
+              y: enemy.y,
+              vx: (Math.random() * 6 - 3),
+              vy: (Math.random() * 6 - 3),
+              color: enemy.color,
+              size: 2 + Math.random() * 4,
+              life: 1.2
+            });
+          }
+
+          enemies.splice(i, 1);
+          updateHUD();
+        }
+      }
+
+      // Partiküllerin güncellenmesi
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    // --- DETAYLI EYLEM METODLARI ---
+
+    // Taret için Menzildeki ve Yolda En İlerideki Düşmanı Bulma
+    function getTurretTarget(turret) {
+      let bestTarget = null;
+      let maxProgress = -1; // Yol index'i ve en ileri piksel hesabı
+
+      enemies.forEach(enemy => {
+        const dx = enemy.x - turret.x;
+        const dy = enemy.y - turret.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= turret.range) {
+          // İlerleyiş puanı = ulaşılan waypoint adeti + bir sonrakine yakınlığı
+          const progress = enemy.pathIndex * 1000 - dist; 
+          if (progress > maxProgress) {
+            maxProgress = progress;
+            bestTarget = enemy;
+          }
+        }
+      });
+
+      return bestTarget;
+    }
+
+    // Plazma Alan Patlaması Mekanizması
+    function triggerPlasmaExplosion(bullet) {
+      audio.playPlasmaExplode();
+      const splashRadius = 70;
+
+      enemies.forEach(enemy => {
+        const edx = enemy.x - bullet.x;
+        const edy = enemy.y - bullet.y;
+        const dist = Math.sqrt(edx * edx + edy * edy);
+        
+        if (dist <= splashRadius) {
+          // Merkezden uzaklaştıkça hasar biraz azalsın
+          const dmgPct = 1 - (dist / splashRadius) * 0.4;
+          enemy.hp -= bullet.damage * dmgPct;
+        }
+      });
+
+      // Patlama neon çemberi partikülü
+      for (let p = 0; p < 20; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 4;
+        particles.push({
+          x: bullet.x,
+          y: bullet.y,
+          vx: Math.cos(ang) * speed,
+          vy: Math.sin(ang) * speed,
+          color: 'var(--neon-magenta)',
+          size: 2 + Math.random() * 3,
+          life: 1.0
+        });
+      }
+    }
+
+    // Oyun Bitti Ekranı
+    function triggerGameOver() {
+      gameOver = true;
+      isPlaying = false;
+      audio.stop();
+
+      const currentHighScore = localStorage.getItem('defense_high_wave') || 0;
+      let newRecordText = "";
+      if (wave > currentHighScore) {
+        localStorage.setItem('defense_high_wave', wave);
+        newRecordText = "⚡ MATRİS REKORU BAŞARIYLA GÜNCELLENDİ! ⚡";
+      }
+
+      document.getElementById('final-wave').innerText = `DALGA ${wave}`;
+      document.getElementById('final-score').innerText = String(score).padStart(6, '0');
+      document.getElementById('new-record-lbl').innerText = newRecordText;
+      document.getElementById('gameover-screen').classList.remove('hidden');
+    }
+
+    // --- EVENT LISTENER BAĞLANTILARI ---
+    document.getElementById('start-btn').addEventListener('click', () => {
+      startNewGame();
+    });
+
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      startNewGame();
+    });
+
+    function displayHighScore() {
+      const highWave = localStorage.getItem('defense_high_wave') || 0;
+      document.getElementById('high-score-display').innerText = `EN YÜKSEK DALGA SKORU: DALGA ${highWave}`;
+    }
+    displayHighScore();
+
+    // --- ÇİZİM VE HAREKET MOTORU (RENDER) ---
+    function gameTick() {
+      if (!isPlaying) return;
+
+      update();
+      draw();
+
+      requestAnimationFrame(gameTick);
+    }
+
+    function draw() {
+      // 1. CRT Temizliği
+      ctx.fillStyle = '#020208';
+      ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+      // Ekran sarsıntısı gir
+      ctx.save();
+      if (screenShake > 0) {
+        const shakeX = (Math.random() * 2 - 1) * screenShake;
+        const shakeY = (Math.random() * 2 - 1) * shakeX;
+        ctx.translate(shakeX, shakeY);
+      }
+
+      // --- A. DETAYLI GRID IZGARA ÇİZİMİ ---
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.02)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      for (let c = 0; c <= cols; c++) {
+        ctx.moveTo(c * cellSize, 0);
+        ctx.lineTo(c * cellSize, baseHeight);
+      }
+      for (let r = 0; r <= rows; r++) {
+        ctx.moveTo(0, r * cellSize);
+        ctx.lineTo(baseWidth, r * cellSize);
+      }
+      ctx.stroke();
+
+      // --- B. PARILDAYAN WINDING NEON YOL ÇİZİMİ ---
+      // Alt zemin neon yolu kalın çizgi
+      ctx.strokeStyle = 'rgba(57, 255, 20, 0.08)';
+      ctx.lineWidth = 32;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(waypoints[0].x, waypoints[0].y);
+      for (let i = 1; i < waypoints.length; i++) {
+        ctx.lineTo(waypoints[i].x, waypoints[i].y);
+      }
+      ctx.stroke();
+
+      // Merkez ince neon yol çizgisi
+      ctx.strokeStyle = 'var(--neon-green)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Yol boyunca akan veri akış noktaları (Paraks hareketli matris noktaları)
+      ctx.save();
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'var(--neon-green)';
+      ctx.shadowBlur = 10;
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const start = waypoints[i];
+        const end = waypoints[i + 1];
+        
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        const dots = Math.floor(dist / 40);
+        const flowOffset = (systemTime * 0.8) % 40;
+
+        for (let d = 0; d < dots; d++) {
+          const ratio = (d * 40 + flowOffset) / dist;
+          if (ratio <= 1.0) {
+            const rx = start.x + dx * ratio;
+            const ry = start.y + dy * ratio;
+            ctx.beginPath();
+            ctx.arc(rx, ry, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      ctx.restore();
+
+      // --- C. CPU MERKEZ ÇEKİRDEK (BİTİŞ NOKTASI) ÇİZİMİ ---
+      const cpuCell = waypoints[waypoints.length - 1];
+      ctx.save();
+      ctx.shadowColor = 'var(--neon-cyan)';
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = '#060a1f';
+      ctx.strokeStyle = 'var(--neon-cyan)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      // Kare siber çip görünümü
+      ctx.rect(cpuCell.x - 24, cpuCell.y - 24, 48, 48);
+      ctx.fill();
+      ctx.stroke();
+
+      // İç parıldayan çekirdek
+      ctx.fillStyle = 'var(--neon-cyan)';
+      ctx.beginPath();
+      ctx.arc(cpuCell.x, cpuCell.y, 8 + Math.sin(systemTime * 0.1) * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // --- D. EMP ŞOK DALGALARI ÇİZİMİ ---
+      empWaves.forEach(wave => {
+        ctx.save();
+        ctx.strokeStyle = 'var(--neon-purple)';
+        ctx.shadowColor = 'var(--neon-purple)';
+        ctx.shadowBlur = 15;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(wave.x, wave.y, wave.currentRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // --- E. TARET SEÇİM DAİRESİ ÇİZİMİ ---
+      // Ekranda kuleye tıklandıysa menzil dairesi çizilir
+      if (selectedTower) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.04)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(selectedTower.x, selectedTower.y, selectedTower.range, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Köşe seçim kareleri
+        ctx.strokeStyle = 'var(--neon-cyan)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(selectedTower.x - 30, selectedTower.y - 30, 60, 60);
+        ctx.restore();
+      }
+
+      // --- F. TARETLERİN ÇİZİMİ ---
+      towers.forEach(turret => {
+        const spec = turretSpecs[turret.type];
+        
+        ctx.save();
+        ctx.translate(turret.x, turret.y);
+
+        // 1. Taret Alt Tabanı (Grid soketi)
+        ctx.fillStyle = '#060614';
+        ctx.strokeStyle = spec.color;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = spec.color;
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(0, 0, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 2. Namlu / Üst Bölüm (Dönüş açısına göre)
+        ctx.rotate(turret.angle);
+        ctx.fillStyle = spec.color;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+
+        if (turret.type === 'laser') {
+          // Çift antenli siber lazer tasarımı
+          ctx.fillRect(-10, -6, 20, 12);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(8, -2, 12, 4); // Namlu ucu
+        } 
+        
+        else if (turret.type === 'gatling') {
+          // Üç namlulu makine
+          ctx.fillRect(-12, -8, 22, 16);
+          ctx.fillStyle = 'var(--neon-yellow)';
+          ctx.fillRect(10, -5, 14, 3);
+          ctx.fillRect(10, 2, 14, 3);
+        } 
+        
+        else if (turret.type === 'emp') {
+          // Dairesel reaktör
+          ctx.beginPath();
+          ctx.arc(0, 0, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          // Dış mor enerji halkası
+          ctx.strokeStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(0, 0, 16 + Math.sin(systemTime * 0.15) * 1.5, 0, Math.PI * 2);
+          ctx.stroke();
+        } 
+        
+        else if (turret.type === 'plasma') {
+          // Dev havan namlusu
+          ctx.beginPath();
+          ctx.arc(0, 0, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#111';
+          ctx.fillRect(4, -5, 18, 10); // Ağır namlu
+        }
+
+        ctx.restore();
+
+        // 3. Taretlerin Hedef Ateş Işınları Çizimi (Lazer için namlu ucu - düşman arası ışın)
+        if (turret.type === 'laser') {
+          const target = getTurretTarget(turret);
+          if (target) {
+            ctx.save();
+            ctx.strokeStyle = 'var(--neon-cyan)';
+            ctx.shadowColor = 'var(--neon-cyan)';
+            ctx.shadowBlur = 15;
+            ctx.lineWidth = 2.5 + Math.sin(systemTime * 0.4) * 1.5;
+            
+            ctx.beginPath();
+            ctx.moveTo(turret.x + Math.cos(turret.angle) * 18, turret.y + Math.sin(turret.angle) * 18);
+            ctx.lineTo(target.x, target.y);
+            ctx.stroke();
+
+            // Lazer çakışma noktası patlama halkası
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      });
+
+      // --- G. ENEMY VİRÜSLERİN ÇİZİMİ ---
+      enemies.forEach(enemy => {
+        ctx.save();
+        ctx.translate(enemy.x, enemy.y);
+        ctx.shadowColor = enemy.color;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = enemy.color;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+
+        // Dairesel dönüş animasyonu (runner'lar için)
+        if (enemy.type === 'runner') {
+          ctx.rotate(systemTime * 0.1);
+        }
+
+        if (enemy.type === 'data') {
+          // Yuvarlak Veri Paketi
+          ctx.beginPath();
+          ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } 
+        
+        else if (enemy.type === 'runner') {
+          // Mor Bit Runner (Hızlı Üçgen)
+          ctx.beginPath();
+          ctx.moveTo(0, -enemy.radius * 1.2);
+          ctx.lineTo(enemy.radius, enemy.radius * 0.8);
+          ctx.lineTo(-enemy.radius, enemy.radius * 0.8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } 
+        
+        else if (enemy.type === 'tank') {
+          // Dev Malware Kare Tank (Dönen iç çip)
+          ctx.rotate(systemTime * 0.02);
+          ctx.beginPath();
+          ctx.rect(-enemy.radius, -enemy.radius, enemy.radius * 2, enemy.radius * 2);
+          ctx.fill();
+          ctx.stroke();
+          // Çapraz neon hatlar
+          ctx.strokeStyle = '#000';
+          ctx.beginPath();
+          ctx.moveTo(-enemy.radius, -enemy.radius);
+          ctx.lineTo(enemy.radius, enemy.radius);
+          ctx.moveTo(enemy.radius, -enemy.radius);
+          ctx.lineTo(-enemy.radius, enemy.radius);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+
+        // Sağlık Barı
+        if (enemy.hp < enemy.maxHp) {
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
+          ctx.fillRect(enemy.x - 14, enemy.y - enemy.radius - 8, 28, 3);
+          ctx.fillStyle = 'var(--neon-green)';
+          ctx.fillRect(enemy.x - 14, enemy.y - enemy.radius - 8, (enemy.hp / enemy.maxHp) * 28, 3);
+        }
+      });
+
+      // --- H. MERMİLERİN ÇİZİMİ ---
+      bullets.forEach(b => {
+        ctx.save();
+        ctx.shadowColor = b.color;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = b.color;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // --- I. PARILDAYAN PARTİKÜLLER ÇİZİMİ ---
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0; // Reset alpha
+
+      ctx.restore(); // Sarsıntı reset
+    }
+
+  </script>
+</body>
+</html>
