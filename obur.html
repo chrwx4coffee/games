@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Obur // Neon Pac-Man</title>
+    <!-- Outfit Font from Google Fonts for a premium look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #03030f;
+            --primary-glow: #ffff00; /* Neon Yellow (Obur) */
+            --wall-color: #0055ff;   /* Neon Blue Walls */
+            --danger-glow: #ff0055;  /* Neon Red */
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --container-bg: rgba(8, 8, 20, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0a0a24 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* CRT Scanlines effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background-size: 100% 4px;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            width: min(95vw, 440px);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, #ffff00, #ff00c8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+            text-shadow: 0 0 25px rgba(255, 255, 0, 0.2);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .score-box .stat-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(255, 255, 0, 0.4);
+        }
+
+        .lives-box {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            height: 24px;
+        }
+
+        .life-icon {
+            width: 16px;
+            height: 16px;
+            background: #ffff00;
+            border-radius: 50%;
+            clip-path: polygon(100% 74%, 50% 50%, 100% 26%, 100% 0%, 0% 0%, 0% 100%, 100% 100%);
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.6);
+            transform: rotate(-30deg);
+        }
+
+        .best-box .stat-value {
+            color: #ff00c8;
+            text-shadow: 0 0 12px rgba(255, 0, 200, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: #010108;
+            width: 100%;
+            max-width: 380px;
+            aspect-ratio: 19 / 21;
+        }
+
+        .hint {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(4, 1, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: #ffff00;
+            text-shadow: 0 0 25px rgba(255, 255, 0, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            font-weight: 400;
+            line-height: 1.5;
+            max-width: 300px;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: #ff00c8;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(255, 255, 0, 0.15), rgba(255, 0, 200, 0.15));
+            border: 1px solid rgba(255, 255, 0, 0.4);
+            color: #ffffff;
+            padding: 13px 32px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(255, 255, 0, 0.3), rgba(255, 0, 200, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 255, 0, 0.3);
+            border-color: #ffff00;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Mobile D-Pad Controls */
+        .mobile-controls {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .dpad-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dpad-btn {
+            width: 52px;
+            height: 52px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .dpad-btn:active {
+            background: rgba(255, 255, 0, 0.2);
+            border-color: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.4);
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 600px) {
+            .mobile-controls {
+                display: flex;
+            }
+            .wrapper {
+                padding: 16px;
+                border-radius: 20px;
+                gap: 12px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <h1>Siber Obur</h1>
+        
+        <div class="stats-panel">
+            <div class="stat-box score-box">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Canlar</span>
+                <div class="lives-box" id="livesContainer">
+                    <div class="life-icon"></div>
+                    <div class="life-icon"></div>
+                    <div class="life-icon"></div>
+                </div>
+            </div>
+            <div class="stat-box best-box">
+                <span class="stat-label">En İyi</span>
+                <span class="stat-value" id="bestScore">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="380" height="420"></canvas>
+            
+            <!-- Start Screen -->
+            <div class="screen-overlay active" id="startScreen">
+                <h2>Siber Obur</h2>
+                <p>Neon labirentte dolaş, tüm sarı diskleri ye ve siber hayaletlerden kaç! Büyük güç disklerini yiyerek hayaletleri kısa süreliğine savunmasız hale getirebilirsin.</p>
+                <button class="btn" id="startBtn">Bağlantıyı Kur</button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 style="color: var(--danger-glow); text-shadow: 0 0 25px rgba(255,0,85,0.6);">Bağlantı Koptu</h2>
+                <p>Toplam Skorunuz: <span id="finalScore">0</span></p>
+                <button class="btn" id="restartBtn">Yeniden Bağlan</button>
+            </div>
+
+            <!-- Stage Clear Screen -->
+            <div class="screen-overlay" id="stageClearScreen">
+                <h2>Veri Temizlendi</h2>
+                <p style="color: #00ffcc;">Sıradaki siber seviyeye geçiş yapılıyor...</p>
+                <button class="btn" id="nextStageBtn">Devam Et</button>
+            </div>
+        </div>
+
+        <div class="hint">Yönlendirmek için klavyede <b>Yön Tuşları</b> veya <b>WASD</b> tuşlarını kullanın.</div>
+
+        <!-- Mobile Touch Controls -->
+        <div class="mobile-controls">
+            <div class="dpad-row">
+                <div class="dpad-btn" id="btnUp">↑</div>
+            </div>
+            <div class="dpad-row">
+                <div class="dpad-btn" id="btnLeft">←</div>
+                <div class="dpad-btn" id="btnDown">↓</div>
+                <div class="dpad-btn" id="btnRight">→</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- WEB AUDIO API TABANLI RETRO SES MOTORU ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.masterVolume = null;
+                this.sirenOsc = null;
+                this.sirenLfo = null;
+                this.sirenLfoGain = null;
+                this.sirenGain = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+                this.masterVolume = this.ctx.createGain();
+                this.masterVolume.gain.setValueAtTime(0.12, this.ctx.currentTime); // Dengeli ses düzeyi
+                this.masterVolume.connect(this.ctx.destination);
+            }
+
+            resume() {
+                this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playStartMelody() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Eğlenceli retro 8-bit melodisi
+                const notes = [
+                    { f: 261.63, d: 0.12 }, // C4
+                    { f: 329.63, d: 0.12 }, // E4
+                    { f: 392.00, d: 0.12 }, // G4
+                    { f: 523.25, d: 0.24 }, // C5
+                    { f: 392.00, d: 0.12 }, // G4
+                    { f: 523.25, d: 0.36 }  // C5
+                ];
+                let timeAccumulator = 0;
+                notes.forEach(n => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(n.f, now + timeAccumulator);
+                    gain.gain.setValueAtTime(0.15, now + timeAccumulator);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + timeAccumulator + n.d - 0.02);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.masterVolume);
+                    
+                    osc.start(now + timeAccumulator);
+                    osc.stop(now + timeAccumulator + n.d);
+                    timeAccumulator += n.d;
+                });
+            }
+
+            playWaka(isAlt) {
+                if (!this.ctx || this.ctx.state === 'suspended') return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(isAlt ? 340 : 240, now);
+                osc.frequency.exponentialRampToValueAtTime(isAlt ? 180 : 120, now + 0.07);
+                
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+                
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                
+                osc.start(now);
+                osc.stop(now + 0.07);
+            }
+
+            playPowerPellet() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+                
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+
+            playEatGhost() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(1500, now + 0.35);
+                
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+                
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+
+            playDeath() {
+                this.resume();
+                if (!this.ctx) return;
+                this.stopSiren();
+                const now = this.ctx.currentTime;
+                
+                // Downward frequency sweep
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(40, now + 0.7);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+                
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(now);
+                osc.stop(now + 0.7);
+
+                // Add noise crunch
+                const bufferSize = this.ctx.sampleRate * 0.7;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(600, now);
+                filter.frequency.linearRampToValueAtTime(60, now + 0.7);
+                
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.12, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+                
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(this.masterVolume);
+                
+                noise.start(now);
+                noise.stop(now + 0.7);
+            }
+
+            startSiren() {
+                this.resume();
+                if (!this.ctx || this.sirenOsc) return;
+                
+                this.sirenOsc = this.ctx.createOscillator();
+                this.sirenGain = this.ctx.createGain();
+                this.sirenLfo = this.ctx.createOscillator();
+                this.sirenLfoGain = this.ctx.createGain();
+                
+                this.sirenOsc.type = 'triangle';
+                this.sirenOsc.frequency.value = 220; // A3 base siren
+                
+                this.sirenLfo.type = 'sine';
+                this.sirenLfo.frequency.value = 3.0; // 3Hz modulation
+                this.sirenLfoGain.gain.value = 30; // Frequency variation
+                
+                this.sirenLfo.connect(this.sirenLfoGain);
+                this.sirenLfoGain.connect(this.sirenOsc.frequency);
+                
+                this.sirenGain.gain.value = 0.03; // Background hum
+                
+                this.sirenOsc.connect(this.sirenGain);
+                this.sirenGain.connect(this.masterVolume);
+                
+                this.sirenLfo.start();
+                this.sirenOsc.start();
+            }
+
+            stopSiren() {
+                if (this.sirenOsc) {
+                    try {
+                        this.sirenOsc.stop();
+                        this.sirenLfo.stop();
+                    } catch(e) {}
+                    this.sirenOsc = null;
+                    this.sirenLfo = null;
+                    this.sirenLfoGain = null;
+                    this.sirenGain = null;
+                }
+            }
+        }
+
+        const audio = new AudioEngine();
+
+        // --- HARİTA TASARIMI VE TANIMLAMALARI ---
+        // 0: Boş yol, 1: Duvar, 2: Normal Yem, 3: Büyük Güç Yemi, 4: Hayalet Evi Kapısı, 5: Hayalet Evi İçi
+        const mazeGrid = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,3,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,3,1],
+            [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
+            [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,2,1],
+            [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
+            [1,1,1,1,2,1,1,1,0,1,0,1,1,1,2,1,1,1,1],
+            [0,0,0,1,2,1,0,0,0,0,0,0,0,1,2,1,0,0,0],
+            [1,1,1,1,2,1,0,1,1,4,1,1,0,1,2,1,1,1,1],
+            [0,0,0,0,2,0,0,1,5,5,5,1,0,0,2,0,0,0,0], // Işınlanma Satırı (Wraparound)
+            [1,1,1,1,2,1,0,1,1,1,1,1,0,1,2,1,1,1,1],
+            [0,0,0,1,2,1,0,0,0,0,0,0,0,1,2,1,0,0,0],
+            [1,1,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,2,1],
+            [1,3,2,1,2,2,2,2,2,0,2,2,2,2,2,1,2,3,1],
+            [1,1,2,1,2,1,2,1,1,1,1,1,2,1,2,1,2,1,1],
+            [1,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,1],
+            [1,2,1,1,1,1,1,1,2,1,2,1,1,1,1,1,1,2,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        const TILE_SIZE = 20;
+        const GRID_COLS = 19;
+        const GRID_ROWS = 21;
+
+        // Yön Değerleri
+        const DIR_UP = { x: 0, y: -1, name: 'UP' };
+        const DIR_DOWN = { x: 0, y: 1, name: 'DOWN' };
+        const DIR_LEFT = { x: -1, y: 0, name: 'LEFT' };
+        const DIR_RIGHT = { x: 1, y: 0, name: 'RIGHT' };
+        const DIR_NONE = { x: 0, y: 0, name: 'NONE' };
+
+        // --- OYUN PARAMETRELERİ ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreValEl = document.getElementById('score');
+        const bestScoreValEl = document.getElementById('bestScore');
+        const livesContainer = document.getElementById('livesContainer');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const stageClearScreen = document.getElementById('stageClearScreen');
+        const finalScoreEl = document.getElementById('finalScore');
+
+        let currentMap = [];
+        let score = 0;
+        let bestScore = localStorage.getItem('siberOburBestScore') || 0;
+        let lives = 3;
+        let gameState = 'START'; // START, PLAYING, DEATH_ANIM, GAMEOVER, NEXT_STAGE
+        let lastTime = 0;
+        let powerPelletActive = false;
+        let powerPelletTimer = 0;
+        let ghostsEatenCount = 0;
+
+        bestScoreValEl.textContent = bestScore;
+
+        // Parçacıklar Listesi
+        let particles = [];
+
+        // Havada Uçuşan Skor Metinleri (+200 vb)
+        let floatingScores = [];
+
+        // --- OBUR (OYUNCU) SINIFI ---
+        class Obur {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Başlangıç konumu: Satır 16, Sütun 9 (Boşluk)
+                this.gridX = 9;
+                this.gridY = 16;
+                this.x = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                this.y = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+                
+                this.dir = DIR_NONE;
+                this.nextDir = DIR_NONE;
+                
+                this.speed = 2.0; // Grid birimi hız
+                this.progress = 0.0; // İki grid arasındaki geçiş yüzdesi (0.0 -> 1.0)
+                this.visualRadius = TILE_SIZE / 2 - 1;
+                this.mouthAngle = 0;
+                this.mouthSpeed = 0.15;
+                this.mouthMax = 0.4;
+                this.mouthOpening = true;
+                
+                this.lastMoveTime = 0;
+            }
+
+            update(dt) {
+                // Eğer hareket etmiyorsa ve bekleyen yön yoksa ağız açıp kapatmayı durdur
+                if (this.dir === DIR_NONE && this.nextDir === DIR_NONE) {
+                    this.mouthAngle = 0.1;
+                    return;
+                }
+
+                // Ağız açma/kapama animasyonu
+                if (this.mouthOpening) {
+                    this.mouthAngle += this.mouthSpeed;
+                    if (this.mouthAngle >= this.mouthMax) this.mouthOpening = false;
+                } else {
+                    this.mouthAngle -= this.mouthSpeed;
+                    if (this.mouthAngle <= 0.05) this.mouthOpening = true;
+                }
+
+                // Eğer Obur bir grid karesi üzerindeyse (progress = 0) yeni yön seçimine karar ver
+                if (this.progress === 0.0) {
+                    // Önce bekleyen bir yön tuşu varsa ve duvar değilse o yöne yönel
+                    if (this.nextDir !== DIR_NONE && this.isValidMove(this.gridX + this.nextDir.x, this.gridY + this.nextDir.y)) {
+                        this.dir = this.nextDir;
+                        this.nextDir = DIR_NONE;
+                    } else if (!this.isValidMove(this.gridX + this.dir.x, this.gridY + this.dir.y)) {
+                        // Eğer mevcut yönü duvara çarpıyorsa durdur
+                        this.dir = DIR_NONE;
+                    }
+                }
+
+                // Eğer hareket ediyorsa ilerlemeyi güncelle
+                if (this.dir !== DIR_NONE) {
+                    // Hızı dt ile çarparak ilerlet
+                    this.progress += this.speed * (dt / 1000);
+                    
+                    if (this.progress >= 1.0) {
+                        // Yeni hücreye ulaştı
+                        this.gridX += this.dir.x;
+                        this.gridY += this.dir.y;
+                        
+                        // Wraparound (Işınlanma Tüneli)
+                        if (this.gridX < 0) this.gridX = GRID_COLS - 1;
+                        if (this.gridX >= GRID_COLS) this.gridX = 0;
+                        
+                        this.progress = 0.0;
+                        this.x = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                        this.y = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+                        
+                        // Hücreye vardığında yem yeme kontrolü
+                        this.checkEat();
+                    } else {
+                        // İki hücre arasındaki ara konumu hesapla
+                        const startX = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                        const startY = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+                        
+                        // Işınlanma sınırlarında koordinat atlamasını önlemek için kontrol
+                        let targetGridX = this.gridX + this.dir.x;
+                        let targetGridY = this.gridY + this.dir.y;
+                        
+                        if (targetGridX < 0) targetGridX = GRID_COLS - 1;
+                        if (targetGridX >= GRID_COLS) targetGridX = 0;
+
+                        const endX = targetGridX * TILE_SIZE + TILE_SIZE / 2;
+                        const endY = targetGridY * TILE_SIZE + TILE_SIZE / 2;
+
+                        // Sınır aşma durumunda ara konumu kaydır
+                        if (Math.abs(startX - endX) > TILE_SIZE * 2) {
+                            // Sınır ışınlanması
+                            if (this.dir === DIR_LEFT) {
+                                this.x = startX - (TILE_SIZE * this.progress);
+                                if (this.x < 0) this.x += GRID_COLS * TILE_SIZE;
+                            } else {
+                                this.x = startX + (TILE_SIZE * this.progress);
+                                if (this.x >= GRID_COLS * TILE_SIZE) this.x -= GRID_COLS * TILE_SIZE;
+                            }
+                        } else {
+                            this.x = startX + (endX - startX) * this.progress;
+                            this.y = startY + (endY - startY) * this.progress;
+                        }
+                    }
+                }
+            }
+
+            isValidMove(gx, gy) {
+                // Wraparound durumunda sütun limitlerini sar
+                let checkX = gx;
+                if (checkX < 0) checkX = GRID_COLS - 1;
+                if (checkX >= GRID_COLS) checkX = 0;
+
+                if (gy < 0 || gy >= GRID_ROWS) return false;
+                
+                const val = currentMap[gy][checkX];
+                // 1: Duvar, 4: Hayalet kapısı (Sadece gözler veya hayaletler geçebilir, Obur giremez)
+                return val !== 1 && val !== 4 && val !== 5;
+            }
+
+            checkEat() {
+                const val = currentMap[this.gridY][this.gridX];
+                if (val === 2) {
+                    // Normal Yem Yeme
+                    currentMap[this.gridY][this.gridX] = 0;
+                    score += 10;
+                    scoreValEl.textContent = score;
+                    createSparks(this.x, this.y, '#ffff00', 5);
+                    audio.playWaka(score % 20 === 0);
+                    checkWin();
+                } else if (val === 3) {
+                    // Büyük Güç Yemi Yeme
+                    currentMap[this.gridY][this.gridX] = 0;
+                    score += 50;
+                    scoreValEl.textContent = score;
+                    createSparks(this.x, this.y, '#00ffcc', 12);
+                    audio.playPowerPellet();
+                    triggerPowerPellet();
+                    checkWin();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Yöne göre ağız yönünü döndür
+                let angle = 0;
+                if (this.dir === DIR_LEFT) angle = Math.PI;
+                else if (this.dir === DIR_UP) angle = -Math.PI / 2;
+                else if (this.dir === DIR_DOWN) angle = Math.PI / 2;
+                
+                ctx.rotate(angle);
+
+                // Neon Sarı Küre
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ffff00';
+                ctx.fillStyle = '#ffff00';
+                
+                ctx.beginPath();
+                // Klasik ağız kesimli daire
+                ctx.arc(0, 0, this.visualRadius, this.mouthAngle, Math.PI * 2 - this.mouthAngle);
+                ctx.lineTo(0, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        const obur = new Obur();
+
+        // --- RETRO GHOST (HAYALET) SINIFI ---
+        class Ghost {
+            constructor(name, color, scatterTarget) {
+                this.name = name;
+                this.color = color;
+                this.scatterTarget = scatterTarget; // {x, y}
+                this.reset();
+            }
+
+            reset() {
+                // Hayalet evinde (Ghost House) başlar
+                // Kırmızı hayalet kapının önünde, diğerleri içeride
+                if (this.name === 'Blinky') {
+                    this.gridX = 9;
+                    this.gridY = 8; // Kapının hemen önü
+                } else if (this.name === 'Pinky') {
+                    this.gridX = 9;
+                    this.gridY = 10;
+                } else if (this.name === 'Inky') {
+                    this.gridX = 8;
+                    this.gridY = 10;
+                } else {
+                    this.gridX = 10;
+                    this.gridY = 10;
+                }
+
+                this.x = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                this.y = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+                
+                this.dir = DIR_UP;
+                this.progress = 0.0;
+                this.speed = 1.6; // Obur'dan biraz daha yavaş
+                this.mode = 'SCATTER'; // SCATTER, CHASE, FRIGHTENED, EATEN
+                
+                this.visualRadius = TILE_SIZE / 2 - 1.5;
+                this.frightenedTimer = 0;
+            }
+
+            update(dt) {
+                // Hız modu ayarlamaları
+                let currentSpeed = this.speed;
+                if (this.mode === 'FRIGHTENED') {
+                    currentSpeed = this.speed * 0.55; // Yavaş
+                } else if (this.mode === 'EATEN') {
+                    currentSpeed = this.speed * 3.5; // Çok hızlı (evine dönüyor)
+                }
+
+                // Grid üstünde ise yeni yöne karar ver
+                if (this.progress === 0.0) {
+                    // Evin içinde ise kapıya doğru gitmeye çalışsın
+                    if (currentMap[this.gridY][this.gridX] === 5 && this.mode !== 'EATEN') {
+                        // Kapı (9,9) yönüne doğru hareket et
+                        this.dir = this.getDirectionTowards(9, 9);
+                    } else if (this.gridX === 9 && this.gridY === 10 && this.mode !== 'EATEN') {
+                        // Kapıdan yukarı çıkış
+                        this.dir = DIR_UP;
+                    } else {
+                        // Normal labirent yön bulma AI
+                        this.dir = this.chooseNextDirection();
+                    }
+                }
+
+                // İlerlemeyi güncelle
+                this.progress += currentSpeed * (dt / 1000);
+                
+                if (this.progress >= 1.0) {
+                    this.gridX += this.dir.x;
+                    this.gridY += this.dir.y;
+                    
+                    // Wraparound tüneli
+                    if (this.gridX < 0) this.gridX = GRID_COLS - 1;
+                    if (this.gridX >= GRID_COLS) this.gridX = 0;
+
+                    this.progress = 0.0;
+                    this.x = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                    this.y = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+
+                    // Eğer evine ulaştıysa ve yenmiş durumdaysa normal moda geri dön
+                    if (this.mode === 'EATEN' && (this.gridY === 10 || this.gridY === 9) && this.gridX === 9) {
+                        this.mode = 'SCATTER';
+                        this.speed = 1.6;
+                    }
+                } else {
+                    const startX = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                    const startY = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+                    
+                    let targetGridX = this.gridX + this.dir.x;
+                    let targetGridY = this.gridY + this.dir.y;
+                    
+                    if (targetGridX < 0) targetGridX = GRID_COLS - 1;
+                    if (targetGridX >= GRID_COLS) targetGridX = 0;
+
+                    const endX = targetGridX * TILE_SIZE + TILE_SIZE / 2;
+                    const endY = targetGridY * TILE_SIZE + TILE_SIZE / 2;
+
+                    if (Math.abs(startX - endX) > TILE_SIZE * 2) {
+                        if (this.dir === DIR_LEFT) {
+                            this.x = startX - (TILE_SIZE * this.progress);
+                            if (this.x < 0) this.x += GRID_COLS * TILE_SIZE;
+                        } else {
+                            this.x = startX + (TILE_SIZE * this.progress);
+                            if (this.x >= GRID_COLS * TILE_SIZE) this.x -= GRID_COLS * TILE_SIZE;
+                        }
+                    } else {
+                        this.x = startX + (endX - startX) * this.progress;
+                        this.y = startY + (endY - startY) * this.progress;
+                    }
+                }
+            }
+
+            // Gözler için en yakın hedef hücresine göre yön bulma
+            getDirectionTowards(tx, ty) {
+                const candidates = [DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT];
+                let bestDir = DIR_UP;
+                let minDist = Infinity;
+                
+                candidates.forEach(c => {
+                    let nextX = this.gridX + c.x;
+                    if (nextX < 0) nextX = GRID_COLS - 1;
+                    if (nextX >= GRID_COLS) nextX = 0;
+                    
+                    const nextY = this.gridY + c.y;
+                    if (nextY >= 0 && nextY < GRID_ROWS && currentMap[nextY][nextX] !== 1) {
+                        const dist = Math.hypot(nextX - tx, nextY - ty);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            bestDir = c;
+                        }
+                    }
+                });
+                return bestDir;
+            }
+
+            chooseNextDirection() {
+                // Hayaletin gitmeyi planladığı sonraki hücre
+                const nextGridX = this.gridX + this.dir.x;
+                const nextGridY = this.gridY + this.dir.y;
+
+                // Geçerli alternatif yönlerin listesini oluştur (180 derece tersine gidemez)
+                const candidates = [];
+                const directions = [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT];
+
+                directions.forEach(d => {
+                    // 180 derece geriye gidemez kuralı
+                    if (d.x === -this.dir.x && d.y === -this.dir.y) return;
+
+                    const checkX = nextGridX + d.x;
+                    const checkY = nextGridY + d.y;
+
+                    if (this.isValidMove(checkX, checkY)) {
+                        candidates.push(d);
+                    }
+                });
+
+                if (candidates.length === 0) {
+                    // Sıkışma durumunda (ki olmamalı) geriye dönsün
+                    return { x: -this.dir.x, y: -this.dir.y, name: 'REVERSE' };
+                }
+
+                if (this.mode === 'FRIGHTENED') {
+                    // Korkmuş modda rastgele geçerli bir yön seç
+                    return candidates[Math.floor(Math.random() * candidates.length)];
+                }
+
+                // CHASE veya SCATTER/EATEN modunda en uygun hedef hücresine göre yön seç
+                const target = this.getTargetCell();
+                let bestDir = candidates[0];
+                let minDistance = Infinity;
+
+                candidates.forEach(d => {
+                    // Aday yöne bir adım atarak mesafeyi ölç
+                    let checkX = nextGridX + d.x;
+                    if (checkX < 0) checkX = GRID_COLS - 1;
+                    if (checkX >= GRID_COLS) checkX = 0;
+                    
+                    const checkY = nextGridY + d.y;
+                    const dist = Math.hypot(checkX - target.x, checkY - target.y);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestDir = d;
+                    }
+                });
+
+                return bestDir;
+            }
+
+            isValidMove(gx, gy) {
+                let checkX = gx;
+                if (checkX < 0) checkX = GRID_COLS - 1;
+                if (checkX >= GRID_COLS) checkX = 0;
+
+                if (gy < 0 || gy >= GRID_ROWS) return false;
+                
+                const val = currentMap[gy][checkX];
+                if (val === 1) return false; // Duvar
+                if (val === 4 && this.mode !== 'EATEN') return false; // Kapıdan sadece yenmiş hayaletler geçip geri dönebilir
+                return true;
+            }
+
+            getTargetCell() {
+                if (this.mode === 'EATEN') {
+                    // Eaten modda doğrudan hayalet evi kapısını hedefler
+                    return { x: 9, y: 10 };
+                }
+
+                if (this.mode === 'SCATTER') {
+                    return this.scatterTarget;
+                }
+
+                // CHASE (Kovalama) Modu Yapay Zekası
+                switch(this.name) {
+                    case 'Blinky': // Kırmızı: Doğrudan Obur'un konumunu hedefler
+                        return { x: obur.gridX, y: obur.gridY };
+                    
+                    case 'Pinky': // Pembe: Obur'un 4 adım ilerisini hedefler
+                        return { 
+                            x: obur.gridX + obur.dir.x * 4, 
+                            y: obur.gridY + obur.dir.y * 4 
+                        };
+                    
+                    case 'Inky': // Mavi: Obur'un 2 adım önü ile Blinky'nin konumu arasındaki vektörün iki katını hedefler
+                        const blinky = ghosts.find(g => g.name === 'Blinky') || this;
+                        const refX = obur.gridX + obur.dir.x * 2;
+                        const refY = obur.gridY + obur.dir.y * 2;
+                        return {
+                            x: refX + (refX - blinky.gridX),
+                            y: refY + (refY - blinky.gridY)
+                        };
+                    
+                    case 'Clyde': // Turuncu: Obur'a uzaksa onu hedefler, 8 birimden yakınsa sol alt köşeye döner
+                        const dist = Math.hypot(this.gridX - obur.gridX, this.gridY - obur.gridY);
+                        if (dist > 8) {
+                            return { x: obur.gridX, y: obur.gridY };
+                        } else {
+                            return this.scatterTarget;
+                        }
+                }
+                return { x: 9, y: 10 };
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                const r = this.visualRadius;
+
+                if (this.mode === 'EATEN') {
+                    // Sadece Gözleri Çiz
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#fff';
+                    this.drawEyes(r);
+                } else if (this.mode === 'FRIGHTENED') {
+                    // Korkmuş Mavi / Büyüteçli Düşman
+                    let isBlinking = false;
+                    if (powerPelletTimer < 3000) { // Son 3 saniye yanıp söner
+                        isBlinking = Math.floor(powerPelletTimer / 250) % 2 === 0;
+                    }
+
+                    const ghostColor = isBlinking ? '#ffffff' : '#0011ff';
+                    const detailColor = isBlinking ? '#ff003c' : '#ffff00';
+
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = ghostColor;
+                    
+                    // Hayalet Gövdesi
+                    ctx.fillStyle = ghostColor;
+                    ctx.beginPath();
+                    ctx.arc(0, -r/6, r, Math.PI, 0, false); // Kafa dairesi
+                    ctx.lineTo(r, r);
+                    // Dalgalı Etek
+                    const waveHeight = r / 4;
+                    ctx.lineTo(r - r/3, r - waveHeight);
+                    ctx.lineTo(r - 2*r/3, r);
+                    ctx.lineTo(0, r - waveHeight);
+                    ctx.lineTo(-2*r/3, r);
+                    ctx.lineTo(-r + r/3, r - waveHeight);
+                    ctx.lineTo(-r, r);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Korkmuş Şaşkın Gözler
+                    ctx.fillStyle = detailColor;
+                    ctx.beginPath();
+                    ctx.arc(-r/3, -r/4, r/6, 0, Math.PI*2);
+                    ctx.arc(r/3, -r/4, r/6, 0, Math.PI*2);
+                    ctx.fill();
+
+                    // Korkmuş Ağız (Zikzak)
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(-r/2, r/3);
+                    ctx.lineTo(-r/4, r/6);
+                    ctx.lineTo(0, r/3);
+                    ctx.lineTo(r/4, r/6);
+                    ctx.lineTo(r/2, r/3);
+                    ctx.stroke();
+                } else {
+                    // Normal Hayalet Çizimi
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = this.color;
+                    
+                    // Gövde
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(0, -r/6, r, Math.PI, 0, false);
+                    ctx.lineTo(r, r);
+                    const waveHeight = r / 4;
+                    ctx.lineTo(r - r/3, r - waveHeight);
+                    ctx.lineTo(r - 2*r/3, r);
+                    ctx.lineTo(0, r - waveHeight);
+                    ctx.lineTo(-2*r/3, r);
+                    ctx.lineTo(-r + r/3, r - waveHeight);
+                    ctx.lineTo(-r, r);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Göz Yuvaları (Beyaz)
+                    this.drawEyes(r);
+                }
+
+                ctx.restore();
+            }
+
+            drawEyes(r) {
+                // Gözler Obur'un yönüne doğru bakar
+                let lookX = 0;
+                let lookY = 0;
+                if (this.dir === DIR_LEFT) lookX = -2;
+                else if (this.dir === DIR_RIGHT) lookX = 2;
+                else if (this.dir === DIR_UP) lookY = -2;
+                else if (this.dir === DIR_DOWN) lookY = 2;
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-r/3, -r/4, r/3.5, 0, Math.PI * 2);
+                ctx.arc(r/3, -r/4, r/3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Göz Bebekleri (Mavi)
+                ctx.fillStyle = '#0055ff';
+                ctx.beginPath();
+                ctx.arc(-r/3 + lookX, -r/4 + lookY, r/6, 0, Math.PI * 2);
+                ctx.arc(r/3 + lookX, -r/4 + lookY, r/6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const ghosts = [
+            new Ghost('Blinky', '#ff003c', { x: GRID_COLS - 2, y: 1 }),     // Kırmızı - Sağ Üst
+            new Ghost('Pinky', '#ff00ff', { x: 1, y: 1 }),                 // Pembe - Sol Üst
+            new Ghost('Inky', '#00f0ff', { x: GRID_COLS - 2, y: GRID_ROWS - 2 }), // Mavi - Sağ Alt
+            new Ghost('Clyde', '#ff9900', { x: 1, y: GRID_ROWS - 2 })       // Turuncu - Sol Alt
+        ];
+
+        // --- DİNAMİK EFEKTLER (PARTICLES & TEXTS) ---
+        function createSparks(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 2.5 + 1.0;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: color,
+                    life: 1.0,
+                    decay: Math.random() * 0.04 + 0.02,
+                    size: Math.random() * 2.5 + 1
+                });
+            }
+        }
+
+        function updateSparks(dt) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawSparks() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function addFloatingScore(x, y, value) {
+            floatingScores.push({
+                x: x,
+                y: y,
+                text: `+${value}`,
+                life: 1.0,
+                decay: 0.02
+            });
+        }
+
+        function updateFloatingScores() {
+            for (let i = floatingScores.length - 1; i >= 0; i--) {
+                const fs = floatingScores[i];
+                fs.y -= 0.6; // Yavaşça yukarı kaydır
+                fs.life -= fs.decay;
+                if (fs.life <= 0) {
+                    floatingScores.splice(i, 1);
+                }
+            }
+        }
+
+        // --- DUVAR ÇİZİM METODU (GLOWING CELL) ---
+        function drawWall(x, y) {
+            const pad = 3;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'rgba(0, 85, 255, 0.6)';
+            ctx.strokeStyle = '#0055ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // Eğer bitişik komşular da duvar ise birleşik duvar çizgisi çizelim
+            const checkX = x / TILE_SIZE;
+            const checkY = y / TILE_SIZE;
+
+            const up = checkY > 0 && currentMap[checkY - 1][checkX] === 1;
+            const down = checkY < GRID_ROWS - 1 && currentMap[checkY + 1][checkX] === 1;
+            const left = checkX > 0 && currentMap[checkY][checkX - 1] === 1;
+            const right = checkX < GRID_COLS - 1 && currentMap[checkY][checkX + 1] === 1;
+
+            if (up && down && left && right) {
+                // Merkez kavşak duvarı
+                ctx.rect(x + pad, y + pad, TILE_SIZE - pad*2, TILE_SIZE - pad*2);
+            } else {
+                ctx.roundRect(x + pad, y + pad, TILE_SIZE - pad*2, TILE_SIZE - pad*2, 4);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // --- GÜÇ YEMİ TETİKLEME ---
+        function triggerPowerPellet() {
+            powerPelletActive = true;
+            powerPelletTimer = 7000; // 7 Saniye güç aktif
+            ghostsEatenCount = 0;
+            ghosts.forEach(g => {
+                if (g.mode !== 'EATEN') {
+                    g.mode = 'FRIGHTENED';
+                    // Korkmuş modda yönünü hemen tersine çevirsin
+                    g.dir = { x: -g.dir.x, y: -g.dir.y };
+                }
+            });
+        }
+
+        // --- BÖLÜM KONTROL VE YEM BİTME DURUMU ---
+        function checkWin() {
+            // Haritada yem (2) veya büyük yem (3) kaldı mı?
+            let itemsLeft = 0;
+            for(let r = 0; r < GRID_ROWS; r++) {
+                for(let c = 0; c < GRID_COLS; c++) {
+                    if (currentMap[r][c] === 2 || currentMap[r][c] === 3) {
+                        itemsLeft++;
+                    }
+                }
+            }
+
+            if (itemsLeft === 0) {
+                gameState = 'NEXT_STAGE';
+                audio.stopSiren();
+                stageClearScreen.classList.add('active');
+            }
+        }
+
+        // --- EKRAN TEMİZLEME VE YENİDEN YÜKLEME ---
+        function nextStage() {
+            // Yemleri yeniden doldur, hayaletlerin hızını artır
+            initMap();
+            obur.reset();
+            ghosts.forEach(g => {
+                g.reset();
+                g.speed += 0.2; // Bir sonraki aşama daha zor
+            });
+            gameState = 'PLAYING';
+            audio.playStartMelody();
+            audio.startSiren();
+            stageClearScreen.classList.remove('active');
+        }
+
+        // --- BAŞLANGIÇ SETUP ---
+        function initMap() {
+            currentMap = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                currentMap.push([...mazeGrid[r]]);
+            }
+        }
+
+        function renderMap() {
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const val = currentMap[r][c];
+                    const x = c * TILE_SIZE;
+                    const y = r * TILE_SIZE;
+
+                    if (val === 1) {
+                        // Duvar
+                        drawWall(x, y);
+                    } else if (val === 2) {
+                        // Normal Sarı Yem
+                        ctx.save();
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = '#ffff00';
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.85)';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    } else if (val === 3) {
+                        // Büyük Güç Yemi (Power Pellet)
+                        // Yanıp sönme efekti için zamanlama
+                        const sizePulse = 5 + Math.sin(Date.now() / 100) * 1.5;
+                        ctx.save();
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#00ffcc';
+                        ctx.fillStyle = '#00ffcc';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, sizePulse, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    } else if (val === 4) {
+                        // Hayalet Evi Kapısı (Neon Pembe İnce Çizgi)
+                        ctx.save();
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#ff00c8';
+                        ctx.strokeStyle = '#ff00c8';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + TILE_SIZE / 2);
+                        ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE / 2);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        // --- HAYALET ÇARPIŞMA KONTROLÜ ---
+        function checkCollisions() {
+            ghosts.forEach(g => {
+                // Obur ile hayalet arasındaki mesafe çarpışma sınırındaysa
+                const dist = Math.hypot(obur.x - g.x, obur.y - g.y);
+                if (dist < TILE_SIZE - 2) {
+                    if (g.mode === 'FRIGHTENED') {
+                        // Obur Hayaleti Yer!
+                        g.mode = 'EATEN';
+                        ghostsEatenCount++;
+                        
+                        const scoreGained = ghostsEatenCount * 200;
+                        score += scoreGained;
+                        scoreValEl.textContent = score;
+                        
+                        addFloatingScore(g.x, g.y, scoreGained);
+                        createSparks(g.x, g.y, '#ffffff', 25);
+                        audio.playEatGhost();
+                    } else if (g.mode !== 'EATEN') {
+                        // Hayalet Obur'u Yakalar! Ölüm Moduna Geçiş
+                        handleDeath();
+                    }
+                }
+            });
+        }
+
+        // --- OYUNCU ÖLÜMÜ KONTROLÜ ---
+        function handleDeath() {
+            gameState = 'DEATH_ANIM';
+            audio.playDeath();
+            createSparks(obur.x, obur.y, '#ffff00', 40);
+            
+            // Canı düş
+            lives--;
+            updateLivesUI();
+
+            setTimeout(() => {
+                if (lives <= 0) {
+                    // Oyun Bitti
+                    gameState = 'GAMEOVER';
+                    finalScoreEl.textContent = score;
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        localStorage.setItem('siberOburBestScore', bestScore);
+                        bestScoreValEl.textContent = bestScore;
+                    }
+                    
+                    gameOverScreen.classList.add('active');
+                } else {
+                    // Pozisyonları sıfırla ve can kurtar
+                    obur.reset();
+                    ghosts.forEach(g => g.reset());
+                    gameState = 'PLAYING';
+                    audio.startSiren();
+                }
+            }, 1000);
+        }
+
+        function updateLivesUI() {
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const icon = document.createElement('div');
+                icon.className = 'life-icon';
+                livesContainer.appendChild(icon);
+            }
+        }
+
+        // --- OYUN GÜNCELLEME VE DÖNGÜSÜ ---
+        function update(dt) {
+            if (gameState === 'PLAYING') {
+                // Güç modu süresini azalt
+                if (powerPelletActive) {
+                    powerPelletTimer -= dt;
+                    if (powerPelletTimer <= 0) {
+                        powerPelletActive = false;
+                        ghosts.forEach(g => {
+                            if (g.mode === 'FRIGHTENED') g.mode = 'SCATTER';
+                        });
+                    }
+                }
+
+                obur.update(dt);
+                ghosts.forEach(g => g.update(dt));
+                checkCollisions();
+            }
+
+            updateSparks(dt);
+            updateFloatingScores();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Haritayı çiz
+            renderMap();
+
+            // Havada süzülen skor metinlerini çiz
+            floatingScores.forEach(fs => {
+                ctx.save();
+                ctx.globalAlpha = fs.life;
+                ctx.fillStyle = '#00ffcc';
+                ctx.font = "800 12px 'Outfit'";
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#00ffcc';
+                ctx.fillText(fs.text, fs.x - 10, fs.y);
+                ctx.restore();
+            });
+
+            // Parçacıkları çiz
+            drawSparks();
+
+            // Karakterleri çiz (Ölüm anında Obur'un parlayan patlama çizimleri için gizle)
+            if (gameState !== 'DEATH_ANIM') {
+                obur.draw();
+                ghosts.forEach(g => g.draw());
+            }
+        }
+
+        function loop(timestamp) {
+            let dt = timestamp - lastTime;
+            if (isNaN(dt)) dt = 0;
+            lastTime = timestamp;
+
+            // Framerate limitleme
+            if (dt > 100) dt = 100;
+
+            update(dt);
+            draw();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- INPUT KONTROLLERİ ---
+        function changeDirection(newDir) {
+            if (gameState !== 'PLAYING') return;
+            audio.resume();
+
+            // Hemen ters yöne dönmeye çalışıyorsa ara bekleme yapmadan dön
+            if ((newDir === DIR_UP && obur.dir === DIR_DOWN) ||
+                (newDir === DIR_DOWN && obur.dir === DIR_UP) ||
+                (newDir === DIR_LEFT && obur.dir === DIR_RIGHT) ||
+                (newDir === DIR_RIGHT && obur.dir === DIR_LEFT)) {
+                obur.dir = newDir;
+                obur.nextDir = DIR_NONE;
+                obur.progress = 1.0 - obur.progress; // Yön değiştirirken ilerlemeyi tersine çevir
+                // Obur'un hücresini güncelle
+                obur.gridX += obur.dir.x;
+                obur.gridY += obur.dir.y;
+            } else {
+                // Normal tamponlama (input buffering)
+                obur.nextDir = newDir;
+            }
+        }
+
+        // Klavye Kontrolleri
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    changeDirection(DIR_UP);
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    changeDirection(DIR_DOWN);
+                    e.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    changeDirection(DIR_LEFT);
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    changeDirection(DIR_RIGHT);
+                    e.preventDefault();
+                    break;
+            }
+        });
+
+        // Mobil D-Pad Kontrolleri
+        document.getElementById('btnUp').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(DIR_UP); });
+        document.getElementById('btnDown').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(DIR_DOWN); });
+        document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(DIR_LEFT); });
+        document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(DIR_RIGHT); });
+
+        // Mouse tıklama desteği (masaüstü testleri için)
+        document.getElementById('btnUp').addEventListener('mousedown', () => changeDirection(DIR_UP));
+        document.getElementById('btnDown').addEventListener('mousedown', () => changeDirection(DIR_DOWN));
+        document.getElementById('btnLeft').addEventListener('mousedown', () => changeDirection(DIR_LEFT));
+        document.getElementById('btnRight').addEventListener('mousedown', () => changeDirection(DIR_RIGHT));
+
+        // --- BUTON İŞLEVLERİ VE BAŞLANGIÇ ---
+        function startGame() {
+            score = 0;
+            lives = 3;
+            scoreValEl.textContent = score;
+            updateLivesUI();
+            
+            initMap();
+            obur.reset();
+            ghosts.forEach(g => g.reset());
+            
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            
+            gameState = 'PLAYING';
+            audio.playStartMelody();
+            audio.startSiren();
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('nextStageBtn').addEventListener('click', nextStage);
+
+        // İlk ekran çizimi
+        initMap();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
