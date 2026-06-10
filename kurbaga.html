@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Kurbağa // Neon Grid Hopper</title>
+    <!-- Outfit Font from Google Fonts for a premium look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #02020a;
+            --primary-glow: #39ff14; /* Neon Green (Frog) */
+            --danger-glow: #ff007f;  /* Neon Pink (Obstacles) */
+            --accent-glow: #00f0ff;  /* Neon Cyan (Logs) */
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --container-bg: rgba(6, 6, 18, 0.85);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0d0d26 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* CRT Scanlines and flicker effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            width: min(95vw, 430px);
+        }
+
+        /* Shake animation for crashes */
+        .shake {
+            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+            40%, 60% { transform: translate3d(5px, 0, 0); }
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--accent-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+            text-shadow: 0 0 25px rgba(57, 255, 20, 0.25);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .score-box .stat-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
+        }
+
+        .lives-box {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            height: 24px;
+        }
+
+        .life-icon {
+            width: 14px;
+            height: 14px;
+            background: var(--primary-glow);
+            border-radius: 50% 50% 40% 40%;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.6);
+            position: relative;
+        }
+
+        .life-icon::before, .life-icon::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .life-icon::before { left: 2px; }
+        .life-icon::after { right: 2px; }
+
+        .best-box .stat-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+        }
+
+        /* Time Limit Bar */
+        .timer-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .timer-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--primary-glow), var(--accent-glow));
+            box-shadow: 0 0 10px var(--primary-glow);
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+
+        .timer-fill.warning {
+            background: var(--danger-glow);
+            box-shadow: 0 0 10px var(--danger-glow);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: #010105;
+            width: 100%;
+            max-width: 390px;
+            aspect-ratio: 13 / 14;
+        }
+
+        .hint {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(3, 1, 10, 0.96);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(57, 255, 20, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            font-weight: 400;
+            line-height: 1.5;
+            max-width: 310px;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--danger-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(57, 255, 20, 0.15), rgba(0, 240, 255, 0.15));
+            border: 1px solid rgba(57, 255, 20, 0.4);
+            color: #ffffff;
+            padding: 13px 32px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(57, 255, 20, 0.3), rgba(0, 240, 255, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(57, 255, 20, 0.3);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Mobile D-Pad Controls */
+        .mobile-controls {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .dpad-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dpad-btn {
+            width: 52px;
+            height: 52px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .dpad-btn:active {
+            background: rgba(57, 255, 20, 0.2);
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 600px) {
+            .mobile-controls {
+                display: flex;
+            }
+            .wrapper {
+                padding: 16px;
+                border-radius: 20px;
+                gap: 12px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Kurbağa</h1>
+        
+        <div class="stats-panel">
+            <div class="stat-box score-box">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Canlar</span>
+                <div class="lives-box" id="livesContainer">
+                    <div class="life-icon"></div>
+                    <div class="life-icon"></div>
+                    <div class="life-icon"></div>
+                </div>
+            </div>
+            <div class="stat-box best-box">
+                <span class="stat-label">En İyi</span>
+                <span class="stat-value" id="bestScore">0</span>
+            </div>
+        </div>
+
+        <div class="timer-container">
+            <div class="timer-fill" id="timerBar"></div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="390" height="420"></canvas>
+            
+            <!-- Start Screen -->
+            <div class="screen-overlay active" id="startScreen">
+                <h2>Siber Kurbağa</h2>
+                <p>Otoyoldaki hızla akan <span>siber araçlardan</span> kaçın ve nehirdeki <span>veri platformlarına</span> tutunarak güvenli şekilde ev yuvalarına ulaşın!</p>
+                <button class="btn" id="startBtn">Bağlantıyı Kur</button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 style="color: var(--danger-glow); text-shadow: 0 0 25px rgba(255,0,127,0.6);">Sistem Çöktü</h2>
+                <p>Toplam Skorunuz: <span id="finalScore">0</span></p>
+                <button class="btn" id="restartBtn">Yeniden Bağlan</button>
+            </div>
+
+            <!-- Stage Clear Screen -->
+            <div class="screen-overlay" id="stageClearScreen">
+                <h2>Bant Genişliği Temizlendi</h2>
+                <p style="color: var(--accent-glow);">Tüm yuvalar dolduruldu. Hız artırılıyor...</p>
+                <button class="btn" id="nextStageBtn">Sonraki Aşamaya Geç</button>
+            </div>
+        </div>
+
+        <div class="hint">Yönlendirmek için klavyede <b>Yön Tuşları</b> veya <b>WASD</b> tuşlarını kullanın.</div>
+
+        <!-- Mobile Touch Controls -->
+        <div class="mobile-controls">
+            <div class="dpad-row">
+                <div class="dpad-btn" id="btnUp">↑</div>
+            </div>
+            <div class="dpad-row">
+                <div class="dpad-btn" id="btnLeft">←</div>
+                <div class="dpad-btn" id="btnDown">↓</div>
+                <div class="dpad-btn" id="btnRight">→</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- WEB AUDIO API TABANLI SES SENTEZLEYİCİ ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.masterVolume = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+                this.masterVolume = this.ctx.createGain();
+                this.masterVolume.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                this.masterVolume.connect(this.ctx.destination);
+            }
+
+            resume() {
+                this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playHop() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.exponentialRampToValueAtTime(700, now + 0.08);
+                
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                
+                osc.start(now);
+                osc.stop(now + 0.08);
+            }
+
+            playCrash() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                // Downward bass sweep
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(30, now + 0.5);
+                
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+                
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(now);
+                osc.stop(now + 0.5);
+
+                // Crash noise explosion
+                const bufferSize = this.ctx.sampleRate * 0.5;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(600, now);
+                filter.frequency.linearRampToValueAtTime(40, now + 0.5);
+                
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.15, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+                
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(this.masterVolume);
+                
+                noise.start(now);
+                noise.stop(now + 0.5);
+            }
+
+            playSplash() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+
+                // River splash noise
+                const bufferSize = this.ctx.sampleRate * 0.45;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(500, now);
+                filter.frequency.exponentialRampToValueAtTime(250, now + 0.4);
+                
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterVolume);
+                
+                noise.start(now);
+                noise.stop(now + 0.45);
+            }
+
+            playGoal() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Positive chiptune sound
+                const notes = [440, 554, 659, 880];
+                notes.forEach((f, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.08);
+                    
+                    gain.gain.setValueAtTime(0.08, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.15);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.masterVolume);
+                    
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+
+            playClear() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Success melody
+                const notes = [
+                    { f: 523.25, d: 0.1 }, // C5
+                    { f: 587.33, d: 0.1 }, // D5
+                    { f: 659.25, d: 0.1 }, // E5
+                    { f: 783.99, d: 0.15 }, // G5
+                    { f: 659.25, d: 0.1 }, // E5
+                    { f: 783.99, d: 0.3 }  // G5
+                ];
+                let accum = 0;
+                notes.forEach(n => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(n.f, now + accum);
+                    
+                    gain.gain.setValueAtTime(0.1, now + accum);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + accum + n.d - 0.02);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.masterVolume);
+                    
+                    osc.start(now + accum);
+                    osc.stop(now + accum + n.d);
+                    accum += n.d;
+                });
+            }
+        }
+
+        const audio = new AudioEngine();
+
+        // --- HARİTA VE GRID YENİLEME DETAYLARI ---
+        const TILE_SIZE = 30;
+        const GRID_COLS = 13;
+        const GRID_ROWS = 14;
+
+        // Grid Satır Sınıflandırmaları
+        const ROW_GOALS = 0;
+        const ROW_BANK_TOP = 1;
+        const RIVER_START = 2;
+        const RIVER_END = 6;
+        const ROW_MEDIAN = 7;
+        const HIGHWAY_START = 8;
+        const HIGHWAY_END = 12;
+        const ROW_START = 13;
+
+        // Yönler
+        const DIR_UP = { x: 0, y: -1, angle: 0 };
+        const DIR_DOWN = { x: 0, y: 1, angle: Math.PI };
+        const DIR_LEFT = { x: -1, y: 0, angle: -Math.PI / 2 };
+        const DIR_RIGHT = { x: 1, y: 0, angle: Math.PI / 2 };
+
+        // --- OYUN PARAMETRELERİ ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreValEl = document.getElementById('score');
+        const bestScoreValEl = document.getElementById('bestScore');
+        const timerBar = document.getElementById('timerBar');
+        const livesContainer = document.getElementById('livesContainer');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const stageClearScreen = document.getElementById('stageClearScreen');
+        const finalScoreEl = document.getElementById('finalScore');
+        const gameWrapper = document.getElementById('gameWrapper');
+
+        let score = 0;
+        let bestScore = localStorage.getItem('siberKurbagaBestScore') || 0;
+        let lives = 3;
+        let gameState = 'START'; // START, PLAYING, DYING, GAMEOVER, CLEAR
+        let lastTime = 0;
+
+        let timeLimit = 40.0; // Seviye başına 40 saniye süre limiti
+        let timeRemaining = 40.0;
+        let speedMultiplier = 1.0;
+
+        bestScoreValEl.textContent = bestScore;
+
+        // Hedef Yuvaların Durumları (5 Adet Yuva: Sütun indices 2, 4, 6, 8, 10)
+        let savedGoals = [false, false, false, false, false];
+
+        // Parçacıklar listesi (splash ve crash patlamaları)
+        let particles = [];
+
+        // --- OYUNCU (KURBAĞA) SINIFI ---
+        class Kurbaga {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Kurbağa en alt satırın ortasında başlar (Satır 13, Sütun 6)
+                this.gridX = 6;
+                this.gridY = ROW_START;
+                this.x = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                this.y = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+
+                this.targetX = this.x;
+                this.targetY = this.y;
+                
+                this.dir = DIR_UP;
+                this.visualRadius = 11;
+                
+                this.jumpProgress = 1.0; // 0.0 -> 1.0 zıplama yayı interpolasyonu
+                this.jumpSpeed = 12.0;   // Zıplama hızı çarpanı
+            }
+
+            hop(d) {
+                if (gameState !== 'PLAYING' || this.jumpProgress < 1.0) return;
+
+                audio.playHop();
+                this.dir = d;
+                
+                // Hedef hücresini hesapla
+                let nextX = this.gridX + d.x;
+                let nextY = this.gridY + d.y;
+
+                // Ekran sınırları kontrolü
+                if (nextX >= 0 && nextX < GRID_COLS && nextY >= 0 && nextY < GRID_ROWS) {
+                    // Ev yuvası kontrolleri
+                    if (nextY === ROW_GOALS) {
+                        const goalIdx = this.getGoalIndex(nextX);
+                        if (goalIdx !== -1) {
+                            if (savedGoals[goalIdx]) {
+                                // Dolu yuvaya giremez, engelle
+                                return;
+                            }
+                        } else {
+                            // Duvardır, girilemez
+                            return;
+                        }
+                    }
+
+                    this.gridX = nextX;
+                    this.gridY = nextY;
+                    this.targetX = this.gridX * TILE_SIZE + TILE_SIZE / 2;
+                    this.targetY = this.gridY * TILE_SIZE + TILE_SIZE / 2;
+                    this.jumpProgress = 0.0;
+                }
+            }
+
+            getGoalIndex(gx) {
+                if (gx === 2) return 0;
+                if (gx === 4) return 1;
+                if (gx === 6) return 2;
+                if (gx === 8) return 3;
+                if (gx === 10) return 4;
+                return -1;
+            }
+
+            update(dt) {
+                // Zıplama animasyon interpolasyonu
+                if (this.jumpProgress < 1.0) {
+                    this.jumpProgress += this.jumpSpeed * (dt / 1000);
+                    if (this.jumpProgress >= 1.0) {
+                        this.jumpProgress = 1.0;
+                        this.x = this.targetX;
+                        this.y = this.targetY;
+
+                        // Hedefe ulaşıp ulaşmadığını kontrol et
+                        if (this.gridY === ROW_GOALS) {
+                            const goalIdx = this.getGoalIndex(this.gridX);
+                            if (goalIdx !== -1 && !savedGoals[goalIdx]) {
+                                saveFrog(goalIdx);
+                            }
+                        }
+                    } else {
+                        // Koordinatları yumuşakça kaydır
+                        const startX = this.x;
+                        const startY = this.y;
+                        this.x = startX + (this.targetX - startX) * this.jumpProgress;
+                        this.y = startY + (this.targetY - startY) * this.jumpProgress;
+                    }
+                }
+
+                // Nehir üstünde sürüklenme mantığı
+                if (gameState === 'PLAYING' && this.jumpProgress === 1.0 && this.gridY >= RIVER_START && this.gridY <= RIVER_END) {
+                    const activeLane = riverLanes[this.gridY - RIVER_START];
+                    this.x += activeLane.speed * speedMultiplier * (dt / 1000) * TILE_SIZE;
+                    this.targetX = this.x;
+                    this.gridX = Math.round((this.x - TILE_SIZE / 2) / TILE_SIZE);
+
+                    // Ekran dışına sürüklenirse boğulma tetikle
+                    if (this.x < 0 || this.x > canvas.width) {
+                        triggerDeath('splash');
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.dir.angle);
+
+                // Zıplarken kurbağayı havaya zıplıyor gibi ölçeklendirelim (Arcade 3D hissi)
+                let scale = 1.0;
+                if (this.jumpProgress < 1.0) {
+                    // Yay şeklinde yükselme (Parabolik zıplama derinliği)
+                    scale = 1.0 + Math.sin(this.jumpProgress * Math.PI) * 0.4;
+                }
+
+                ctx.scale(scale, scale);
+
+                // Neon Yeşil Kurbağa Çizimi
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = varColor('--primary-glow');
+                ctx.fillStyle = varColor('--primary-glow');
+
+                // Bacaklar
+                ctx.fillRect(-12, -8, 6, 6);
+                ctx.fillRect(6, -8, 6, 6);
+                ctx.fillRect(-12, 4, 5, 8);
+                ctx.fillRect(7, 4, 5, 8);
+
+                // Gövde
+                ctx.beginPath();
+                ctx.arc(0, 0, this.visualRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Gözler (Parlayan Beyaz + Kırmızı Göz Bebekleri)
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-5, -6, 3, 0, Math.PI * 2);
+                ctx.arc(5, -6, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(-5, -7, 1.5, 0, Math.PI * 2);
+                ctx.arc(5, -7, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        const kurbaga = new Kurbaga();
+
+        // --- OTOYOL ARACI VE ENGELLER ---
+        class Vehicle {
+            constructor(laneY, direction, speed, length, color, type) {
+                this.laneY = laneY; // Grid satırı
+                this.direction = direction; // 1 (sağ), -1 (sol)
+                this.speed = speed;
+                this.length = length; // Grid birimi uzunluk (1 veya 2)
+                this.color = color;
+                this.type = type; // 'cycle', 'truck', 'car', 'glider'
+                
+                this.w = length * TILE_SIZE - 4;
+                this.h = TILE_SIZE - 6;
+
+                // Başlangıç x koordinatı
+                if (direction === 1) {
+                    this.x = -this.w;
+                } else {
+                    this.x = canvas.width;
+                }
+                this.y = laneY * TILE_SIZE + (TILE_SIZE - this.h) / 2;
+            }
+
+            update(dt) {
+                this.x += this.direction * this.speed * speedMultiplier * (dt / 1000) * TILE_SIZE;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+
+                // Premium neon tasarımına sahip araç gövdeleri
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, this.w, this.h, 6);
+                ctx.fill();
+
+                // Kabin camları veya fütüristik çizgiler
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 0.5;
+
+                if (this.direction === 1) {
+                    // Sağa giden kabin camı önde
+                    ctx.fillRect(this.x + this.w - 12, this.y + 3, 8, this.h - 6);
+                } else {
+                    // Sola giden kabin camı önde
+                    ctx.fillRect(this.x + 4, this.y + 3, 8, this.h - 6);
+                }
+
+                ctx.restore();
+            }
+
+            isColliding(fx, fy, fr) {
+                // Kurbağa dairesel alanının, aracın dikdörtgeni ile çarpışma tespiti (AABB vs Circle)
+                const closestX = Math.max(this.x, Math.min(fx, this.x + this.w));
+                const closestY = Math.max(this.y, Math.min(fy, this.y + this.h));
+                const distanceX = fx - closestX;
+                const distanceY = fy - closestY;
+                const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+                return distanceSquared < (fr * fr - 2);
+            }
+        }
+
+        // --- NEHİR VERİ BLOKLARI (LOGS & PLATFORMS) ---
+        class Platform {
+            constructor(laneY, direction, speed, length, color, isSubmerging = false) {
+                this.laneY = laneY;
+                this.direction = direction;
+                this.speed = speed;
+                this.length = length;
+                this.color = color;
+                
+                this.w = length * TILE_SIZE;
+                this.h = TILE_SIZE - 2;
+
+                this.isSubmerging = isSubmerging;
+                this.submergeTimer = Math.random() * 3000; // Rastgele başlama fazı
+                this.isSubmerged = false;
+
+                if (direction === 1) {
+                    this.x = -this.w;
+                } else {
+                    this.x = canvas.width;
+                }
+                this.y = laneY * TILE_SIZE + 1;
+            }
+
+            update(dt) {
+                this.x += this.direction * this.speed * speedMultiplier * (dt / 1000) * TILE_SIZE;
+
+                // Batıp çıkma mantığı (periyodik olarak batar/çıkar)
+                if (this.isSubmerging) {
+                    this.submergeTimer += dt;
+                    // Her 3 saniyede bir durum değiştir
+                    const cycle = Math.floor(this.submergeTimer / 2000) % 2;
+                    this.isSubmerged = (cycle === 1);
+                }
+            }
+
+            draw() {
+                if (this.isSubmerged && this.isSubmerging) {
+                    // Batık iken hafif bir siluet göster veya hiç gösterme
+                    ctx.save();
+                    ctx.globalAlpha = 0.08;
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.roundRect(this.x, this.y, this.w, this.h, 4);
+                    ctx.stroke();
+                    ctx.restore();
+                    return;
+                }
+
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+
+                // Uyarı yanıp sönmesi (batmadan 800ms önce kırmızı-pembe yanıp söner)
+                if (this.isSubmerging) {
+                    const cycleTime = this.submergeTimer % 2000;
+                    if (cycleTime > 1200) {
+                        const flash = Math.floor(Date.now() / 150) % 2 === 0;
+                        if (flash) {
+                            ctx.shadowColor = varColor('--danger-glow');
+                            ctx.fillStyle = varColor('--danger-glow');
+                        }
+                    }
+                }
+
+                // Veri platformunu çiz
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, this.w, this.h, 4);
+                ctx.fill();
+
+                // Platform üzerindeki data çizgileri
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 0.3;
+                for (let i = 8; i < this.w; i += 16) {
+                    ctx.fillRect(this.x + i, this.y + 4, 3, this.h - 8);
+                }
+
+                ctx.restore();
+            }
+
+            isStandingOn(fx, fy) {
+                if (this.isSubmerged && this.isSubmerging) return false;
+                // Kurbağa merkezinin platform sınırları içerisinde olması
+                return (fx >= this.x && fx <= this.x + this.w && fy >= this.y && fy <= this.y + this.h);
+            }
+        }
+
+        // --- ŞERİT YAPILARI VE LANES YÖNETİMİ ---
+        const highwayLanes = [
+            // Row 8, 9, 10, 11, 12
+            { laneY: 8, direction: 1, speed: 2.2, spawnTimer: 0, interval: 1800, length: 1, color: '#ff007f', type: 'cycle' },
+            { laneY: 9, direction: -1, speed: 1.3, spawnTimer: 0, interval: 2600, length: 2, color: '#ffaa00', type: 'truck' },
+            { laneY: 10, direction: 1, speed: 1.6, spawnTimer: 0, interval: 2200, length: 1, color: '#ffff00', type: 'car' },
+            { laneY: 11, direction: -1, speed: 2.8, spawnTimer: 0, interval: 3200, length: 1, color: '#00ffff', type: 'glider' },
+            { laneY: 12, direction: 1, speed: 1.0, spawnTimer: 0, interval: 2900, length: 2, color: '#ffaa00', type: 'truck' }
+        ];
+
+        const riverLanes = [
+            // Row 2, 3, 4, 5, 6
+            { laneY: 2, direction: -1, speed: 1.2, spawnTimer: 0, interval: 2200, length: 3, color: '#00f0ff', submerge: false },
+            { laneY: 3, direction: 1, speed: 1.5, spawnTimer: 0, interval: 2600, length: 1, color: '#d500f9', submerge: true },
+            { laneY: 4, direction: -1, speed: 1.8, spawnTimer: 0, interval: 2000, length: 2, color: '#00f0ff', submerge: false },
+            { laneY: 5, direction: 1, speed: 1.0, spawnTimer: 0, interval: 3500, length: 4, color: '#00f0ff', submerge: false },
+            { laneY: 6, direction: -1, speed: 1.3, spawnTimer: 0, interval: 2400, length: 1, color: '#d500f9', submerge: true }
+        ];
+
+        let vehicles = [];
+        let platforms = [];
+
+        function spawnHighway(dt) {
+            highwayLanes.forEach(lane => {
+                lane.spawnTimer += dt;
+                if (lane.spawnTimer >= lane.interval) {
+                    lane.spawnTimer = 0;
+                    // Rastgele aralık değişimi (tıkanmayı önlemek için)
+                    lane.interval = (1600 + Math.random() * 1500);
+                    
+                    vehicles.push(new Vehicle(
+                        lane.laneY,
+                        lane.direction,
+                        lane.speed,
+                        lane.length,
+                        lane.color,
+                        lane.type
+                    ));
+                }
+            });
+        }
+
+        function spawnRiver(dt) {
+            riverLanes.forEach(lane => {
+                lane.spawnTimer += dt;
+                if (lane.spawnTimer >= lane.interval) {
+                    lane.spawnTimer = 0;
+                    lane.interval = (2000 + Math.random() * 2000);
+
+                    platforms.push(new Platform(
+                        lane.laneY,
+                        lane.direction,
+                        lane.speed,
+                        lane.length,
+                        lane.color,
+                        lane.submerge
+                    ));
+                }
+            });
+        }
+
+        // --- PARTICLE PATLAMA EFEKTLERİ ---
+        function createExplosion(x, y, color, type = 'crash') {
+            const count = type === 'crash' ? 30 : 15;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3.0 + 1.0;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - (type === 'splash' ? 1.5 : 0),
+                    color: color,
+                    life: 1.0,
+                    decay: Math.random() * 0.04 + 0.02,
+                    size: Math.random() * 3 + 1,
+                    type: type // 'crash', 'splash'
+                });
+            }
+        }
+
+        function updateParticles(dt) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                
+                // Su sıçramasında yerçekimi ekleyelim
+                if (p.type === 'splash') {
+                    p.vy += 0.15;
+                }
+
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        // --- SEVİYE VE CAN KAYBI YÖNETİMİ ---
+        function triggerDeath(reason) {
+            gameState = 'DYING';
+            if (reason === 'crash') {
+                audio.playCrash();
+                createExplosion(kurbaga.x, kurbaga.y, varColor('--danger-glow'), 'crash');
+                triggerScreenShake();
+            } else {
+                audio.playSplash();
+                createExplosion(kurbaga.x, kurbaga.y, '#00ffff', 'splash');
+            }
+
+            lives--;
+            updateLivesUI();
+
+            setTimeout(() => {
+                if (lives <= 0) {
+                    // Oyun Bitti
+                    gameState = 'GAMEOVER';
+                    finalScoreEl.textContent = score;
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        localStorage.setItem('siberKurbagaBestScore', bestScore);
+                        bestScoreValEl.textContent = bestScore;
+                    }
+                    gameOverScreen.classList.add('active');
+                } else {
+                    // Yeniden canlan
+                    kurbaga.reset();
+                    timeRemaining = timeLimit;
+                    gameState = 'PLAYING';
+                }
+            }, 1000);
+        }
+
+        function saveFrog(goalIdx) {
+            savedGoals[goalIdx] = true;
+            score += 200;
+            // Kalan süre bonusu ekle
+            score += Math.floor(timeRemaining * 10);
+            scoreValEl.textContent = score;
+            audio.playGoal();
+
+            // Parçacık kutlaması
+            createExplosion(kurbaga.x, kurbaga.y, varColor('--primary-glow'), 'splash');
+
+            // Kurbağayı başlangıç noktasına sıfırla
+            kurbaga.reset();
+            timeRemaining = timeLimit;
+
+            // Kazanma kontrolü (tüm yuvalar doldu mu?)
+            const won = savedGoals.every(g => g === true);
+            if (won) {
+                gameState = 'CLEAR';
+                audio.playClear();
+                stageClearScreen.classList.add('active');
+            }
+        }
+
+        function triggerScreenShake() {
+            gameWrapper.classList.add('shake');
+            setTimeout(() => {
+                gameWrapper.classList.remove('shake');
+            }, 200);
+        }
+
+        function updateLivesUI() {
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const icon = document.createElement('div');
+                icon.className = 'life-icon';
+                livesContainer.appendChild(icon);
+            }
+        }
+
+        function nextStage() {
+            savedGoals = [false, false, false, false, false];
+            speedMultiplier += 0.2; // Aşama zorluğunu artır
+            kurbaga.reset();
+            timeRemaining = timeLimit;
+            gameState = 'PLAYING';
+            stageClearScreen.classList.remove('active');
+        }
+
+        // --- HARİTA VE ELEMENTLERİN ÇİZİMİ ---
+        function renderGridMap() {
+            // 1. Otoyol Çizimi (Satır 8 - 12)
+            ctx.fillStyle = '#0a0a16';
+            ctx.fillRect(0, HIGHWAY_START * TILE_SIZE, canvas.width, (HIGHWAY_END - HIGHWAY_START + 1) * TILE_SIZE);
+            
+            // Otoyol şerit kesik çizgileri
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([15, 15]);
+            for (let i = HIGHWAY_START + 1; i <= HIGHWAY_END; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * TILE_SIZE);
+                ctx.lineTo(canvas.width, i * TILE_SIZE);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // 2. Siber Nehir Çizimi (Satır 2 - 6)
+            ctx.fillStyle = '#010118';
+            ctx.fillRect(0, RIVER_START * TILE_SIZE, canvas.width, (RIVER_END - RIVER_START + 1) * TILE_SIZE);
+
+            // Nehir akıntı çizgileri (farklı yönlerde neon mavilikler)
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+            ctx.lineWidth = 1.0;
+            for (let i = RIVER_START; i <= RIVER_END; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * TILE_SIZE);
+                ctx.lineTo(canvas.width, i * TILE_SIZE);
+                ctx.stroke();
+            }
+
+            // 3. Güvenli Alanlar ve Başlangıç Çizgileri
+            // Başlangıç satırı (Row 13)
+            drawSafeZone(ROW_START, varColor('--primary-glow'));
+            // Orta dinlenme şeridi (Row 7)
+            drawSafeZone(ROW_MEDIAN, '#9d00ff');
+            // Üst nehir kıyısı (Row 1)
+            drawSafeZone(ROW_BANK_TOP, '#9d00ff');
+
+            // 4. Hedef Siber Evler (Row 0)
+            ctx.fillStyle = '#010108';
+            ctx.fillRect(0, 0, canvas.width, TILE_SIZE);
+
+            // Yuvaların duvarları
+            ctx.fillStyle = '#090933';
+            ctx.strokeStyle = '#0055ff';
+            ctx.lineWidth = 2.0;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#0055ff';
+
+            for (let c = 0; c < GRID_COLS; c++) {
+                const isGoal = (c === 2 || c === 4 || c === 6 || c === 8 || c === 10);
+                if (!isGoal) {
+                    ctx.fillRect(c * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeRect(c * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE);
+                }
+            }
+            ctx.shadowBlur = 0;
+
+            // Kaydedilmiş kurbağa simgelerini yuvalarında göster
+            savedGoals.forEach((saved, idx) => {
+                if (saved) {
+                    const gx = (idx * 2 + 2) * TILE_SIZE + TILE_SIZE / 2;
+                    const gy = TILE_SIZE / 2;
+                    ctx.save();
+                    ctx.translate(gx, gy);
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = varColor('--primary-glow');
+                    ctx.fillStyle = varColor('--primary-glow');
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 9, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(-3, -3, 2, 0, Math.PI * 2);
+                    ctx.arc(3, -3, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            });
+        }
+
+        function drawSafeZone(rowIdx, glowColor) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(20, 10, 45, 0.6)';
+            ctx.fillRect(0, rowIdx * TILE_SIZE, canvas.width, TILE_SIZE);
+            ctx.strokeStyle = glowColor;
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = glowColor;
+            
+            // Alt ve üst çizgiler
+            ctx.beginPath();
+            ctx.moveTo(0, rowIdx * TILE_SIZE);
+            ctx.lineTo(canvas.width, rowIdx * TILE_SIZE);
+            ctx.moveTo(0, (rowIdx + 1) * TILE_SIZE);
+            ctx.lineTo(canvas.width, (rowIdx + 1) * TILE_SIZE);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- CSS DEĞİŞKENİNİ OKUMA YARDIMCISI ---
+        function varColor(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
+        // --- ÇARPIŞMA VE ETKİLEŞİM ANALİZİ ---
+        function checkCollisions() {
+            // 1. Otoyol Çarpışmaları
+            if (kurbaga.gridY >= HIGHWAY_START && kurbaga.gridY <= HIGHWAY_END) {
+                vehicles.forEach(v => {
+                    if (v.laneY === kurbaga.gridY) {
+                        if (v.isColliding(kurbaga.x, kurbaga.y, kurbaga.visualRadius)) {
+                            triggerDeath('crash');
+                        }
+                    }
+                });
+            }
+
+            // 2. Siber Nehir Etkileşimleri (Zıplama bitmişken kontrol et)
+            if (kurbaga.gridY >= RIVER_START && kurbaga.gridY <= RIVER_END && kurbaga.jumpProgress === 1.0) {
+                let isOnPlatform = false;
+                platforms.forEach(p => {
+                    if (p.laneY === kurbaga.gridY) {
+                        if (p.isStandingOn(kurbaga.x, kurbaga.y)) {
+                            isOnPlatform = true;
+                        }
+                    }
+                });
+
+                if (!isOnPlatform) {
+                    triggerDeath('splash');
+                }
+            }
+        }
+
+        // --- OYUN DÖNGÜSÜ KODLARI ---
+        function update(dt) {
+            updateParticles(dt);
+
+            if (gameState === 'PLAYING') {
+                // Zamanı azalt
+                timeRemaining -= (dt / 1000);
+                if (timeRemaining <= 0) {
+                    timeRemaining = 0;
+                    triggerDeath('splash'); // Zaman bitmesi suya düşmek gibidir
+                }
+
+                // Zaman barı doluluğunu güncelle
+                const ratio = Math.max(0, timeRemaining / timeLimit);
+                timerBar.style.width = `${ratio * 100}%`;
+                if (ratio < 0.25) {
+                    timerBar.classList.add('warning');
+                } else {
+                    timerBar.classList.remove('warning');
+                }
+
+                // Araçları ve platformları spawn et ve sürükle
+                spawnHighway(dt);
+                spawnRiver(dt);
+
+                vehicles.forEach(v => v.update(dt));
+                platforms.forEach(p => p.update(dt));
+
+                // Ekrandan çıkan araçları/platformları sil
+                vehicles = vehicles.filter(v => (v.direction === 1 && v.x < canvas.width + v.w) || (v.direction === -1 && v.x > -v.w));
+                platforms = platforms.filter(p => (p.direction === 1 && p.x < canvas.width + p.w) || (p.direction === -1 && p.x > -p.w));
+
+                kurbaga.update(dt);
+                checkCollisions();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Harita altyapısı
+            renderGridMap();
+
+            // Platformlar ve araçlar
+            platforms.forEach(p => p.draw());
+            vehicles.forEach(v => v.draw());
+
+            // Parçacıklar
+            drawParticles();
+
+            // Kurbağa (Ölüm animasyonu aktif değilse)
+            if (gameState !== 'DYING') {
+                kurbaga.draw();
+            }
+        }
+
+        function loop(timestamp) {
+            let dt = timestamp - lastTime;
+            if (isNaN(dt)) dt = 0;
+            lastTime = timestamp;
+
+            if (dt > 100) dt = 100;
+
+            update(dt);
+            draw();
+
+            requestAnimationFrame(loop);
+        }
+
+        // Klavye Yön Kontrolleri
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    kurbaga.hop(DIR_UP);
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    kurbaga.hop(DIR_DOWN);
+                    e.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    kurbaga.hop(DIR_LEFT);
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    kurbaga.hop(DIR_RIGHT);
+                    e.preventDefault();
+                    break;
+            }
+        });
+
+        // Mobil Dokunmatik D-Pad Kontrolleri
+        document.getElementById('btnUp').addEventListener('touchstart', (e) => { e.preventDefault(); kurbaga.hop(DIR_UP); });
+        document.getElementById('btnDown').addEventListener('touchstart', (e) => { e.preventDefault(); kurbaga.hop(DIR_DOWN); });
+        document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); kurbaga.hop(DIR_LEFT); });
+        document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); kurbaga.hop(DIR_RIGHT); });
+
+        // Masaüstü tıklama emülatörü
+        document.getElementById('btnUp').addEventListener('mousedown', () => kurbaga.hop(DIR_UP));
+        document.getElementById('btnDown').addEventListener('mousedown', () => kurbaga.hop(DIR_DOWN));
+        document.getElementById('btnLeft').addEventListener('mousedown', () => kurbaga.hop(DIR_LEFT));
+        document.getElementById('btnRight').addEventListener('mousedown', () => kurbaga.hop(DIR_RIGHT));
+
+        // --- BUTTONS VE YENİDEN BAŞLATMA ---
+        function startGame() {
+            score = 0;
+            lives = 3;
+            speedMultiplier = 1.0;
+            scoreValEl.textContent = score;
+            updateLivesUI();
+
+            savedGoals = [false, false, false, false, false];
+            vehicles = [];
+            platforms = [];
+            particles = [];
+
+            kurbaga.reset();
+            timeRemaining = timeLimit;
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            stageClearScreen.classList.remove('active');
+
+            gameState = 'PLAYING';
+            // Pre-spawn elements to fill the map slightly at start
+            for(let i = 0; i < 2000; i += 16) {
+                update(16);
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('nextStageBtn').addEventListener('click', nextStage);
+
+        // Döngüyü başlat
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
