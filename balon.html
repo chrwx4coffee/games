@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Balon // Neon Bubble Shooter</title>
+    <!-- Outfit Font from Google Fonts for a premium look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #02020a;
+            --primary-glow: #ff007f; /* Neon Pink */
+            --accent-glow: #00f0ff;  /* Neon Cyan */
+            --danger-glow: #ff1744;  /* Neon Red */
+            --success-glow: #39ff14; /* Neon Green */
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --container-bg: rgba(6, 6, 18, 0.85);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0d0d26 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* CRT Scanlines and flicker effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            width: min(95vw, 430px);
+        }
+
+        /* Shake animation for pops/crashes */
+        .shake {
+            animation: shake 0.15s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+            40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--accent-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+            text-shadow: 0 0 25px rgba(255, 0, 127, 0.25);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .score-box .stat-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+        }
+
+        .ammo-box {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            height: 24px;
+        }
+
+        .ammo-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-glow);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--primary-glow);
+            transition: all 0.2s ease;
+        }
+
+        .ammo-dot.empty {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+            transform: scale(0.7);
+        }
+
+        .best-box .stat-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(255, 0, 127, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: #010106;
+            width: 100%;
+            max-width: 390px;
+            aspect-ratio: 4 / 5;
+        }
+
+        .hint {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(3, 1, 10, 0.96);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            font-weight: 400;
+            line-height: 1.5;
+            max-width: 310px;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--accent-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(255, 0, 127, 0.15), rgba(0, 240, 255, 0.15));
+            border: 1px solid rgba(255, 0, 127, 0.4);
+            color: #ffffff;
+            padding: 13px 32px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(255, 0, 127, 0.3), rgba(0, 240, 255, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 0, 127, 0.3);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        @media (max-width: 600px) {
+            .wrapper {
+                padding: 16px;
+                border-radius: 20px;
+                gap: 12px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Balon</h1>
+        
+        <div class="stats-panel">
+            <div class="stat-box score-box">
+                <span class="stat-label">Skor</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">İlerleme</span>
+                <div class="ammo-box" id="ammoContainer">
+                    <div class="ammo-dot" id="dot1"></div>
+                    <div class="ammo-dot" id="dot2"></div>
+                    <div class="ammo-dot" id="dot3"></div>
+                    <div class="ammo-dot" id="dot4"></div>
+                    <div class="ammo-dot" id="dot5"></div>
+                </div>
+            </div>
+            <div class="stat-box best-box">
+                <span class="stat-label">En İyi</span>
+                <span class="stat-value" id="bestScore">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="400" height="500"></canvas>
+            
+            <!-- Start Screen -->
+            <div class="screen-overlay active" id="startScreen">
+                <h2>Siber Balon</h2>
+                <p>Neon balonları fırlat, <span>aynı renkten en az 3</span> balonu yan yana getirerek patlat! Tavana bağlı olmayan serbest balonlar düşerek ekstra puan kazandırır.</p>
+                <button class="btn" id="startBtn">Bağlantıyı Kur</button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 style="color: var(--danger-glow); text-shadow: 0 0 25px rgba(255,23,68,0.6);">Bağlantı Koptu</h2>
+                <p>Toplam Skorunuz: <span id="finalScore">0</span></p>
+                <button class="btn" id="restartBtn">Yeniden Bağlan</button>
+            </div>
+        </div>
+
+        <div class="hint">Nişan almak için parmağınızı kaydırın veya fareyi hareket ettirin. Fırlatmak için tıklayın veya dokunmayı bırakın.</div>
+    </div>
+
+    <script>
+        // --- WEB AUDIO API TABANLI RETRO SES SENTEZLEYİCİ ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.masterVolume = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+                this.masterVolume = this.ctx.createGain();
+                this.masterVolume.gain.setValueAtTime(0.08, this.ctx.currentTime); // Düşük dengeli ses
+                this.masterVolume.connect(this.ctx.destination);
+            }
+
+            resume() {
+                this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playShoot() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(750, now + 0.12);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            }
+
+            playBounce() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.setValueAtTime(260, now + 0.04);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+
+            playPop() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(550, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.09);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(now);
+                osc.stop(now + 0.09);
+            }
+
+            playDrop() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(45, now + 0.22);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(now);
+                osc.stop(now + 0.22);
+            }
+
+            playGameOver() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [280, 220, 180, 130];
+                notes.forEach((f, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.14);
+                    gain.gain.setValueAtTime(0.08, now + idx * 0.14);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.14 + 0.22);
+                    osc.connect(gain);
+                    gain.connect(this.masterVolume);
+                    osc.start(now + idx * 0.14);
+                    osc.stop(now + idx * 0.14 + 0.25);
+                });
+            }
+        }
+
+        const audio = new AudioEngine();
+
+        // --- GRID / MATEMATİKSEL KURALLAR ---
+        const BUBBLE_D = 38; // Balon çapı
+        const BUBBLE_R = 19; // Balon yarıçapı
+        const GRID_COLS = 10;
+        const GRID_ROWS = 14;
+        const ROW_HEIGHT = 33; // D * Math.sqrt(3) / 2 = 38 * 0.866 = ~32.9
+
+        // X Konum Ayarları
+        const X_PADDING = 10;
+        const EVEN_ROW_X_START = X_PADDING + BUBBLE_R; // 29
+        const ODD_ROW_X_START = X_PADDING + BUBBLE_R + BUBBLE_R; // 48
+
+        // Renkler ve Glow Kodları
+        const COLOR_PALETTE = {
+            'pink': { fill: '#ff007f', glow: 'rgba(255, 0, 127, 0.7)' },
+            'cyan': { fill: '#00f0ff', glow: 'rgba(0, 240, 255, 0.7)' },
+            'green': { fill: '#39ff14', glow: 'rgba(57, 255, 20, 0.7)' },
+            'yellow': { fill: '#ffff00', glow: 'rgba(255, 255, 0, 0.7)' },
+            'purple': { fill: '#b500ff', glow: 'rgba(181, 0, 255, 0.7)' }
+        };
+        const COLOR_KEYS = Object.keys(COLOR_PALETTE);
+
+        // --- OYUN DEĞİŞKENLERİ ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('bestScore');
+        const finalScoreEl = document.getElementById('finalScore');
+        const gameWrapper = document.getElementById('gameWrapper');
+        const ammoContainer = document.getElementById('ammoContainer');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        let score = 0;
+        let bestScore = localStorage.getItem('siberBalonBestScore') || 0;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let animationId;
+
+        let grid = []; // 2D Array [row][col] - Depolar renk anahtarlarını
+        let particles = [];
+        let fallingBubbles = [];
+        let floatingScores = [];
+
+        // Fırlatıcı ve Aktif Balon Durumu
+        const shooterPos = { x: canvas.width / 2, y: canvas.height - 35 };
+        let currentAmmoColor = getRandomColor();
+        let nextAmmoColor = getRandomColor();
+        let activeBubble = null; // Fırlatılmış ve hareket eden balon
+        let aimingAngle = -Math.PI / 2; // Yukarı doğru
+        
+        let shotsCount = 0; // 5 fırlatmada bir yeni satır eklenir
+        
+        bestScoreEl.textContent = bestScore;
+
+        // --- MODEL TANIMLARI ---
+
+        // Float Text Model
+        class FloatText {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.alpha = 1.0;
+                this.vy = -1.2;
+            }
+            update() {
+                this.y += this.vy;
+                this.alpha -= 0.025;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.font = '800 16px Outfit';
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // Parçacık Sınıfı (Patlama Efekti)
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 4;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.color = color;
+                this.alpha = 1.0;
+                this.decay = 0.03 + Math.random() * 0.03;
+                this.gravity = 0.08;
+                this.r = 2 + Math.random() * 2;
+            }
+            update() {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Düşen Balon Sınıfı
+        class FallingBubble {
+            constructor(x, y, colorKey) {
+                this.x = x;
+                this.y = y;
+                this.colorKey = colorKey;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = -1 - Math.random() * 3;
+                this.gravity = 0.35;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.vRotation = (Math.random() - 0.5) * 0.1;
+                this.alpha = 1.0;
+            }
+            update() {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rotation += this.vRotation;
+                
+                // Duvarlardan sekme
+                if (this.x < BUBBLE_R || this.x > canvas.width - BUBBLE_R) {
+                    this.vx *= -0.8;
+                    this.x = this.x < BUBBLE_R ? BUBBLE_R : canvas.width - BUBBLE_R;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                drawBubble(this.x, this.y, this.colorKey, this.rotation);
+                ctx.restore();
+            }
+        }
+
+        // --- MATEMATİKSEL VE GRID İŞLEMLERİ ---
+
+        function getBubbleCenter(row, col) {
+            const startX = (row % 2 === 0) ? EVEN_ROW_X_START : ODD_ROW_X_START;
+            const x = startX + col * BUBBLE_D;
+            const y = X_PADDING + BUBBLE_R + row * ROW_HEIGHT;
+            return { x, y };
+        }
+
+        function getClosestGridPos(x, y) {
+            let closestRow = 0;
+            let closestCol = 0;
+            let minDist = Infinity;
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                const colsInRow = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                for (let c = 0; c < colsInRow; c++) {
+                    const center = getBubbleCenter(r, c);
+                    const dist = Math.hypot(x - center.x, y - center.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestRow = r;
+                        closestCol = c;
+                    }
+                }
+            }
+            return { row: closestRow, col: closestCol };
+        }
+
+        function getRandomColor() {
+            return COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+        }
+
+        function initializeGrid() {
+            grid = [];
+            // İlk 4 satırı rastgele doldur
+            for (let r = 0; r < GRID_ROWS; r++) {
+                grid[r] = [];
+                const colsInRow = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                for (let c = 0; c < colsInRow; c++) {
+                    if (r < 5) {
+                        grid[r][c] = getRandomColor();
+                    } else {
+                        grid[r][c] = null;
+                    }
+                }
+            }
+        }
+
+        // Grid üzerindeki bir balonun tüm komşularını getir
+        function getNeighbors(row, col) {
+            const neighbors = [];
+            
+            // Satır çift mi tek mi?
+            const isEven = (row % 2 === 0);
+            
+            const offsets = isEven ? [
+                { r: -1, c: -1 }, { r: -1, c: 0 },
+                { r: 0, c: -1 },                  { r: 0, c: 1 },
+                { r: 1, c: -1 },  { r: 1, c: 0 }
+            ] : [
+                { r: -1, c: 0 },  { r: -1, c: 1 },
+                { r: 0, c: -1 },                  { r: 0, c: 1 },
+                { r: 1, c: 0 },   { r: 1, c: 1 }
+            ];
+
+            for (const offset of offsets) {
+                const nr = row + offset.r;
+                const nc = col + offset.c;
+                
+                if (nr >= 0 && nr < GRID_ROWS) {
+                    const colsInRow = (nr % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                    if (nc >= 0 && nc < colsInRow) {
+                        neighbors.push({ row: nr, col: nc });
+                    }
+                }
+            }
+            return neighbors;
+        }
+
+        // --- BAĞLANTI KONTROLLERİ VE FLOOD FILL ---
+
+        // Renk Eşleşmesi DFS Arama
+        function findMatches(startRow, startCol, colorKey) {
+            const matches = [];
+            const visited = Array(GRID_ROWS).fill(null).map((_, r) => {
+                const cols = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                return Array(cols).fill(false);
+            });
+
+            const queue = [{ row: startRow, col: startCol }];
+            visited[startRow][startCol] = true;
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+                matches.push(current);
+
+                const neighbors = getNeighbors(current.row, current.col);
+                for (const n of neighbors) {
+                    if (!visited[n.row][n.col] && grid[n.row][n.col] === colorKey) {
+                        visited[n.row][n.col] = true;
+                        queue.push(n);
+                    }
+                }
+            }
+            return matches;
+        }
+
+        // Serbest Kalan (Yarasa / Bağlantısız) Balonları Bulma
+        function dropFloatingBubbles() {
+            // Tavanla bağlantılı balonları işaretle
+            const connected = Array(GRID_ROWS).fill(null).map((_, r) => {
+                const cols = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                return Array(cols).fill(false);
+            });
+
+            const queue = [];
+
+            // İlk satır tavan olduğu için tüm var olanları kuyruğa ekle
+            for (let c = 0; c < GRID_COLS; c++) {
+                if (grid[0][c] !== null) {
+                    queue.push({ row: 0, col: c });
+                    connected[0][c] = true;
+                }
+            }
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+                const neighbors = getNeighbors(current.row, current.col);
+
+                for (const n of neighbors) {
+                    if (grid[n.row][n.col] !== null && !connected[n.row][n.col]) {
+                        connected[n.row][n.col] = true;
+                        queue.push(n);
+                    }
+                }
+            }
+
+            // Bağlantısı olmayanları düşür
+            let dropCount = 0;
+            for (let r = 0; r < GRID_ROWS; r++) {
+                const cols = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c] !== null && !connected[r][c]) {
+                        const center = getBubbleCenter(r, c);
+                        fallingBubbles.push(new FallingBubble(center.x, center.y, grid[r][c]));
+                        grid[r][c] = null;
+                        dropCount++;
+                    }
+                }
+            }
+
+            if (dropCount > 0) {
+                audio.playDrop();
+                const bonusPoints = dropCount * 20;
+                score += bonusPoints;
+                scoreEl.textContent = score;
+
+                // En son düşen balonun koordinatında bonus yaz
+                if (fallingBubbles.length > 0) {
+                    const last = fallingBubbles[fallingBubbles.length - 1];
+                    floatingScores.push(new FloatText(last.x, last.y - 15, `DÜŞTÜ! +${bonusPoints}`, '#ff007f'));
+                }
+            }
+        }
+
+        // Grid'i aşağı kaydırıp tepeye yeni satır ekler
+        function addNewRow() {
+            // Son satırda balon varsa ve kaydırılacaksa direkt game over
+            const lastRowCols = (GRID_ROWS - 1 % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+            for (let c = 0; c < lastRowCols; c++) {
+                if (grid[GRID_ROWS - 1][c] !== null) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // Satırları aşağı doğru ötele
+            for (let r = GRID_ROWS - 1; r > 0; r--) {
+                grid[r] = [...grid[r - 1]];
+            }
+
+            // Yeni ilk satırı üret (alternatif olarak her yeni satırda sütun sayısı grid yapısına uyar)
+            grid[0] = [];
+            for (let c = 0; c < GRID_COLS; c++) {
+                grid[0][c] = getRandomColor();
+            }
+
+            // İlerleme noktalarını sıfırla
+            shotsCount = 0;
+            updateAmmoUI();
+
+            triggerScreenShake();
+            audio.playBounce();
+
+            // Sınır aşma kontrolü
+            checkBottomCollision();
+        }
+
+        function checkBottomCollision() {
+            // Uyarı hattı sınır kontrolü: 12. satır sınır, 13. satır sonrası game over
+            for (let r = 12; r < GRID_ROWS; r++) {
+                const cols = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c] !== null) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+        }
+
+        function triggerScreenShake() {
+            gameWrapper.classList.add('shake');
+            setTimeout(() => {
+                gameWrapper.classList.remove('shake');
+            }, 150);
+        }
+
+        // --- BALON FIRLATMA FİZİĞİ ---
+
+        function fireBubble() {
+            if (activeBubble || gameState !== 'PLAYING') return;
+
+            audio.playShoot();
+            const speed = 11;
+            activeBubble = {
+                x: shooterPos.x,
+                y: shooterPos.y,
+                vx: Math.cos(aimingAngle) * speed,
+                vy: Math.sin(aimingAngle) * speed,
+                colorKey: currentAmmoColor
+            };
+
+            // Cephane değişimleri
+            currentAmmoColor = nextAmmoColor;
+            nextAmmoColor = getRandomColor();
+            
+            // Fırlatma limit takibi
+            shotsCount++;
+            updateAmmoUI();
+        }
+
+        function updateAmmoUI() {
+            for (let i = 1; i <= 5; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                if (i <= shotsCount) {
+                    dot.classList.add('empty');
+                } else {
+                    dot.classList.remove('empty');
+                }
+            }
+        }
+
+        // --- GÖRSEL ÇİZİM UTILITY FONKSİYONLARI ---
+
+        // Parlayan Balon Çizimi (Neon Glossy Sphere)
+        function drawBubble(x, y, colorKey, rot = 0) {
+            const data = COLOR_PALETTE[colorKey];
+            if (!data) return;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rot);
+
+            // Neon Dış Işıma
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = data.glow;
+            
+            // Ana Gövde Dairesi
+            const grad = ctx.createRadialGradient(-3, -3, 2, 0, 0, BUBBLE_R);
+            grad.addColorStop(0, '#ffffff'); // Işık yansıması beyaz
+            grad.addColorStop(0.3, data.fill);
+            grad.addColorStop(1, '#050212'); // Karanlık gölge
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, BUBBLE_R - 1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Parlaklık Elipsi (Glow Highlight)
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(-5, -5, 6, 3, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Nişan Alma Kılavuz Çizgisi (Laser trajectory with reflections)
+        function drawLaserGuide() {
+            if (activeBubble || gameState !== 'PLAYING') return;
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 6]);
+
+            let startX = shooterPos.x;
+            let startY = shooterPos.y;
+            let dx = Math.cos(aimingAngle);
+            let dy = Math.sin(aimingAngle);
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+
+            // Bouncing Math
+            let laserLen = 450;
+            let curX = startX;
+            let curY = startY;
+
+            while (laserLen > 0) {
+                // Duvar çarpışma t süresini hesapla
+                // curX + dx * t = BUBBLE_R  (sol) => t = (BUBBLE_R - curX)/dx
+                // curX + dx * t = width - BUBBLE_R (sağ) => t = (width - BUBBLE_R - curX)/dx
+                let t = Infinity;
+                if (dx < 0) {
+                    t = (BUBBLE_R - curX) / dx;
+                } else if (dx > 0) {
+                    t = (canvas.width - BUBBLE_R - curX) / dx;
+                }
+
+                // Tavana çarpışma süresi
+                let tCeil = (X_PADDING + BUBBLE_R - curY) / dy;
+
+                let actualT = Math.min(t, tCeil);
+                if (actualT > laserLen || actualT <= 0) {
+                    // Lazer sınırına kadar çiz
+                    ctx.lineTo(curX + dx * laserLen, curY + dy * laserLen);
+                    break;
+                }
+
+                curX += dx * actualT;
+                curY += dy * actualT;
+                laserLen -= actualT;
+
+                ctx.lineTo(curX, curY);
+
+                if (actualT === tCeil) {
+                    // Tavana ulaştı, sonlandır
+                    break;
+                }
+
+                // Duvara çarptı, yansıt
+                dx = -dx;
+            }
+
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- UPDATE & RENDER LOOP ---
+
+        function update() {
+            // 1. Fırlatılan aktif balonu güncelle
+            if (activeBubble) {
+                activeBubble.x += activeBubble.vx;
+                activeBubble.y += activeBubble.vy;
+
+                // Duvar çarpmaları
+                if (activeBubble.x < BUBBLE_R) {
+                    activeBubble.x = BUBBLE_R;
+                    activeBubble.vx *= -1;
+                    audio.playBounce();
+                } else if (activeBubble.x > canvas.width - BUBBLE_R) {
+                    activeBubble.x = canvas.width - BUBBLE_R;
+                    activeBubble.vx *= -1;
+                    audio.playBounce();
+                }
+
+                // Grid üstüne yerleşme veya diğer balonlarla çarpışma tespiti
+                let collided = false;
+                let gridPos = null;
+
+                // Tavan çarpması
+                if (activeBubble.y <= X_PADDING + BUBBLE_R) {
+                    collided = true;
+                    gridPos = getClosestGridPos(activeBubble.x, activeBubble.y);
+                } else {
+                    // Diğer balonlarla çarpışma
+                    for (let r = 0; r < GRID_ROWS; r++) {
+                        const cols = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                        for (let c = 0; c < cols; c++) {
+                            if (grid[r][c] !== null) {
+                                const center = getBubbleCenter(r, c);
+                                const dist = Math.hypot(activeBubble.x - center.x, activeBubble.y - center.y);
+                                // Yarıçapların toplamı: D=38. Sıkışma hissi için tolerans 34px
+                                if (dist < BUBBLE_D - 5) {
+                                    collided = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (collided) break;
+                    }
+
+                    if (collided) {
+                        // Çarpışan noktaya en yakın grid konumunu al
+                        gridPos = getClosestGridPos(activeBubble.x, activeBubble.y);
+                    }
+                }
+
+                if (collided && gridPos) {
+                    // Grid hücresinin boş ve limitler içinde olduğunu onayla
+                    const maxCols = (gridPos.row % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                    if (gridPos.col >= 0 && gridPos.col < maxCols && grid[gridPos.row][gridPos.col] === null) {
+                        grid[gridPos.row][gridPos.col] = activeBubble.colorKey;
+                        
+                        // Patlamaları hesapla
+                        const matches = findMatches(gridPos.row, gridPos.col, activeBubble.colorKey);
+                        if (matches.length >= 3) {
+                            audio.playPop();
+                            triggerScreenShake();
+
+                            // Eşleşen balonları yok et ve parçacık fırlat
+                            matches.forEach(m => {
+                                const center = getBubbleCenter(m.row, m.col);
+                                grid[m.row][m.col] = null;
+                                
+                                // Parçacık patlaması
+                                const color = COLOR_PALETTE[activeBubble.colorKey].fill;
+                                for (let i = 0; i < 8; i++) {
+                                    particles.push(new Particle(center.x, center.y, color));
+                                }
+                            });
+
+                            // Puan ekle
+                            const points = matches.length * 10;
+                            score += points;
+                            scoreEl.textContent = score;
+
+                            const center = getBubbleCenter(gridPos.row, gridPos.col);
+                            floatingScores.push(new FloatText(center.x, center.y - 10, `KOMBO! +${points}`, COLOR_PALETTE[activeBubble.colorKey].fill));
+
+                            // Boşta kalan balonları aşağı kaydır
+                            dropFloatingBubbles();
+                        } else {
+                            audio.playBounce();
+                        }
+
+                        activeBubble = null;
+
+                        // Limit dolduysa yeni satır ekle
+                        if (shotsCount >= 5) {
+                            addNewRow();
+                        } else {
+                            checkBottomCollision();
+                        }
+                    } else {
+                        // Eğer snap yapamıyorsa (özel kenar hatalarında) aşağı kaydırıp sönümlendir
+                        activeBubble = null;
+                    }
+                }
+            }
+
+            // 2. Parçacıkları güncelle
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // 3. Düşen balonları güncelle
+            for (let i = fallingBubbles.length - 1; i >= 0; i--) {
+                const fb = fallingBubbles[i];
+                fb.update();
+                if (fb.y > canvas.height + BUBBLE_R) {
+                    fallingBubbles.splice(i, 1);
+                }
+            }
+
+            // 4. Floating skorları güncelle
+            for (let i = floatingScores.length - 1; i >= 0; i--) {
+                floatingScores[i].update();
+                if (floatingScores[i].alpha <= 0) {
+                    floatingScores.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Siber Arka Plan Kareleri (Grid Lines)
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.012)';
+            for (let i = 0; i < canvas.width; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let j = 0; j < canvas.height; j += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, j);
+                ctx.lineTo(canvas.width, j);
+                ctx.stroke();
+            }
+
+            // 2. Tehlike Sınır Çizgisi (Warning Limit Line)
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255, 23, 68, 0.2)';
+            ctx.setLineDash([8, 12]);
+            const warningY = X_PADDING + BUBBLE_R + 12 * ROW_HEIGHT + BUBBLE_R; // ~440px
+            ctx.beginPath();
+            ctx.moveTo(0, warningY);
+            ctx.lineTo(canvas.width, warningY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+
+            // 3. Grid üzerindeki balonları çiz
+            for (let r = 0; r < GRID_ROWS; r++) {
+                const cols = (r % 2 === 0) ? GRID_COLS : GRID_COLS - 1;
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c] !== null) {
+                        const center = getBubbleCenter(r, c);
+                        drawBubble(center.x, center.y, grid[r][c]);
+                    }
+                }
+            }
+
+            // 4. Lazer nişan alma kılavuzu
+            drawLaserGuide();
+
+            // 5. Parçacıklar ve Düşen Balonlar
+            particles.forEach(p => p.draw());
+            fallingBubbles.forEach(fb => fb.draw());
+            floatingScores.forEach(t => t.draw());
+
+            // 6. Fırlatıcının çizimi ve yüklü cephaneler
+            ctx.save();
+            ctx.translate(shooterPos.x, shooterPos.y);
+            ctx.rotate(aimingAngle + Math.PI / 2);
+
+            // Fırlatıcı Namlu Halkası
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, -32, 8, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Namlu Gövdesi
+            ctx.fillStyle = '#060616';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-6, -30);
+            ctx.lineTo(6, -30);
+            ctx.lineTo(10, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Atışa hazır balonu çiz (Fırlatıcı yuvasında)
+            if (!activeBubble && gameState === 'PLAYING') {
+                drawBubble(shooterPos.x, shooterPos.y, currentAmmoColor);
+            }
+
+            // Sıradaki balonu çiz (Küçük sol yuvada)
+            if (gameState === 'PLAYING') {
+                ctx.save();
+                ctx.globalAlpha = 0.5;
+                drawBubble(shooterPos.x - 45, shooterPos.y + 10, nextAmmoColor);
+                ctx.restore();
+            }
+
+            // Fırlatılmış aktif balonu çiz
+            if (activeBubble) {
+                drawBubble(activeBubble.x, activeBubble.y, activeBubble.colorKey);
+            }
+        }
+
+        function gameLoop() {
+            if (gameState !== 'PLAYING') return;
+            update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- GAME CONTROL FUNCTIONS ---
+
+        function startGame() {
+            score = 0;
+            scoreEl.textContent = '0';
+            shotsCount = 0;
+            updateAmmoUI();
+
+            particles = [];
+            fallingBubbles = [];
+            floatingScores = [];
+            activeBubble = null;
+
+            initializeGrid();
+
+            currentAmmoColor = getRandomColor();
+            nextAmmoColor = getRandomColor();
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            
+            gameState = 'PLAYING';
+            cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            audio.playGameOver();
+            triggerScreenShake();
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('siberBalonBestScore', bestScore);
+                bestScoreEl.textContent = bestScore;
+            }
+
+            finalScoreEl.textContent = score;
+            gameOverScreen.classList.add('active');
+        }
+
+        // --- NİŞAN ALMA VE DOKUNMATİK EYLEMLERİ ---
+
+        function handlePointerMove(clientX, clientY) {
+            if (gameState !== 'PLAYING') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const pointerX = (clientX - rect.left) * scaleX;
+            const pointerY = (clientY - rect.top) * scaleY;
+
+            // Fırlatıcıdan imlece doğru açıyı hesapla
+            const dy = pointerY - shooterPos.y;
+            const dx = pointerX - shooterPos.x;
+            
+            // Sadece yukarı yarım kürede nişan almaya izin ver (Minimum açı sınırlaması)
+            let angle = Math.atan2(dy, dx);
+            if (angle > -0.2) angle = -0.2;
+            if (angle < -Math.PI + 0.2) angle = -Math.PI + 0.2;
+
+            aimingAngle = angle;
+        }
+
+        // Mouse Listeners
+        canvas.addEventListener('mousemove', (e) => {
+            handlePointerMove(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('click', (e) => {
+            handlePointerMove(e.clientX, e.clientY);
+            fireBubble();
+        });
+
+        // Touch Listeners (Mobil)
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            fireBubble();
+            e.preventDefault();
+        }, { passive: false });
+
+        // Düğmeler
+        document.getElementById('startBtn').addEventListener('click', () => {
+            audio.resume();
+            startGame();
+        });
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            audio.resume();
+            startGame();
+        });
+
+        // Statik açılış görüntüsü çiz
+        initializeGrid();
+        draw();
+    </script>
+</body>
+</html>
