@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Altıgen // Neon Cyber Hexagon</title>
+    <!-- Outfit Font from Google Fonts for a premium look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #020208;
+            --primary-glow: #ff007f; /* Neon Pink */
+            --accent-glow: #00f0ff;  /* Neon Cyan */
+            --danger-glow: #ff1744;  /* Neon Red */
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --container-bg: rgba(6, 6, 18, 0.85);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: var(--bg-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* CRT Scanlines and flicker effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            width: min(95vw, 430px);
+        }
+
+        /* Shake animation for crashes */
+        .shake {
+            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+            40%, 60% { transform: translate3d(5px, 0, 0); }
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, #ff00c8, var(--accent-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+            text-shadow: 0 0 25px rgba(255, 0, 200, 0.25);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .score-box .stat-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+        }
+
+        .best-box .stat-value {
+            color: #ff00c8;
+            text-shadow: 0 0 12px rgba(255, 0, 200, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: #000;
+            width: 100%;
+            max-width: 380px;
+            aspect-ratio: 1;
+        }
+
+        .hint {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(3, 1, 10, 0.96);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: #ff00c8;
+            text-shadow: 0 0 25px rgba(255, 0, 200, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            font-weight: 400;
+            line-height: 1.5;
+            max-width: 310px;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--accent-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(255, 0, 200, 0.15), rgba(0, 240, 255, 0.15));
+            border: 1px solid rgba(255, 0, 200, 0.4);
+            color: #ffffff;
+            padding: 13px 32px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(255, 0, 200, 0.3), rgba(0, 240, 255, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 0, 200, 0.3);
+            border-color: #ff00c8;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        @media (max-width: 600px) {
+            .wrapper {
+                padding: 16px;
+                border-radius: 20px;
+                gap: 12px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Altıgen</h1>
+        
+        <div class="stats-panel">
+            <div class="stat-box score-box">
+                <span class="stat-label">Süre</span>
+                <span class="stat-value" id="score">00:00.00</span>
+            </div>
+            <div class="stat-box best-box">
+                <span class="stat-label">En İyi</span>
+                <span class="stat-value" id="bestScore">00:00.00</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="380" height="380"></canvas>
+            
+            <!-- Start Screen -->
+            <div class="screen-overlay active" id="startScreen">
+                <h2>Siber Altıgen</h2>
+                <p>Merkezdeki altıgenin yörüngesinde dön ve dışarıdan <span>daralan çizgilerden</span> kaç! Yön değiştirmek için klavyede yön tuşlarını veya ekrana tıklamayı kullan.</p>
+                <button class="btn" id="startBtn">Bağlantıyı Kur</button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 style="color: var(--danger-glow); text-shadow: 0 0 25px rgba(255,23,68,0.6);">Yok Edildin</h2>
+                <p>Hayatta Kalma Süresi: <span id="finalScore" style="font-family: 'Share Tech Mono', monospace; color: var(--accent-glow);">00:00.00</span></p>
+                <button class="btn" id="restartBtn">Yeniden Bağlan</button>
+            </div>
+        </div>
+
+        <div class="hint">Yönlendirmek için klavyede <b>Yön Tuşları</b> (Sol/Sağ veya A/D) kullanın ya da ekrana dokunun (Sol taraf sola, Sağ taraf sağa döndürür).</div>
+    </div>
+
+    <script>
+        // --- WEB AUDIO API TABANLI RETRO TEMPO MOTORU ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.masterVolume = null;
+                this.beatInterval = null;
+                this.beatCount = 0;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+                this.masterVolume = this.ctx.createGain();
+                this.masterVolume.gain.setValueAtTime(0.06, this.ctx.currentTime); // Dengeli arka plan sesi
+                this.masterVolume.connect(this.ctx.destination);
+            }
+
+            resume() {
+                this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            startBeat() {
+                this.resume();
+                if (!this.ctx || this.beatInterval) return;
+
+                this.beatCount = 0;
+                // 135 BPM (Her 8. nota 222 ms)
+                this.beatInterval = setInterval(() => {
+                    if (gameState !== 'PLAYING') return;
+                    const now = this.ctx.currentTime;
+
+                    // Görsel vuruş atımı (Pulsing)
+                    pulse = 1.15;
+
+                    // 4/4 ritim düzeni
+                    const step = this.beatCount % 8;
+                    if (step === 0 || step === 4) {
+                        this.playKick(now);
+                    } else if (step === 2 || step === 6) {
+                        this.playSnare(now);
+                    } else {
+                        this.playHat(now);
+                    }
+
+                    // Basit melodik döngü
+                    if (step === 0) {
+                        // Bas tonu nota seçimi
+                        const notes = [55, 65.41, 73.42, 82.41]; // A1, C2, D2, E2
+                        const f = notes[Math.floor(this.beatCount / 8) % notes.length];
+                        this.playSynthBass(now, f);
+                    }
+
+                    this.beatCount++;
+                }, 222);
+            }
+
+            stopBeat() {
+                if (this.beatInterval) {
+                    clearInterval(this.beatInterval);
+                    this.beatInterval = null;
+                }
+            }
+
+            playKick(time) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(80, time);
+                osc.frequency.exponentialRampToValueAtTime(35, time + 0.15);
+                gain.gain.setValueAtTime(0.4, time);
+                gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.15);
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(time);
+                osc.stop(time + 0.15);
+            }
+
+            playSnare(time) {
+                // Retro gürültülü trampet
+                const bufferSize = this.ctx.sampleRate * 0.08;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1000, time);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.08, time);
+                gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.08);
+
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterVolume);
+                source.start(time);
+                source.stop(time + 0.08);
+            }
+
+            playHat(time) {
+                // Kısa hi-hat
+                const bufferSize = this.ctx.sampleRate * 0.02;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.setValueAtTime(9000, time);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.02, time);
+                gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.02);
+
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterVolume);
+                source.start(time);
+                source.stop(time + 0.02);
+            }
+
+            playSynthBass(time, freq) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, time);
+                osc.frequency.linearRampToValueAtTime(freq * 0.9, time + 0.2);
+
+                gain.gain.setValueAtTime(0.12, time);
+                gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.2);
+
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(time);
+                osc.stop(time + 0.2);
+            }
+
+            playCrash() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                // Bass Sweep
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(30, now + 0.6);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+                osc.connect(gain);
+                gain.connect(this.masterVolume);
+                osc.start(now);
+                osc.stop(now + 0.6);
+
+                // Gürültülü patlama
+                const bufferSize = this.ctx.sampleRate * 0.6;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, now);
+                
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.16, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+                
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(this.masterVolume);
+                noise.start(now);
+                noise.stop(now + 0.6);
+            }
+
+            playMilestone() {
+                this.resume();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((f, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.1, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.masterVolume);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+        }
+
+        const audio = new AudioEngine();
+
+        // --- GÖRSEL AESTHETIC PALETLERİ ---
+        const COLOR_PALETTES = [
+            { name: 'cyan-purple', colorA: '#0d0221', colorB: '#0f081d', wall: '#00f0ff', player: '#ff00c8' },
+            { name: 'green-yellow', colorA: '#021a02', colorB: '#010f01', wall: '#39ff14', player: '#ffff00' },
+            { name: 'red-blue', colorA: '#1a020d', colorB: '#0f0107', wall: '#ff0055', player: '#00f0ff' },
+            { name: 'orange-pink', colorA: '#1a0d02', colorB: '#0f0801', wall: '#ff6600', player: '#ff00c8' }
+        ];
+
+        // --- OYUN PARAMETRELERİ ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('bestScore');
+        const finalScoreEl = document.getElementById('finalScore');
+        const gameWrapper = document.getElementById('gameWrapper');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        let score = 0; // Saniye cinsinden
+        let bestScore = localStorage.getItem('siberAltigenBestScore') || 0;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let animationId;
+        
+        let pulse = 1.0;
+        let lastTime = 0;
+        let gameTime = 0.0;
+        
+        // Kamera Döndürme Değişkenleri
+        let cameraAngle = 0;
+        let cameraSpeed = 0.015;
+        let cameraDirectionTimer = 0;
+
+        // Renk Paleti Değişimi
+        let currentPaletteIndex = 0;
+        let paletteTimer = 0;
+
+        // Oyuncu Bilgileri
+        let playerAngle = -Math.PI / 2;
+        let playerRadius = 45;
+        const playerSectorCount = 6;
+        let inputDirection = 0; // -1: Sol, 1: Sağ
+
+        // Merkez altıgen yarıçapı
+        const centerHexRadius = 32;
+
+        // Parçacık Patlamaları
+        let particles = [];
+
+        // Duvarlar Array
+        let walls = [];
+        let wallSpawnTimer = 0;
+        let wallSpawnInterval = 1600; // milisaniye cinsinden
+        let baseWallSpeed = 0.12;     // piksel/ms
+        let gameDifficulty = 1.0;
+
+        bestScoreEl.textContent = formatTime(bestScore);
+
+        // --- MODELLER ---
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 5;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.color = color;
+                this.alpha = 1.0;
+                this.decay = 0.02 + Math.random() * 0.03;
+            }
+            update(dt) {
+                this.x += this.vx * (dt / 16);
+                this.y += this.vy * (dt / 16);
+                this.alpha -= this.decay * (dt / 16);
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2 + Math.random() * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Wall {
+            constructor(blockedSides, thickness = 18) {
+                this.dist = canvas.width * 0.8; // Dışarıdan başlar
+                this.thickness = thickness;
+                this.sides = blockedSides; // Array of booleans of length 6
+                this.speed = baseWallSpeed * gameDifficulty;
+            }
+
+            update(dt) {
+                this.dist -= this.speed * dt;
+            }
+
+            draw(palette) {
+                ctx.save();
+                ctx.fillStyle = palette.wall;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = palette.wall;
+
+                for (let i = 0; i < playerSectorCount; i++) {
+                    if (this.sides[i]) {
+                        const a1 = (i / playerSectorCount) * Math.PI * 2;
+                        const a2 = ((i + 1) / playerSectorCount) * Math.PI * 2;
+
+                        ctx.beginPath();
+                        // Dış Köşeler
+                        ctx.moveTo(Math.cos(a1) * (this.dist + this.thickness), Math.sin(a1) * (this.dist + this.thickness));
+                        ctx.lineTo(Math.cos(a2) * (this.dist + this.thickness), Math.sin(a2) * (this.dist + this.thickness));
+                        // İç Köşeler
+                        ctx.lineTo(Math.cos(a2) * this.dist, Math.sin(a2) * this.dist);
+                        ctx.lineTo(Math.cos(a1) * this.dist, Math.sin(a1) * this.dist);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+
+            // Çarpışma Testi
+            checkCollision(pAngle) {
+                // Oyuncu yarıçapı duvarın iç ve dış mesafesi arasındaysa
+                if (playerRadius >= this.dist && playerRadius <= this.dist + this.thickness) {
+                    // Oyuncunun bulunduğu dilim sektörünü bul (0..5)
+                    // Açıyı 0..2PI aralığına normalize et
+                    const normAngle = ((pAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                    const sector = Math.floor(normAngle / (Math.PI / 3));
+                    
+                    if (this.sides[sector]) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        // --- ZAMAN BİÇİMLENDİRME ---
+        function formatTime(totalMs) {
+            const minutes = Math.floor(totalMs / 60000);
+            const seconds = Math.floor((totalMs % 60000) / 1000);
+            const ms = Math.floor((totalMs % 1000) / 10);
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+        }
+
+        // --- DUVAR SEGMENT GENERATORLERİ ---
+
+        function generateWallBatch() {
+            // Rastgele bir desen seçip sırayla duvarları fırlatırız
+            const patterns = ['single-gap', 'spiral', 'opposite-gaps', 'alternate-gaps'];
+            const chosenPattern = patterns[Math.floor(Math.random() * patterns.length)];
+
+            if (chosenPattern === 'single-gap') {
+                // 1-3 adet tek boşluklu duvar
+                const gapSide = Math.floor(Math.random() * 6);
+                const sides = Array(6).fill(true);
+                sides[gapSide] = false;
+                
+                walls.push(new Wall(sides));
+            } 
+            else if (chosenPattern === 'spiral') {
+                // Giderek kayan spiral şeklinde 3-4 duvar
+                const startGap = Math.floor(Math.random() * 6);
+                const dir = Math.random() < 0.5 ? 1 : -1;
+                for (let i = 0; i < 4; i++) {
+                    setTimeout(() => {
+                        if (gameState === 'PLAYING') {
+                            const currentGap = (startGap + i * dir + 6) % 6;
+                            const sides = Array(6).fill(true);
+                            sides[currentGap] = false;
+                            walls.push(new Wall(sides));
+                        }
+                    }, i * 350);
+                }
+            } 
+            else if (chosenPattern === 'opposite-gaps') {
+                // Karşılıklı 2 adet boşluk olan duvarlar
+                const gapSide1 = Math.floor(Math.random() * 3);
+                const gapSide2 = gapSide1 + 3;
+                const sides = Array(6).fill(true);
+                sides[gapSide1] = false;
+                sides[gapSide2] = false;
+                
+                walls.push(new Wall(sides));
+            } 
+            else if (chosenPattern === 'alternate-gaps') {
+                // Ardışık boşluklu iki duvar fırlatırız
+                const gap1 = Math.floor(Math.random() * 6);
+                const gap2 = (gap1 + 2) % 6;
+                
+                const sides1 = Array(6).fill(true);
+                sides1[gap1] = false;
+                walls.push(new Wall(sides1));
+
+                setTimeout(() => {
+                    if (gameState === 'PLAYING') {
+                        const sides2 = Array(6).fill(true);
+                        sides2[gap2] = false;
+                        walls.push(new Wall(sides2));
+                    }
+                }, 400);
+            }
+        }
+
+        // --- UPDATE & RENDER LOOP ---
+
+        function update(dt) {
+            gameTime += dt;
+            scoreEl.textContent = formatTime(gameTime);
+
+            // Zorluk artışı ve palet değişimi
+            paletteTimer += dt;
+            if (paletteTimer >= 10000) { // Her 10 saniyede bir
+                paletteTimer = 0;
+                currentPaletteIndex = (currentPaletteIndex + 1) % COLOR_PALETTES.length;
+                gameDifficulty += 0.12;
+                baseWallSpeed = Math.min(0.24, baseWallSpeed + 0.01);
+                cameraSpeed = Math.min(0.035, cameraSpeed + 0.003);
+                wallSpawnInterval = Math.max(800, wallSpawnInterval - 100);
+
+                audio.playMilestone();
+            }
+
+            // Ritmik Pulse yavaşça sönümlenir (1.15 -> 1.0)
+            pulse += (1.0 - pulse) * 0.15 * (dt / 16);
+
+            // 1. Kamera Rotasyonu
+            cameraDirectionTimer += dt;
+            if (cameraDirectionTimer >= 5000 + Math.random() * 3000) {
+                cameraDirectionTimer = 0;
+                cameraSpeed = -cameraSpeed; // Yön değiştir
+            }
+            cameraAngle += cameraSpeed * (dt / 16);
+
+            // 2. Oyuncu Hareket ve Konumu
+            const rotSpeed = 0.09;
+            if (inputDirection !== 0) {
+                playerAngle += inputDirection * rotSpeed * (dt / 16);
+            }
+            // Açı normalizasyonu (0 - 2PI)
+            playerAngle = ((playerAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+            // 3. Duvar Üretimi ve Hareketi
+            wallSpawnTimer += dt;
+            if (wallSpawnTimer >= wallSpawnInterval) {
+                generateWallBatch();
+                wallSpawnTimer = 0;
+            }
+
+            for (let i = walls.length - 1; i >= 0; i--) {
+                const w = walls[i];
+                w.update(dt);
+
+                // Çarpışma Kontrolü
+                if (w.checkCollision(playerAngle)) {
+                    gameOver();
+                    return;
+                }
+
+                // Altıgene ulaştıysa yok et
+                if (w.dist <= centerHexRadius - 5) {
+                    walls.splice(i, 1);
+                }
+            }
+
+            // 4. Parçacıklar
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update(dt);
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // Ekran Temizleme
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const palette = COLOR_PALETTES[currentPaletteIndex];
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Kamera Rotasyonu ve Merkezleme Transformu
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(cameraAngle);
+
+            // 1. Arka Plan Sektör Dilimleri
+            for (let i = 0; i < playerSectorCount; i++) {
+                const a1 = (i / playerSectorCount) * Math.PI * 2;
+                const a2 = ((i + 1) / playerSectorCount) * Math.PI * 2;
+                
+                ctx.fillStyle = (i % 2 === 0) ? palette.colorA : palette.colorB;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                // Ekran sınırlarını aşacak büyüklükte çiz
+                ctx.lineTo(Math.cos(a1) * canvas.width * 1.5, Math.sin(a1) * canvas.width * 1.5);
+                ctx.lineTo(Math.cos(a2) * canvas.width * 1.5, Math.sin(a2) * canvas.width * 1.5);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // 2. Parçacıklar (Sektörler ve merkez altında)
+            particles.forEach(p => p.draw());
+
+            // 3. Daralan Duvarları Çiz
+            walls.forEach(w => w.draw(palette));
+
+            // 4. Merkez Altıgen Çizimi (Pulse ile çarparak ritim kazandır)
+            ctx.save();
+            ctx.fillStyle = '#02020a';
+            ctx.strokeStyle = palette.wall;
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = palette.wall;
+
+            const hexR = centerHexRadius * pulse;
+            ctx.beginPath();
+            for (let i = 0; i < playerSectorCount; i++) {
+                const a = (i / playerSectorCount) * Math.PI * 2;
+                const px = Math.cos(a) * hexR;
+                const py = Math.sin(a) * hexR;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            // 5. Oyuncu (Küçük Üçgen)
+            if (gameState === 'PLAYING') {
+                ctx.save();
+                const pR = playerRadius * (pulse * 0.15 + 0.85); // Oyuncu da biraz ritim alır
+                ctx.translate(Math.cos(playerAngle) * pR, Math.sin(playerAngle) * pR);
+                ctx.rotate(playerAngle);
+
+                ctx.fillStyle = palette.player;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = palette.player;
+
+                // İçe doğru bakan üçgen
+                ctx.beginPath();
+                ctx.moveTo(-6, 0);       // Uç
+                ctx.lineTo(6, -6);       // Arka sol
+                ctx.lineTo(4, 0);        // İç oyuk
+                ctx.lineTo(6, 6);        // Arka sağ
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore(); // Kamera transformunu kaldır
+        }
+
+        function gameLoop(time) {
+            if (gameState !== 'PLAYING') return;
+
+            const dt = time - lastTime;
+            lastTime = time;
+
+            update(dt);
+            draw();
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- GAME CONTROL FUNCTIONS ---
+
+        function startGame() {
+            gameTime = 0.0;
+            paletteTimer = 0;
+            currentPaletteIndex = 0;
+            gameDifficulty = 1.0;
+            baseWallSpeed = 0.12;
+            cameraSpeed = 0.015;
+            wallSpawnInterval = 1600;
+            
+            walls = [];
+            particles = [];
+            playerAngle = -Math.PI / 2;
+            inputDirection = 0;
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+
+            gameState = 'PLAYING';
+            audio.startBeat();
+
+            cancelAnimationFrame(animationId);
+            lastTime = performance.now();
+            gameLoop(lastTime);
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            audio.stopBeat();
+            audio.playCrash();
+            triggerScreenShake();
+
+            // Oyuncu parçalanması (Shatter particles)
+            const palette = COLOR_PALETTES[currentPaletteIndex];
+            const px = Math.cos(playerAngle) * playerRadius;
+            const py = Math.sin(playerAngle) * playerRadius;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            // Kamera dönüşüne göre mutlak parçacık konumlarını hesapla
+            const radX = cx + px * Math.cos(cameraAngle) - py * Math.sin(cameraAngle);
+            const radY = cy + px * Math.sin(cameraAngle) + py * Math.cos(cameraAngle);
+
+            for (let i = 0; i < 35; i++) {
+                particles.push(new Particle(radX, radY, palette.player));
+            }
+
+            // Son kare parçacıklarını çiz
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,23,68,0.25)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update(16);
+                p.draw();
+            });
+            ctx.restore();
+
+            if (gameTime > bestScore) {
+                bestScore = gameTime;
+                localStorage.setItem('siberAltigenBestScore', bestScore);
+                bestScoreEl.textContent = formatTime(bestScore);
+            }
+
+            finalScoreEl.textContent = formatTime(gameTime);
+            gameOverScreen.classList.add('active');
+        }
+
+        function triggerScreenShake() {
+            gameWrapper.classList.add('shake');
+            setTimeout(() => {
+                gameWrapper.classList.remove('shake');
+            }, 200);
+        }
+
+        // --- GİRİŞ / KLAVYE VE DOKUNMATİK EYLEMLERİ ---
+
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                inputDirection = -1;
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                inputDirection = 1;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (
+                ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && inputDirection === -1) ||
+                ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && inputDirection === 1)
+            ) {
+                inputDirection = 0;
+            }
+        });
+
+        // Touch aiming splits screen (Left side Sol, Right side Sağ)
+        function handlePointerStart(clientX) {
+            if (gameState !== 'PLAYING') return;
+            const halfWidth = window.innerWidth / 2;
+            if (clientX < halfWidth) {
+                inputDirection = -1;
+            } else {
+                inputDirection = 1;
+            }
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if (gameState === 'PLAYING') {
+                handlePointerStart(e.clientX);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (gameState === 'PLAYING') {
+                inputDirection = 0;
+            }
+        });
+
+        window.addEventListener('touchstart', (e) => {
+            if (gameState === 'PLAYING' && e.touches.length > 0) {
+                handlePointerStart(e.touches[0].clientX);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            if (gameState === 'PLAYING') {
+                inputDirection = 0;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        // Düğmeler
+        document.getElementById('startBtn').addEventListener('click', () => {
+            audio.resume();
+            startGame();
+        });
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            audio.resume();
+            startGame();
+        });
+
+        // Başlangıç çizimi
+        draw();
+    </script>
+</body>
+</html>
