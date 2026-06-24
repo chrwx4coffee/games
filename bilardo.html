@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Bilardo // Cyber Pool</title>
+    <!-- Outfit Font for clean cyber style -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #03001e;
+            --primary-glow: #00f2fe; /* Cyan */
+            --secondary-glow: #ff007f; /* Magenta */
+            --accent-glow: #ffd700; /* Gold */
+            --felt-color: #0d0628; /* Deep purple pool felt */
+            --cushion-color: #1a0f4a;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(8, 4, 25, 0.75);
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0f0426 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 20px 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(0, 242, 254, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            width: min(95vw, 760px);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: -4px;
+        }
+
+        .hud-panel {
+            display: flex;
+            gap: 12px;
+            padding: 10px 18px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            transition: all 0.2s ease;
+        }
+
+        .hud-turn {
+            flex: 1.5;
+        }
+
+        .turn-player .hud-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.5);
+        }
+
+        .turn-ai .hud-value {
+            color: var(--secondary-glow);
+            text-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
+        }
+
+        .hud-score .hud-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
+            width: 100%;
+            overflow: hidden;
+            aspect-ratio: 700/380;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: var(--felt-color);
+            width: 100%;
+            height: 100%;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            background: rgba(5, 2, 20, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.98rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--accent-glow);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .btn {
+            flex: 1;
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.15), rgba(255, 0, 127, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.3), rgba(255, 0, 127, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 242, 254, 0.35);
+            border-color: var(--primary-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .ctrl-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .power-bar-container {
+            width: 100%;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            margin-top: -6px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .power-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            box-shadow: 0 0 8px var(--primary-glow);
+            transition: width 0.05s ease-out;
+        }
+
+        .shake {
+            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Bilardo</h1>
+        
+        <div class="hud-panel">
+            <div class="hud-item hud-turn" id="turnPanel">
+                <span class="hud-label">SIra</span>
+                <span class="hud-value" id="activeTurn">OYUNA BAŞLA</span>
+            </div>
+            <div class="hud-item hud-score">
+                <span class="hud-label">SAYILAN TOPLAR</span>
+                <span class="hud-value" id="ballsPotted">0 / 9</span>
+            </div>
+            <div class="hud-item" id="shotCountPanel">
+                <span class="hud-label">VURUŞ SAYISI</span>
+                <span class="hud-value" id="shotsTaken">0</span>
+            </div>
+        </div>
+
+        <div class="power-bar-container" id="powerBarContainer">
+            <div class="power-bar" id="powerBar"></div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="700" height="380"></canvas>
+            
+            <!-- Menu Screen Overlay -->
+            <div class="screen-overlay active" id="menuScreen">
+                <h2>Cyber Pool</h2>
+                <p>Neon ışıklı masada bilardo keyfi! Beyaz topa vurarak tüm topları deliklere sokun. <span>Vs Yapay Zeka</span> modunda bilgisayara meydan okuyun!</p>
+                <div class="btn-group">
+                    <button class="btn" onclick="startGame('solo')">Solo Mücadele</button>
+                    <button class="btn btn-secondary" onclick="startGame('ai')">Yapay Zeka</button>
+                </div>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 id="winnerText">MÜKEMMEL!</h2>
+                <p id="gameOverStats">Tüm topları 12 vuruşta temizlediniz.</p>
+                <button class="btn" id="restartBtn">Menüye Dön</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="ctrl-btn" id="rulesBtn">Nasıl Oynanır?</button>
+            <button class="ctrl-btn" id="menuBtn">Menü</button>
+        </div>
+
+        <div class="hint" id="hintText">Beyaz topun üzerinden geriye doğru sürükleyip gücü ayarlayın ve bırakarak vurun.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const activeTurnEl = document.getElementById('activeTurn');
+        const turnPanel = document.getElementById('turnPanel');
+        const ballsPottedEl = document.getElementById('ballsPotted');
+        const shotsTakenEl = document.getElementById('shotsTaken');
+        const powerBarContainer = document.getElementById('powerBarContainer');
+        const powerBar = document.getElementById('powerBar');
+        
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const restartBtn = document.getElementById('restartBtn');
+        const rulesBtn = document.getElementById('rulesBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const gameWrapper = document.getElementById('gameWrapper');
+        const winnerText = document.getElementById('winnerText');
+        const gameOverStats = document.getElementById('gameOverStats');
+        const hintText = document.getElementById('hintText');
+
+        // Virtual Pool Table Constants
+        const TABLE_WIDTH = 700;
+        const TABLE_HEIGHT = 380;
+        const BORDER = 24;
+        const BALL_RADIUS = 9;
+        const FRICTION = 0.983;
+
+        // Pockets centers
+        const pockets = [
+            { x: BORDER + 4, y: BORDER + 4, r: 19 }, // Top-Left
+            { x: TABLE_WIDTH / 2, y: BORDER - 2, r: 18 }, // Top-Mid
+            { x: TABLE_WIDTH - BORDER - 4, y: BORDER + 4, r: 19 }, // Top-Right
+            { x: BORDER + 4, y: TABLE_HEIGHT - BORDER - 4, r: 19 }, // Bottom-Left
+            { x: TABLE_WIDTH / 2, y: TABLE_HEIGHT - BORDER + 2, r: 18 }, // Bottom-Mid
+            { x: TABLE_WIDTH - BORDER - 4, y: TABLE_HEIGHT - BORDER - 4, r: 19 } // Bottom-Right
+        ];
+
+        // Object ball custom neon colors
+        const BALL_COLORS = [
+            '#ffff00', // 1: Yellow
+            '#0000ff', // 2: Blue
+            '#ff0000', // 3: Red
+            '#aa00aa', // 4: Purple
+            '#ffaa00', // 5: Orange
+            '#00aa00', // 6: Green
+            '#a52a2a', // 7: Brown
+            '#111111', // 8: Black
+            '#ffd700'  // 9: Golden Yellow
+        ];
+
+        // Game State Variables
+        let gameState = 'MENU'; // MENU, PLAYING, AI_THINKING, GAMEOVER
+        let gameMode = 'solo'; // solo, ai
+        let turn = 'player'; // player, ai
+        let scorePlayer = 0;
+        let scoreAi = 0;
+        let shotsTaken = 0;
+        let totalPottedCount = 0;
+
+        let balls = [];
+        let particles = [];
+        let cueBall = null;
+
+        // Interactive Aiming state
+        let aimLineActive = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragCurrent = { x: 0, y: 0 };
+        let dragPower = 0;
+        let dragAngle = 0;
+
+        // Audio System
+        let audioCtx = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSynth(freqStart, freqEnd, duration, type = 'sine', volume = 0.2) {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+                if (freqEnd !== freqStart) {
+                    osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + duration);
+                }
+
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playBallHitSound(volumeRatio = 1.0) {
+            // High frequency wood clack
+            playSynth(700 + Math.random() * 200, 400, 0.05, 'triangle', 0.25 * volumeRatio);
+        }
+
+        function playCushionSound(volumeRatio = 1.0) {
+            // Low thud
+            playSynth(130, 70, 0.1, 'sine', 0.2 * volumeRatio);
+        }
+
+        function playPocketSound() {
+            // Sweet laser chime
+            setTimeout(() => playSynth(523, 523, 0.08, 'sine', 0.15), 0);
+            setTimeout(() => playSynth(783, 783, 0.08, 'sine', 0.15), 60);
+            setTimeout(() => playSynth(1046, 1200, 0.18, 'triangle', 0.15), 120);
+        }
+
+        function playScratchSound() {
+            // Descending sweep
+            playSynth(300, 80, 0.25, 'sawtooth', 0.2);
+        }
+
+        // Particle System
+        class Particle {
+            constructor(x, y, vx, vy, color, r, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.r = r;
+                this.alpha = 1.0;
+                this.decay = 1.0 / life;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createSparkParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 4 + 1.5;
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    color,
+                    Math.random() * 2 + 1,
+                    Math.random() * 15 + 15
+                ));
+            }
+        }
+
+        // Ball Class
+        class Ball {
+            constructor(x, y, num, isCue = false) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.r = BALL_RADIUS;
+                this.num = num;
+                this.isCue = isCue;
+                
+                this.color = isCue ? '#ffffff' : BALL_COLORS[num - 1];
+                this.shadowColor = isCue ? 'var(--primary-glow)' : this.color;
+                
+                this.inPocket = false;
+                this.pocketAnimationScale = 1.0;
+                this.targetPocketX = 0;
+                this.targetPocketY = 0;
+            }
+
+            update() {
+                if (this.inPocket) {
+                    // Sucking animation toward pocket center
+                    const dx = this.targetPocketX - this.x;
+                    const dy = this.targetPocketY - this.y;
+                    this.x += dx * 0.15;
+                    this.y += dy * 0.15;
+                    this.pocketAnimationScale -= 0.08;
+                    this.vx = 0;
+                    this.vy = 0;
+                    
+                    if (this.pocketAnimationScale <= 0.05) {
+                        handleBallPocketed(this);
+                    }
+                    return;
+                }
+
+                // Normal movement
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Felt friction slowing down
+                this.vx *= FRICTION;
+                this.vy *= FRICTION;
+                
+                if (Math.hypot(this.vx, this.vy) < 0.08) {
+                    this.vx = 0;
+                    this.vy = 0;
+                }
+
+                // Check Cushion Bounces
+                const left = BORDER + this.r;
+                const right = TABLE_WIDTH - BORDER - this.r;
+                const top = BORDER + this.r;
+                const bottom = TABLE_HEIGHT - BORDER - this.r;
+
+                // Left cushion
+                if (this.x < left) {
+                    if (!checkPocketSuction(this)) {
+                        this.x = left;
+                        this.vx = -this.vx * 0.95;
+                        playCushionSound(Math.abs(this.vx) / 6);
+                        createSparkParticles(left - this.r, this.y, this.color, 4);
+                    }
+                }
+                // Right cushion
+                else if (this.x > right) {
+                    if (!checkPocketSuction(this)) {
+                        this.x = right;
+                        this.vx = -this.vx * 0.95;
+                        playCushionSound(Math.abs(this.vx) / 6);
+                        createSparkParticles(right + this.r, this.y, this.color, 4);
+                    }
+                }
+
+                // Top cushion
+                if (this.y < top) {
+                    if (!checkPocketSuction(this)) {
+                        this.y = top;
+                        this.vy = -this.vy * 0.95;
+                        playCushionSound(Math.abs(this.vy) / 6);
+                        createSparkParticles(this.x, top - this.r, this.color, 4);
+                    }
+                }
+                // Bottom cushion
+                else if (this.y > bottom) {
+                    if (!checkPocketSuction(this)) {
+                        this.y = bottom;
+                        this.vy = -this.vy * 0.95;
+                        playCushionSound(Math.abs(this.vy) / 6);
+                        createSparkParticles(this.x, bottom + this.r, this.color, 4);
+                    }
+                }
+            }
+
+            draw() {
+                if (this.pocketAnimationScale <= 0) return;
+                
+                ctx.save();
+                ctx.shadowBlur = this.inPocket ? 0 : 15;
+                ctx.shadowColor = this.shadowColor;
+                ctx.fillStyle = this.color;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r * this.pocketAnimationScale, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Draw ball number label
+                if (!this.isCue && !this.inPocket) {
+                    ctx.save();
+                    ctx.fillStyle = this.num === 8 ? '#ffffff' : '#000000';
+                    ctx.font = "800 10px 'Outfit'";
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.num, this.x, this.y);
+                    ctx.restore();
+                }
+            }
+        }
+
+        // Rack diamond layout
+        function rackNineBall() {
+            balls = [];
+            
+            // Add Cue Ball (cyan / white)
+            cueBall = new Ball(180, 190, 0, true);
+            balls.push(cueBall);
+
+            // Diamond layout coordinates
+            const startX = 490;
+            const startY = 190;
+            const size = 18; // ball diameter
+            const dx = size * Math.cos(Math.PI / 6); // 15.6
+            const dy = size * Math.sin(Math.PI / 6); // 9
+
+            // Pre-defined diamond positions for 9 balls:
+            const rackPositions = [
+                { row: 0, col: 0, n: 1 }, // Front apex: Ball 1
+                
+                { row: 1, col: -1, n: 2 },
+                { row: 1, col: 1, n: 3 },
+                
+                { row: 2, col: -2, n: 4 },
+                { row: 2, col: 0, n: 9 },  // Center: Ball 9 is always in the middle
+                { row: 2, col: 2, n: 5 },
+                
+                { row: 3, col: -1, n: 6 },
+                { row: 3, col: 1, n: 7 },
+                
+                { row: 4, col: 0, n: 8 } // Back tail: Ball 8
+            ];
+
+            rackPositions.forEach(pos => {
+                const bx = startX + pos.row * dx;
+                const by = startY + pos.col * dy;
+                balls.push(new Ball(bx, by, pos.n, false));
+            });
+
+            totalPottedCount = 0;
+            ballsPottedEl.textContent = `0 / 9`;
+        }
+
+        function checkPocketSuction(ball) {
+            for (let pocket of pockets) {
+                const dist = Math.hypot(ball.x - pocket.x, ball.y - pocket.y);
+                if (dist < pocket.r + 4) {
+                    ball.inPocket = true;
+                    ball.targetPocketX = pocket.x;
+                    ball.targetPocketY = pocket.y;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function handleBallPocketed(ball) {
+            // Remove ball from active list
+            balls = balls.filter(b => b !== ball);
+
+            if (ball.isCue) {
+                // Cue ball Scratch!
+                playScratchSound();
+                createSparkParticles(ball.x, ball.y, '#ffffff', 25);
+                gameWrapper.classList.add('shake');
+                setTimeout(() => gameWrapper.classList.remove('shake'), 200);
+
+                // Re-spawn cue ball on headstring line
+                setTimeout(() => {
+                    cueBall = new Ball(180, 190, 0, true);
+                    balls.push(cueBall);
+                }, 800);
+
+                if (gameMode === 'ai') {
+                    // Turn switches on scratch
+                    switchTurn();
+                }
+            } else {
+                // Sunk object ball!
+                playPocketSound();
+                createSparkParticles(ball.x, ball.y, ball.color, 35);
+                
+                totalPottedCount++;
+                ballsPottedEl.textContent = `${totalPottedCount} / 9`;
+
+                if (gameMode === 'ai') {
+                    if (turn === 'player') scorePlayer++;
+                    else scoreAi++;
+                }
+
+                // Check win condition
+                const objectBallsLeft = balls.filter(b => !b.isCue).length;
+                if (objectBallsLeft === 0) {
+                    endGame();
+                }
+            }
+        }
+
+        // Switch turn between Player and AI
+        function switchTurn() {
+            if (gameMode !== 'ai') return;
+            
+            turn = (turn === 'player') ? 'ai' : 'player';
+            
+            if (turn === 'player') {
+                activeTurnEl.textContent = 'SENİN SIRAN';
+                turnPanel.className = 'hud-item hud-turn turn-player';
+                gameState = 'PLAYING';
+            } else {
+                activeTurnEl.textContent = 'YAPAY ZEKA DÜŞÜNÜYOR...';
+                turnPanel.className = 'hud-item hud-turn turn-ai';
+                gameState = 'AI_THINKING';
+                setTimeout(runAIShot, 1600); // AI wait then shoots
+            }
+        }
+
+        // Smart vector-pathing AI shot routines
+        function runAIShot() {
+            if (gameState !== 'AI_THINKING') return;
+
+            const objectBalls = balls.filter(b => !b.isCue);
+            if (objectBalls.length === 0) return;
+
+            // Pick closest object ball as target
+            objectBalls.sort((a, b) => Math.hypot(a.x - cueBall.x, a.y - cueBall.y) - Math.hypot(b.x - cueBall.x, b.y - cueBall.y));
+            const target = objectBalls[0];
+
+            // Math angle from cue ball to target
+            const angle = Math.atan2(target.y - cueBall.y, target.x - cueBall.x);
+            // Slight inaccuracy error random shift
+            const error = (Math.random() - 0.5) * 0.08;
+            
+            // Random power
+            const power = 5.5 + Math.random() * 8;
+
+            // Perform visual AI shot simulation
+            shoot(angle + error, power);
+        }
+
+        // Shot action trigger
+        function shoot(angle, force) {
+            initAudio();
+            
+            cueBall.vx = Math.cos(angle) * force;
+            cueBall.vy = Math.sin(angle) * force;
+            
+            playBallHitSound(force / 12);
+            shotsTaken++;
+            shotsTakenEl.textContent = shotsTaken;
+            
+            aimLineActive = false;
+            
+            // If Vs AI mode, we will track if any balls sink to determine next turn
+            if (gameMode === 'ai') {
+                // Wait for all balls to halt completely before analyzing turn changes
+                setTimeout(monitorTurnCycle, 150);
+            }
+        }
+
+        function monitorTurnCycle() {
+            // Check if balls are still sliding
+            const sliding = balls.some(b => b.vx !== 0 || b.vy !== 0 || b.inPocket);
+            if (sliding) {
+                setTimeout(monitorTurnCycle, 100);
+            } else {
+                // Halts reached. Switch turns.
+                switchTurn();
+            }
+        }
+
+        // Win / Conclude game triggers
+        function endGame() {
+            gameState = 'GAMEOVER';
+            
+            if (gameMode === 'solo') {
+                winnerText.textContent = 'MÜKEMMEL!';
+                gameOverStats.textContent = `Tüm topları ${shotsTaken} vuruşta temizlediniz.`;
+            } else {
+                if (scorePlayer > scoreAi) {
+                    winnerText.textContent = 'ZAFER SENİN!';
+                    gameOverStats.textContent = `Yapay Zekayı ${scorePlayer} - ${scoreAi} yendin!`;
+                } else if (scoreAi > scorePlayer) {
+                    winnerText.textContent = 'BOZGUN!';
+                    gameOverStats.textContent = `Yapay Zeka ${scoreAi} - ${scorePlayer} kazandı.`;
+                } else {
+                    winnerText.textContent = 'BERABERE!';
+                    gameOverStats.textContent = `Dostluk kazandı! Skorlar: ${scorePlayer} - ${scoreAi}`;
+                }
+            }
+
+            gameOverScreen.classList.add('active');
+        }
+
+        // Physics Engine updates
+        function updatePhysics() {
+            // 1. Move all balls
+            balls.forEach(b => b.update());
+
+            // 2. Resolve Ball-to-Ball elastic collisions
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    const b1 = balls[i];
+                    const b2 = balls[j];
+                    
+                    if (b1.inPocket || b2.inPocket) continue;
+
+                    const dist = Math.hypot(b2.x - b1.x, b2.y - b1.y);
+                    const minDist = b1.r + b2.r;
+
+                    if (dist < minDist) {
+                        // Resolve overlap immediately to prevent locking
+                        const overlap = minDist - dist;
+                        const nx = (b2.x - b1.x) / dist;
+                        const ny = (b2.y - b1.y) / dist;
+
+                        b1.x -= nx * overlap * 0.5;
+                        b1.y -= ny * overlap * 0.5;
+                        b2.x += nx * overlap * 0.5;
+                        b2.y += ny * overlap * 0.5;
+
+                        // 2D Elastic impulse collision formulas
+                        const rvx = b2.vx - b1.vx;
+                        const rvy = b2.vy - b1.vy;
+                        const velAlongNormal = rvx * nx + rvy * ny;
+
+                        if (velAlongNormal < 0) {
+                            const restitution = 0.96;
+                            const impulseScalar = -(1 + restitution) * velAlongNormal / 2; // Equal masses (mass=1)
+                            
+                            b1.vx -= impulseScalar * nx;
+                            b1.vy -= impulseScalar * ny;
+                            b2.vx += impulseScalar * nx;
+                            b2.vy += impulseScalar * ny;
+
+                            const force = Math.abs(velAlongNormal);
+                            playBallHitSound(force / 10);
+                            createSparkParticles(b1.x + nx * b1.r, b1.y + ny * b1.r, b2.color, 4);
+                        }
+                    }
+                }
+            }
+
+            // 3. Update active particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alpha <= 0) particles.splice(i, 1);
+            }
+        }
+
+        // Canvas Field and Entities Drawing routines
+        function drawTable() {
+            // Felt background
+            ctx.fillStyle = 'var(--felt-color)';
+            ctx.fillRect(0, 0, TABLE_WIDTH, TABLE_HEIGHT);
+
+            // Subtle grids on felt
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.02)';
+            ctx.lineWidth = 1.5;
+            for (let x = BORDER; x < TABLE_WIDTH - BORDER; x += 30) {
+                ctx.beginPath();
+                ctx.moveTo(x, BORDER);
+                ctx.lineTo(x, TABLE_HEIGHT - BORDER);
+                ctx.stroke();
+            }
+            for (let y = BORDER; y < TABLE_HEIGHT - BORDER; y += 30) {
+                ctx.beginPath();
+                ctx.moveTo(BORDER, y);
+                ctx.lineTo(TABLE_WIDTH - BORDER, y);
+                ctx.stroke();
+            }
+
+            // Headstring line (25%) & spots
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(180, BORDER);
+            ctx.lineTo(180, TABLE_HEIGHT - BORDER);
+            ctx.stroke();
+
+            // Outer wooden cushions borders (Neon borders)
+            ctx.shadowBlur = 20;
+            ctx.lineWidth = 6;
+
+            // Player Turn glows
+            if (gameMode === 'ai' && turn === 'ai') {
+                ctx.shadowColor = 'var(--secondary-glow)';
+                ctx.strokeStyle = 'var(--secondary-glow)';
+            } else {
+                ctx.shadowColor = 'var(--primary-glow)';
+                ctx.strokeStyle = 'var(--primary-glow)';
+            }
+            
+            // Draw table boundaries rectangle
+            ctx.beginPath();
+            ctx.rect(BORDER, BORDER, TABLE_WIDTH - 2*BORDER, TABLE_HEIGHT - 2*BORDER);
+            ctx.stroke();
+
+            // Reset shadows
+            ctx.shadowBlur = 0;
+
+            // Draw six pockets
+            pockets.forEach(p => {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#000';
+                
+                // Pocket body black hole
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Pocket outer glowing ring
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        function drawEntities() {
+            // 1. Draw Particles
+            particles.forEach(p => p.draw());
+
+            // 2. Draw Balls
+            balls.forEach(b => b.draw());
+
+            // 3. Draw Aim line indicator (Slingshot/Pullback style)
+            const tableFrictionHalted = balls.every(b => b.vx === 0 && b.vy === 0);
+            
+            if (aimLineActive && tableFrictionHalted && gameState === 'PLAYING') {
+                // Aim projection vector (Opposite of drag)
+                const projX = cueBall.x + Math.cos(dragAngle) * 200;
+                const projY = cueBall.y + Math.sin(dragAngle) * 200;
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.35)';
+                ctx.setLineDash([6, 6]);
+                ctx.lineWidth = 2;
+                
+                // Draw dotted projection line
+                ctx.beginPath();
+                ctx.moveTo(cueBall.x, cueBall.y);
+                ctx.lineTo(projX, projY);
+                ctx.stroke();
+                ctx.restore();
+
+                // Draw aiming cue stick behind cue ball
+                const cueStickDist = 22 + dragPower * 1.5; // push stick back based on power
+                const stickStartX = cueBall.x - Math.cos(dragAngle) * cueStickDist;
+                const stickStartY = cueBall.y - Math.sin(dragAngle) * cueStickDist;
+                const stickEndX = cueBall.x - Math.cos(dragAngle) * (cueStickDist + 150);
+                const stickEndY = cueBall.y - Math.sin(dragAngle) * (cueStickDist + 150);
+
+                ctx.save();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'var(--primary-glow)';
+                ctx.beginPath();
+                ctx.moveTo(stickStartX, stickStartY);
+                ctx.lineTo(stickEndX, stickEndY);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // Loop Runner
+        function loop() {
+            updatePhysics();
+            drawTable();
+            drawEntities();
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Interactive Start trigger
+        window.startGame = function(mode) {
+            initAudio();
+            gameMode = mode;
+            turn = 'player';
+            shotsTaken = 0;
+            scorePlayer = 0;
+            scoreAi = 0;
+            
+            shotsTakenEl.textContent = '0';
+            ballsPottedEl.textContent = '0 / 9';
+            
+            if (mode === 'solo') {
+                activeTurnEl.textContent = 'TEMİZLEME MODU';
+                turnPanel.className = 'hud-item hud-turn turn-player';
+                document.getElementById('shotCountPanel').style.display = 'flex';
+            } else {
+                activeTurnEl.textContent = 'SENİN SIRAN';
+                turnPanel.className = 'hud-item hud-turn turn-player';
+                document.getElementById('shotCountPanel').style.display = 'none';
+            }
+
+            rackNineBall();
+            menuScreen.classList.remove('active');
+            gameState = 'PLAYING';
+            hintText.textContent = "Beyaz topun üzerinden geriye doğru sürükleyip gücü ayarlayın ve bırakarak vurun.";
+        };
+
+        // Coordinate scaling to map browser touches/mouse inputs to 700x380
+        function mapInputCoords(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = TABLE_WIDTH / rect.width;
+            const scaleY = TABLE_HEIGHT / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handlePointerDown(x, y) {
+            initAudio();
+            if (gameState !== 'PLAYING' || turn !== 'player') return;
+
+            // Wait for all balls to halt completely before allowing next shot
+            const moving = balls.some(b => b.vx !== 0 || b.vy !== 0);
+            if (moving) return;
+
+            const coords = mapInputCoords(x, y);
+
+            // Check if player touched near cue ball
+            const dist = Math.hypot(coords.x - cueBall.x, coords.y - cueBall.y);
+            if (dist < 40) {
+                aimLineActive = true;
+                dragStart.x = cueBall.x;
+                dragStart.y = cueBall.y;
+                dragCurrent.x = coords.x;
+                dragCurrent.y = coords.y;
+                
+                powerBarContainer.style.display = 'block';
+            }
+        }
+
+        function handlePointerMove(x, y) {
+            if (!aimLineActive) return;
+            const coords = mapInputCoords(x, y);
+            dragCurrent.x = coords.x;
+            dragCurrent.y = coords.y;
+
+            // Calculate drag distance (power) and angle
+            const dx = cueBall.x - coords.x;
+            const dy = cueBall.y - coords.y;
+            const dist = Math.hypot(dx, dy);
+
+            // Angle of shoot path (direction of stick push, opposite of drag)
+            dragAngle = Math.atan2(dy, dx);
+            
+            // Map drag distance to shot force: min 0, max 160 pixels map to max force of 18
+            dragPower = Math.min(18, dist * 0.12);
+            
+            // Update power bar UI
+            const powerPercent = (dragPower / 18) * 100;
+            powerBar.style.width = `${powerPercent}%`;
+        }
+
+        function handlePointerUp() {
+            if (!aimLineActive) return;
+            
+            powerBarContainer.style.display = 'none';
+            powerBar.style.width = '0%';
+
+            if (dragPower > 0.8) {
+                shoot(dragAngle, dragPower);
+            } else {
+                aimLineActive = false;
+            }
+        }
+
+        // Mouse Event Listeners
+        canvas.addEventListener('mousedown', (e) => {
+            handlePointerDown(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            handlePointerMove(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => {
+            handlePointerUp();
+        });
+
+        // Touch Event Listeners (for mobile devices)
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault(); // prevents standard touch gestures (scrolling)
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            handlePointerUp();
+        });
+
+        // Buttons
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.classList.remove('active');
+            menuScreen.classList.add('active');
+            gameState = 'MENU';
+            activeTurnEl.textContent = 'OYUNA BAŞLA';
+        });
+
+        menuBtn.addEventListener('click', () => {
+            gameState = 'MENU';
+            menuScreen.classList.add('active');
+            gameOverScreen.classList.remove('active');
+        });
+
+        rulesBtn.addEventListener('click', () => {
+            alert("Siber Bilardo Kuralları:\n\n1. İstekayı yönlendirmek ve güç vermek için parmağınızı veya fareyi BEYAZ TOPUN üzerinden GİRİYE doğru çekip bırakın.\n2. Amacınız tüm renkli topları deliklere sokmaktır.\n3. Beyaz top deliğe düşerse (Scratch) ceza alırsınız ve beyaz top tekrar başlangıç pozisyonuna döner.\n4. Yapay Zeka modunda sırayla atış yaparsınız. İyi eğlenceler!");
+        });
+
+        // Initial setup
+        loop();
+    </script>
+</body>
+</html>
