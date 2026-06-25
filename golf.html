@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Mini Golf // Cyber Mini Golf</title>
+    <!-- Google Fonts for retro tech typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #03001e;
+            --primary-glow: #00f2fe; /* Cyber Cyan */
+            --secondary-glow: #ff007f; /* Neon Pink */
+            --accent-glow: #ffd700; /* Gold */
+            --danger-glow: #ff3366; /* Red Laser */
+            --booster-glow: #39ff14; /* Green Booster */
+            --portal-glow: #b500ff; /* Purple Portal */
+            --glass-bg: rgba(8, 4, 25, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0f0426 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 20px 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(0, 242, 254, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            width: min(95vw, 450px);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: -4px;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 12px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .level-box .stat-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.5);
+        }
+
+        .strokes-box .stat-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+        }
+
+        .par-box .stat-value {
+            color: var(--secondary-glow);
+            text-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            overflow: hidden;
+            aspect-ratio: 2/3;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 15px;
+            background: #02010c;
+            width: 100%;
+            height: 100%;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(5, 2, 20, 0.96);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 85%;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--accent-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.15), rgba(ff, 0, 127, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+            padding: 12px 32px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.3), rgba(ff, 0, 127, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 242, 254, 0.3);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .ctrl-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        /* Screen Shake effect on resets */
+        .shake {
+            animation: shake 0.25s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-3px, 0, 0); }
+            20%, 80% { transform: translate3d(5px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Golf</h1>
+        
+        <div class="stats-panel">
+            <div class="stat-box level-box">
+                <span class="stat-label">DELİK</span>
+                <span class="stat-value" id="currentLevel">1 / 9</span>
+            </div>
+            <div class="stat-box strokes-box">
+                <span class="stat-label">VURUŞLAR</span>
+                <span class="stat-value" id="strokesTaken">0</span>
+            </div>
+            <div class="stat-box par-box">
+                <span class="stat-label">PAR</span>
+                <span class="stat-value" id="currentPar">2</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="400" height="600"></canvas>
+            
+            <!-- Menu Screen Overlay -->
+            <div class="screen-overlay active" id="menuScreen">
+                <h2>Cyber Mini Golf</h2>
+                <p>Neon ışıklı yollarda siber vuruşlar! Engelleri aşın, geçitlerden ışınlanın ve topu en az atışta deliğe sokun.</p>
+                <button class="btn" id="startBtn">Mücadeleye Başla</button>
+            </div>
+
+            <!-- Level Completed Overlay -->
+            <div class="screen-overlay" id="levelClearScreen">
+                <h2 style="color: var(--accent-glow); text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);">Delik Tamamlandı!</h2>
+                <p>Skorunuz: <span id="levelStrokes">3 vuruş</span> (Par: <span id="levelPar">2</span>)</p>
+                <button class="btn" id="nextLevelBtn">Sonraki Delik</button>
+            </div>
+
+            <!-- Game Complete Screen Overlay -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 style="color: var(--primary-glow); text-shadow: 0 0 25px rgba(0, 242, 254, 0.7);">SİBER ŞAMPİYON!</h2>
+                <p>Toplam Vuruş Sayısı: <span id="finalStrokes" style="color: var(--accent-glow);">24</span><br>Toplam Par Değeri: <span id="finalPar">27</span></p>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="ctrl-btn" id="resetBallBtn">Topu Sıfırla</button>
+            <button class="ctrl-btn" id="restartGameBtn">Yeniden Başlat</button>
+        </div>
+
+        <div class="hint">Topun üzerinden geriye doğru sürükleyip gücü ayarlayın ve bırakarak fırlatın.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const currentLevelEl = document.getElementById('currentLevel');
+        const strokesTakenEl = document.getElementById('strokesTaken');
+        const currentParEl = document.getElementById('currentPar');
+        
+        const menuScreen = document.getElementById('menuScreen');
+        const levelClearScreen = document.getElementById('levelClearScreen');
+        const nextLevelBtn = document.getElementById('nextLevelBtn');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const resetBallBtn = document.getElementById('resetBallBtn');
+        const restartGameBtn = document.getElementById('restartGameBtn');
+        
+        const gameWrapper = document.getElementById('gameWrapper');
+        const levelStrokesEl = document.getElementById('levelStrokes');
+        const levelParEl = document.getElementById('levelPar');
+        const finalStrokesEl = document.getElementById('finalStrokes');
+        const finalParEl = document.getElementById('finalPar');
+
+        // Physics constants
+        const FRICTION = 0.982;
+        const BOUNCE_ELASTICITY = 0.85;
+        const BALL_RADIUS = 6;
+        const HOLE_RADIUS = 11;
+        const FIELD_WIDTH = 400;
+        const FIELD_HEIGHT = 600;
+        const BORDER = 20;
+
+        // Custom level layouts
+        const LEVELS = [
+            // Level 1: Straight Shot Intro
+            {
+                par: 2,
+                ballStart: { x: 200, y: 500 },
+                hole: { x: 200, y: 120 },
+                walls: [],
+                portals: [],
+                boosters: [],
+                hazards: [],
+                spinners: []
+            },
+            // Level 2: Central wall blockage
+            {
+                par: 3,
+                ballStart: { x: 200, y: 520 },
+                hole: { x: 200, y: 80 },
+                walls: [
+                    { x: 120, y: 280, w: 160, h: 30 } // Middle bumper
+                ],
+                portals: [],
+                boosters: [],
+                hazards: [],
+                spinners: []
+            },
+            // Level 3: Speed Boosters & block
+            {
+                par: 3,
+                ballStart: { x: 200, y: 520 },
+                hole: { x: 200, y: 80 },
+                walls: [
+                    { x: 160, y: 220, w: 80, h: 40 }
+                ],
+                boosters: [
+                    { x: 60, y: 320, w: 50, h: 60, dx: 0, dy: -1 },
+                    { x: 290, y: 320, w: 50, h: 60, dx: 0, dy: -1 }
+                ],
+                portals: [],
+                hazards: [],
+                spinners: []
+            },
+            // Level 4: Chamber warp portals
+            {
+                par: 3,
+                ballStart: { x: 100, y: 500 },
+                hole: { x: 300, y: 100 },
+                walls: [
+                    // Horizontal wall dividing screen
+                    { x: 20, y: 300, w: 360, h: 20 }
+                ],
+                portals: [
+                    { x: 100, y: 200, r: 16, target: 1 }, // Portal Entry (Bottom chamber)
+                    { x: 300, y: 400, r: 16, target: 0 }  // Portal Exit (Top chamber)
+                ],
+                boosters: [],
+                hazards: [],
+                spinners: []
+            },
+            // Level 5: Red Laser Hazard
+            {
+                par: 4,
+                ballStart: { x: 200, y: 520 },
+                hole: { x: 200, y: 80 },
+                walls: [
+                    { x: 20, y: 280, w: 120, h: 20 },
+                    { x: 260, y: 280, w: 120, h: 20 }
+                ],
+                hazards: [
+                    { x: 140, y: 280, w: 120, h: 20 } // Center laser pool resets ball
+                ],
+                portals: [],
+                boosters: [],
+                spinners: []
+            },
+            // Level 6: Rotating spinner bar
+            {
+                par: 3,
+                ballStart: { x: 200, y: 520 },
+                hole: { x: 200, y: 80 },
+                walls: [],
+                spinners: [
+                    { x: 200, y: 260, length: 110, angle: 0, speed: 0.03 } // Rotating windmill spinner
+                ],
+                portals: [],
+                boosters: [],
+                hazards: []
+            },
+            // Level 7: Multi chamber portal maze
+            {
+                par: 5,
+                ballStart: { x: 80, y: 520 },
+                hole: { x: 320, y: 80 },
+                walls: [
+                    { x: 160, y: 20, w: 20, h: 360 },
+                    { x: 220, y: 220, w: 160, h: 20 }
+                ],
+                portals: [
+                    { x: 80, y: 150, r: 16, target: 1 },
+                    { x: 320, y: 500, r: 16, target: 0 }
+                ],
+                boosters: [],
+                hazards: [
+                    { x: 220, y: 350, w: 160, h: 20 }
+                ],
+                spinners: []
+            },
+            // Level 8: Spinner Gauntlet
+            {
+                par: 4,
+                ballStart: { x: 200, y: 520 },
+                hole: { x: 200, y: 80 },
+                walls: [],
+                spinners: [
+                    { x: 110, y: 240, length: 70, angle: 0, speed: 0.04 },
+                    { x: 290, y: 240, length: 70, angle: Math.PI/2, speed: -0.04 }
+                ],
+                portals: [],
+                boosters: [],
+                hazards: []
+            },
+            // Level 9: Final Masterpiece
+            {
+                par: 5,
+                ballStart: { x: 200, y: 530 },
+                hole: { x: 200, y: 80 },
+                walls: [
+                    { x: 20, y: 350, w: 140, h: 20 },
+                    { x: 240, y: 350, w: 140, h: 20 }
+                ],
+                portals: [
+                    { x: 80, y: 440, r: 16, target: 1 },
+                    { x: 320, y: 180, r: 16, target: 0 }
+                ],
+                boosters: [
+                    { x: 160, y: 330, w: 80, h: 50, dx: 0, dy: -1 }
+                ],
+                hazards: [
+                    { x: 20, y: 250, w: 140, h: 20 },
+                    { x: 240, y: 250, w: 140, h: 20 }
+                ],
+                spinners: [
+                    { x: 200, y: 160, length: 90, angle: 0, speed: 0.025 }
+                ]
+            }
+        ];
+
+        // Game State Variables
+        let gameState = 'MENU'; // MENU, PLAYING, LEVEL_CLEAR, GAMEOVER
+        let currentLevelIndex = 0;
+        
+        let strokesTakenCurrent = 0;
+        let strokesTakenTotal = 0;
+        let cumulativePar = 0;
+
+        // Ball State
+        let ball = { x: 200, y: 500, vx: 0, vy: 0, r: BALL_RADIUS, scale: 1.0, isSinking: false, teleportCooldown: 0 };
+        let particles = [];
+        let hitThrottles = { booster: 0, hazard: 0 };
+
+        // Interaction state
+        let pointerActive = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragCurrent = { x: 0, y: 0 };
+        let dragPower = 0;
+        let dragAngle = 0;
+
+        // Audio System
+        let audioCtx = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSynth(freqStart, freqEnd, duration, type = 'sine', volume = 0.2) {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+                if (freqEnd !== freqStart) {
+                    osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + duration);
+                }
+
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playBallHitSound(vol = 0.2) {
+            playSynth(800, 700, 0.05, 'triangle', vol);
+        }
+
+        function playBounceSound() {
+            playSynth(220, 160, 0.06, 'sine', 0.15);
+        }
+
+        function playBoosterSound() {
+            if (Date.now() - hitThrottles.booster < 350) return;
+            hitThrottles.booster = Date.now();
+            playSynth(180, 800, 0.2, 'sine', 0.2);
+        }
+
+        function playPortalSound() {
+            playSynth(400, 900, 0.22, 'sine', 0.22);
+        }
+
+        function playHazardSound() {
+            if (Date.now() - hitThrottles.hazard < 600) return;
+            hitThrottles.hazard = Date.now();
+            playSynth(160, 40, 0.28, 'sawtooth', 0.25);
+        }
+
+        function playHoleSuccessSound() {
+            // Arpeggio chords
+            setTimeout(() => playSynth(523.25, 523.25, 0.08, 'sine', 0.15), 0);
+            setTimeout(() => playSynth(659.25, 659.25, 0.08, 'sine', 0.15), 80);
+            setTimeout(() => playSynth(783.99, 783.99, 0.08, 'sine', 0.15), 160);
+            setTimeout(() => playSynth(1046.50, 1200, 0.25, 'triangle', 0.2), 240);
+        }
+
+        // Particle System
+        class Particle {
+            constructor(x, y, vx, vy, color, r, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.r = r;
+                this.alpha = 1.0;
+                this.decay = 1.0 / life;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createParticles(x, y, color, count = 10, speedMul = 1) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (Math.random() * 4 + 1.5) * speedMul;
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    color,
+                    Math.random() * 2 + 1,
+                    Math.random() * 15 + 15
+                ));
+            }
+        }
+
+        // Setup Level State
+        function initLevel() {
+            const level = LEVELS[currentLevelIndex];
+            
+            ball.x = level.ballStart.x;
+            ball.y = level.ballStart.y;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.scale = 1.0;
+            ball.isSinking = false;
+            ball.teleportCooldown = 0;
+            
+            strokesTakenCurrent = 0;
+            strokesTakenEl.textContent = '0';
+            currentLevelEl.textContent = `${currentLevelIndex + 1} / 9`;
+            currentParEl.textContent = level.par;
+            
+            particles = [];
+
+            // Reset rotating spinner parameters to base angles
+            level.spinners.forEach(s => s.angle = 0);
+        }
+
+        function triggerScreenShake() {
+            gameWrapper.classList.add('shake');
+            setTimeout(() => gameWrapper.classList.remove('shake'), 250);
+        }
+
+        // Reset ball triggers (manually or on laser death)
+        function resetBallPosition(silent = false) {
+            const level = LEVELS[currentLevelIndex];
+            ball.x = level.ballStart.x;
+            ball.y = level.ballStart.y;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.scale = 1.0;
+            ball.isSinking = false;
+            
+            if (!silent) {
+                triggerScreenShake();
+                createParticles(ball.x, ball.y, '#ff3366', 20, 1.8);
+            }
+        }
+
+        function handleHoleSunk() {
+            playHoleSuccessSound();
+            createParticles(ball.x, ball.y, 'var(--accent-glow)', 35, 2.0);
+            
+            strokesTakenTotal += strokesTakenCurrent;
+            cumulativePar += LEVELS[currentLevelIndex].par;
+            
+            gameState = 'LEVEL_CLEAR';
+            levelStrokesEl.textContent = `${strokesTakenCurrent} vuruş`;
+            levelParEl.textContent = LEVELS[currentLevelIndex].par;
+            levelClearScreen.classList.add('active');
+        }
+
+        function advanceLevel() {
+            levelClearScreen.classList.remove('active');
+            currentLevelIndex++;
+            
+            if (currentLevelIndex < LEVELS.length) {
+                initLevel();
+                gameState = 'PLAYING';
+            } else {
+                // Game Finished!
+                gameState = 'GAMEOVER';
+                finalStrokesEl.textContent = strokesTakenTotal;
+                finalParEl.textContent = cumulativePar;
+                gameOverScreen.classList.add('active');
+            }
+        }
+
+        function restartGame() {
+            currentLevelIndex = 0;
+            strokesTakenTotal = 0;
+            cumulativePar = 0;
+            
+            gameOverScreen.classList.remove('active');
+            menuScreen.classList.add('active');
+            gameState = 'MENU';
+        }
+
+        // Main Physics Engine loop
+        function updatePhysics() {
+            const level = LEVELS[currentLevelIndex];
+
+            // 1. Teleport Cooldown update
+            if (ball.teleportCooldown > 0) {
+                ball.teleportCooldown--;
+            }
+
+            // 2. Hole Gravity Pull check
+            if (!ball.isSinking) {
+                const distHole = Math.hypot(ball.x - level.hole.x, ball.y - level.hole.y);
+                if (distHole < HOLE_RADIUS + 4) {
+                    const speed = Math.hypot(ball.vx, ball.vy);
+                    if (speed < 4.0) {
+                        ball.isSinking = true;
+                    }
+                }
+            }
+
+            if (ball.isSinking) {
+                const distHole = Math.hypot(ball.x - level.hole.x, ball.y - level.hole.y);
+                ball.vx = (level.hole.x - ball.x) * 0.22;
+                ball.vy = (level.hole.y - ball.y) * 0.22;
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                ball.scale -= 0.08;
+                
+                if (ball.scale <= 0.05) {
+                    handleHoleSunk();
+                }
+                return; // skip wall collisions when sinking
+            }
+
+            // 3. Normal ball moves
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            ball.vx *= FRICTION;
+            ball.vy *= FRICTION;
+
+            if (Math.hypot(ball.vx, ball.vy) < 0.05) {
+                ball.vx = 0;
+                ball.vy = 0;
+            }
+
+            // 4. Bounces off table outer border cushions
+            const left = BORDER + ball.r;
+            const right = FIELD_WIDTH - BORDER - ball.r;
+            const top = BORDER + ball.r;
+            const bottom = FIELD_HEIGHT - BORDER - ball.r;
+
+            if (ball.x < left) {
+                ball.x = left;
+                ball.vx = -ball.vx * BOUNCE_ELASTICITY;
+                playBounceSound();
+                createParticles(left - ball.r, ball.y, '#00f2fe', 4);
+            } else if (ball.x > right) {
+                ball.x = right;
+                ball.vx = -ball.vx * BOUNCE_ELASTICITY;
+                playBounceSound();
+                createParticles(right + ball.r, ball.y, '#00f2fe', 4);
+            }
+
+            if (ball.y < top) {
+                ball.y = top;
+                ball.vy = -ball.vy * BOUNCE_ELASTICITY;
+                playBounceSound();
+                createParticles(ball.x, top - ball.r, '#00f2fe', 4);
+            } else if (ball.y > bottom) {
+                ball.y = bottom;
+                ball.vy = -ball.vy * BOUNCE_ELASTICITY;
+                playBounceSound();
+                createParticles(ball.x, bottom + ball.r, '#00f2fe', 4);
+            }
+
+            // 5. Portals warp checks
+            level.portals.forEach(p => {
+                const dist = Math.hypot(ball.x - p.x, ball.y - p.y);
+                if (dist < p.r + ball.r && ball.teleportCooldown === 0) {
+                    const destPortal = level.portals[p.target];
+                    ball.x = destPortal.x;
+                    ball.y = destPortal.y;
+                    ball.teleportCooldown = 40;
+                    playPortalSound();
+                    createParticles(p.x, p.y, 'var(--portal-glow)', 15, 1.2);
+                    createParticles(destPortal.x, destPortal.y, 'var(--portal-glow)', 15, 1.2);
+                }
+            });
+
+            // 6. Speed Boosters checking
+            level.boosters.forEach(b => {
+                if (ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) {
+                    ball.vx += b.dx * 0.7;
+                    ball.vy += b.dy * 0.7;
+                    playBoosterSound();
+                    createParticles(ball.x, ball.y, 'var(--booster-glow)', 3, 0.8);
+                }
+            });
+
+            // 7. Hazard Pools checking
+            level.hazards.forEach(h => {
+                if (ball.x > h.x && ball.x < h.x + h.w && ball.y > h.y && ball.y < h.y + h.h) {
+                    playHazardSound();
+                    resetBallPosition(false);
+                }
+            });
+
+            // 8. Static walls AABB-circle collisions
+            level.walls.forEach(w => {
+                const closestX = Math.max(w.x, Math.min(ball.x, w.x + w.w));
+                const closestY = Math.max(w.y, Math.min(ball.y, w.y + w.h));
+                const dist = Math.hypot(ball.x - closestX, ball.y - closestY);
+
+                if (dist < ball.r) {
+                    // Resolve overlap: push out
+                    const overlap = ball.r - dist;
+                    let nx = (ball.x - closestX) / (dist || 1);
+                    let ny = (ball.y - closestY) / (dist || 1);
+
+                    // If inside box, offset along closest edge
+                    if (dist === 0) {
+                        const dl = ball.x - w.x;
+                        const dr = (w.x + w.w) - ball.x;
+                        const dt = ball.y - w.y;
+                        const db = (w.y + w.h) - ball.y;
+                        const min = Math.min(dl, dr, dt, db);
+                        if (min === dl) { nx = -1; ny = 0; }
+                        else if (min === dr) { nx = 1; ny = 0; }
+                        else if (min === dt) { nx = 0; ny = -1; }
+                        else { nx = 0; ny = 1; }
+                    }
+
+                    ball.x += nx * overlap;
+                    ball.y += ny * overlap;
+
+                    // Elastic reflection
+                    const dot = ball.vx * nx + ball.vy * ny;
+                    if (dot < 0) {
+                        ball.vx = (ball.vx - 2 * dot * nx) * BOUNCE_ELASTICITY;
+                        ball.vy = (ball.vy - 2 * dot * ny) * BOUNCE_ELASTICITY;
+                        playBounceSound();
+                        createParticles(closestX, closestY, '#ff007f', 5);
+                    }
+                }
+            });
+
+            // 9. Update Spinners (Rotating bars) physics
+            level.spinners.forEach(s => {
+                // Update rotation angle
+                s.angle += s.speed;
+                
+                // Endpoints: pivot (x, y) to (x2, y2)
+                const x2 = s.x + s.length * Math.cos(s.angle);
+                const y2 = s.y + s.length * Math.sin(s.angle);
+
+                // Check circle-segment distance
+                const dx = x2 - s.x;
+                const dy = y2 - s.y;
+                const lenSq = dx*dx + dy*dy;
+                
+                let t = ((ball.x - s.x) * dx + (ball.y - s.y) * dy) / (lenSq || 1);
+                t = Math.max(0, Math.min(1, t));
+
+                const closestX = s.x + t * dx;
+                const closestY = s.y + t * dy;
+                const dist = Math.hypot(ball.x - closestX, ball.y - closestY);
+
+                if (dist < ball.r) {
+                    const nx = (ball.x - closestX) / (dist || 1);
+                    const ny = (ball.y - closestY) / (dist || 1);
+
+                    // Push out of line segment
+                    ball.x = closestX + nx * ball.r;
+                    ball.y = closestY + ny * ball.r;
+
+                    // Surface linear velocity at contact point due to rotation
+                    const contactLen = t * s.length;
+                    const vx_spinner = -s.speed * (closestY - s.y);
+                    const vy_spinner = s.speed * (closestX - s.x);
+
+                    // Relative velocity math
+                    const rvx = ball.vx - vx_spinner;
+                    const rvy = ball.vy - vy_spinner;
+                    const dot = rvx * nx + rvy * ny;
+
+                    if (dot < 0) {
+                        const impulse = -(1 + BOUNCE_ELASTICITY) * dot;
+                        ball.vx += impulse * nx + vx_spinner * 0.45;
+                        ball.vy += impulse * ny + vy_spinner * 0.45;
+                        
+                        playBounceSound();
+                        createParticles(closestX, closestY, 'var(--accent-glow)', 6);
+                    }
+                }
+            });
+
+            // 10. Update active particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alpha <= 0) particles.splice(i, 1);
+            }
+        }
+
+        // Render Canvas scenes
+        function drawField() {
+            const level = LEVELS[currentLevelIndex];
+
+            // Dark background
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+
+            // Subtle grids
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.02)';
+            ctx.lineWidth = 1.5;
+            const grid = 30;
+            for (let x = BORDER; x < FIELD_WIDTH - BORDER; x += grid) {
+                ctx.beginPath();
+                ctx.moveTo(x, BORDER);
+                ctx.lineTo(x, FIELD_HEIGHT - BORDER);
+                ctx.stroke();
+            }
+            for (let y = BORDER; y < FIELD_HEIGHT - BORDER; y += grid) {
+                ctx.beginPath();
+                ctx.moveTo(BORDER, y);
+                ctx.lineTo(FIELD_WIDTH - BORDER, y);
+                ctx.stroke();
+            }
+
+            // Draw outer border (Cyan neon)
+            ctx.save();
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.rect(BORDER, BORDER, FIELD_WIDTH - 2*BORDER, FIELD_HEIGHT - 2*BORDER);
+            ctx.stroke();
+            ctx.restore();
+
+            // 1. Draw Speed Boosters (Green)
+            level.boosters.forEach(b => {
+                ctx.save();
+                ctx.fillStyle = 'rgba(57, 255, 20, 0.06)';
+                ctx.strokeStyle = 'var(--booster-glow)';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'var(--booster-glow)';
+                
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+                ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+                // Draw arrows inside boosters
+                ctx.fillStyle = 'rgba(57, 255, 20, 0.35)';
+                ctx.beginPath();
+                if (b.dy < 0) { // Upward arrows
+                    for (let py = b.y + 15; py < b.y + b.h; py += 20) {
+                        ctx.moveTo(b.x + b.w/2, py - 6);
+                        ctx.lineTo(b.x + b.w/2 - 10, py + 4);
+                        ctx.lineTo(b.x + b.w/2 + 10, py + 4);
+                    }
+                }
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 2. Draw Laser Hazard Pools (Red)
+            level.hazards.forEach(h => {
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 51, 102, 0.15)';
+                ctx.strokeStyle = 'var(--danger-glow)';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = 'var(--danger-glow)';
+                ctx.fillRect(h.x, h.y, h.w, h.h);
+                ctx.strokeRect(h.x, h.y, h.w, h.h);
+                
+                // Draw caution pattern inside hazard zones
+                ctx.strokeStyle = 'rgba(255, 51, 102, 0.4)';
+                ctx.lineWidth = 1;
+                for (let px = h.x; px < h.x + h.w; px += 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, h.y);
+                    ctx.lineTo(px + 10, h.y + h.h);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+
+            // 3. Draw Portals (Purple vortex rings)
+            level.portals.forEach(p => {
+                ctx.save();
+                ctx.strokeStyle = 'var(--portal-glow)';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'var(--portal-glow)';
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Spiral vortex center lines
+                ctx.strokeStyle = 'rgba(181, 0, 255, 0.35)';
+                const numSpirals = 4;
+                const rotOffset = (Date.now() * 0.005) % (Math.PI * 2);
+                for (let i = 0; i < numSpirals; i++) {
+                    const startAng = rotOffset + (i * Math.PI / 2);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r - 5, startAng, startAng + Math.PI/2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+
+            // 4. Draw Static wall bumpers (Pink)
+            level.walls.forEach(w => {
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 0, 127, 0.1)';
+                ctx.strokeStyle = 'var(--secondary-glow)';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'var(--secondary-glow)';
+                ctx.beginPath();
+                ctx.roundRect(w.x, w.y, w.w, w.h, 6);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // 5. Draw Windmill Spinners (Yellow)
+            level.spinners.forEach(s => {
+                const x2 = s.x + s.length * Math.cos(s.angle);
+                const y2 = s.y + s.length * Math.sin(s.angle);
+
+                ctx.save();
+                ctx.strokeStyle = 'var(--accent-glow)';
+                ctx.lineWidth = 5;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = 'var(--accent-glow)';
+                ctx.lineCap = 'round';
+                
+                // Rotating line
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Draw central pivot point
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 6. Draw Target Hole (Golden ring)
+            ctx.save();
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(level.hole.x, level.hole.y, HOLE_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pulsing target glow ring
+            const pulse = 10 + Math.sin(Date.now() * 0.01) * 3;
+            ctx.strokeStyle = 'var(--accent-glow)';
+            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = pulse;
+            ctx.shadowColor = 'var(--accent-glow)';
+            ctx.beginPath();
+            ctx.arc(level.hole.x, level.hole.y, HOLE_RADIUS, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawEntities() {
+            // 1. Draw particles
+            particles.forEach(p => p.draw());
+
+            // 2. Draw Golf Ball (White/Cyan)
+            if (ball.scale > 0 && gameState === 'PLAYING') {
+                ctx.save();
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = ball.isSinking ? 0 : 15;
+                ctx.shadowColor = 'var(--primary-glow)';
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.r * ball.scale, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 3. Draw Aim indicator (slingshot pullback visual stick and guides)
+            const speed = Math.hypot(ball.vx, ball.vy);
+            if (pointerActive && speed === 0 && gameState === 'PLAYING') {
+                // Projection aim lines
+                const projX = ball.x + Math.cos(dragAngle) * 150;
+                const projY = ball.y + Math.sin(dragAngle) * 150;
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.45)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(projX, projY);
+                ctx.stroke();
+                ctx.restore();
+
+                // Pullback lines showing slingshot tension
+                const pullX = ball.x - Math.cos(dragAngle) * (dragPower * 4.5);
+                const pullY = ball.y - Math.sin(dragAngle) * (dragPower * 4.5);
+
+                ctx.save();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'var(--secondary-glow)';
+                
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(pullX, pullY);
+                ctx.stroke();
+
+                // Small arrow pointer at pull end
+                ctx.beginPath();
+                ctx.arc(pullX, pullY, 4, 0, Math.PI * 2);
+                ctx.fillStyle = 'var(--secondary-glow)';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Loop Runner
+        function loop() {
+            if (gameState === 'PLAYING') {
+                updatePhysics();
+            }
+            
+            drawField();
+            drawEntities();
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Interactive inputs coord scaling maps touches/mouse clicks to 400x600 coordinates
+        function mapInputCoords(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = FIELD_WIDTH / rect.width;
+            const scaleY = FIELD_HEIGHT / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handlePointerDown(x, y) {
+            initAudio();
+            if (gameState !== 'PLAYING') return;
+
+            const speed = Math.hypot(ball.vx, ball.vy);
+            if (speed > 0) return; // wait for ball to rest
+
+            const coords = mapInputCoords(x, y);
+
+            // Check if player clicks close to golf ball
+            const dist = Math.hypot(coords.x - ball.x, coords.y - ball.y);
+            if (dist < 40) {
+                pointerActive = true;
+                dragStart.x = ball.x;
+                dragStart.y = ball.y;
+                dragCurrent.x = coords.x;
+                dragCurrent.y = coords.y;
+            }
+        }
+
+        function handlePointerMove(x, y) {
+            if (!pointerActive) return;
+            const coords = mapInputCoords(x, y);
+            dragCurrent.x = coords.x;
+            dragCurrent.y = coords.y;
+
+            // Calculate pullback drag displacement vectors
+            const dx = ball.x - coords.x;
+            const dy = ball.y - coords.y;
+            const dist = Math.hypot(dx, dy);
+
+            // Pullback shot angles (opposite of drag direction)
+            dragAngle = Math.atan2(dy, dx);
+            
+            // Map drag distance displacement to force limits: max 15
+            dragPower = Math.min(15, dist * 0.12);
+        }
+
+        function handlePointerUp() {
+            if (!pointerActive) return;
+            pointerActive = false;
+
+            if (dragPower > 0.8) {
+                // Shoot the golf ball!
+                ball.vx = Math.cos(dragAngle) * dragPower;
+                ball.vy = Math.sin(dragAngle) * dragPower;
+                
+                playBallHitSound(dragPower / 12);
+                strokesTakenCurrent++;
+                strokesTakenEl.textContent = strokesTakenCurrent;
+            }
+        }
+
+        // Mouse listeners
+        canvas.addEventListener('mousedown', (e) => {
+            handlePointerDown(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            handlePointerMove(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => {
+            handlePointerUp();
+        });
+
+        // Touch listeners (Touchscreens)
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            handlePointerUp();
+        });
+
+        // Click buttons
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            menuScreen.classList.remove('active');
+            gameState = 'PLAYING';
+            currentLevelIndex = 0;
+            strokesTakenTotal = 0;
+            cumulativePar = 0;
+            initLevel();
+        });
+
+        nextLevelBtn.addEventListener('click', () => {
+            advanceLevel();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            restartGame();
+        });
+
+        resetBallBtn.addEventListener('click', () => {
+            if (gameState === 'PLAYING') {
+                resetBallPosition(false);
+            }
+        });
+
+        restartGameBtn.addEventListener('click', () => {
+            if (confirm("Mevcut oyunu sıfırlayıp baştan başlamak istediğinize emin misiniz?")) {
+                currentLevelIndex = 0;
+                strokesTakenTotal = 0;
+                cumulativePar = 0;
+                initLevel();
+                gameState = 'PLAYING';
+                levelClearScreen.classList.remove('active');
+                gameOverScreen.classList.remove('active');
+                menuScreen.classList.remove('active');
+            }
+        });
+
+        // Initial setup launch loop
+        loop();
+    </script>
+</body>
+</html>
