@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Okçu // Cyber Archer</title>
+    <!-- Outfit Font for premium style -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #03001e;
+            --primary-glow: #00f2fe; /* Cyan */
+            --secondary-glow: #ff007f; /* Magenta */
+            --accent-glow: #ffd700; /* Gold */
+            --danger-glow: #ff3366; /* Red */
+            --glass-bg: rgba(8, 4, 25, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0f0426 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 20px 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(0, 242, 254, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            width: min(95vw, 750px);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: -4px;
+        }
+
+        .hud-panel {
+            display: flex;
+            gap: 12px;
+            padding: 10px 18px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .score-box .hud-value {
+            color: var(--accent-glow);
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+        }
+
+        .shots-box .hud-value {
+            color: var(--primary-glow);
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.5);
+        }
+
+        .wind-box .hud-value {
+            color: var(--secondary-glow);
+            text-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
+            font-size: 1.1rem;
+            margin-top: 4px;
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
+            width: 100%;
+            overflow: hidden;
+            aspect-ratio: 700/380;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #02010c;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            background: rgba(5, 2, 20, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.98rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--accent-glow);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .btn {
+            flex: 1;
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.15), rgba(255, 0, 127, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.3), rgba(255, 0, 127, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 242, 254, 0.35);
+            border-color: var(--primary-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .ctrl-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .shake {
+            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Okçu</h1>
+        
+        <div class="hud-panel">
+            <div class="hud-item score-box">
+                <span class="hud-label">SKOR</span>
+                <span class="hud-value" id="scoreValue">0</span>
+            </div>
+            <div class="hud-item shots-box">
+                <span class="hud-label" id="shotsLabel">OK SAYISI</span>
+                <span class="hud-value" id="shotsValue">0 / 10</span>
+            </div>
+            <div class="hud-item wind-box">
+                <span class="hud-label">RÜZGAR</span>
+                <span class="hud-value" id="windValue">0.0 m/s ➔</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="700" height="380"></canvas>
+            
+            <!-- Menu Screen Overlay -->
+            <div class="screen-overlay active" id="menuScreen">
+                <h2>Cyber Archer</h2>
+                <p>Neon yayınızı gerin, rüzgarı hesaba katın ve tam ortadan vurun! <span>3 farklı oyun modunda</span> yeteneklerinizi sınayın.</p>
+                <div class="btn-group">
+                    <button class="btn" onclick="startGame('practice')">Hedef Talimi</button>
+                    <button class="btn btn-secondary" onclick="startGame('wind')">Rüzgar Mücadelesi</button>
+                    <button class="btn btn-secondary" onclick="startGame('moving')">Hareketli Hedef</button>
+                </div>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2>Talim Bitti!</h2>
+                <p id="gameOverStats">10 atışta toplam 76 skor elde ettiniz.</p>
+                <button class="btn" id="restartBtn">Menüye Dön</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="ctrl-btn" id="menuBtn">Menü</button>
+            <button class="ctrl-btn" id="clearArrowsBtn">Masaüstünü Temizle</button>
+        </div>
+
+        <div class="hint">Yayı germek için mouse veya dokunmatik ekranı geriye doğru sürükleyip bırakarak fırlatın.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreValueEl = document.getElementById('scoreValue');
+        const shotsLabelEl = document.getElementById('shotsLabel');
+        const shotsValueEl = document.getElementById('shotsValue');
+        const windValueEl = document.getElementById('windValue');
+        
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const restartBtn = document.getElementById('restartBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const clearArrowsBtn = document.getElementById('clearArrowsBtn');
+        const gameWrapper = document.getElementById('gameWrapper');
+        const gameOverStats = document.getElementById('gameOverStats');
+
+        // Virtual Coordinate Resolution: 700x380
+        const FIELD_WIDTH = 700;
+        const FIELD_HEIGHT = 380;
+        const GROUND_Y = 340;
+        const GRAVITY = 0.16;
+
+        // Bow variables
+        const BOW_X = 80;
+        const BOW_Y = 220;
+        const BOW_RADIUS = 30;
+
+        // Target variables
+        let target = { x: 600, y: 220, r: 28, vy: 1.5, angle: 0 };
+        
+        // Game State Variables
+        let gameState = 'MENU'; // MENU, PLAYING, GAMEOVER
+        let gameMode = 'practice'; // practice, wind, moving
+        let score = 0;
+        let shotsTaken = 0;
+        const maxShots = 10;
+
+        // Wind vectors
+        let windX = 0;
+        let windY = 0;
+
+        // Arrow tracking list
+        let activeArrow = null;
+        let stuckArrows = []; // Arrow logs sticking on target/ground
+        let particles = [];
+
+        // Float scores feedback
+        let floatingFeedbacks = [];
+
+        // String draw variables
+        let pointerActive = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragCurrent = { x: 0, y: 0 };
+        let dragLength = 0;
+        let dragAngle = 0;
+
+        // Sound System
+        let audioCtx = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSynth(freqStart, freqEnd, duration, type = 'sine', volume = 0.2) {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+                if (freqEnd !== freqStart) {
+                    osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + duration);
+                }
+
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Noise sweeps for release whoosh
+        function playReleaseWhoosh() {
+            if (!audioCtx) return;
+            try {
+                // Synthesize quick string whoosh noise using square wave pitch ramp
+                playSynth(400, 1800, 0.12, 'triangle', 0.12);
+            } catch(e) {}
+        }
+
+        function playBowPullSound(powerRatio) {
+            // Low tension creak chord sound
+            playSynth(80 + powerRatio * 40, 120 + powerRatio * 40, 0.08, 'sine', 0.08);
+        }
+
+        function playTargetHitSound(isBullseye = false) {
+            if (isBullseye) {
+                // High pitch metallic chime
+                setTimeout(() => playSynth(987.77, 987.77, 0.08, 'sine', 0.18), 0);
+                setTimeout(() => playSynth(1318.51, 1318.51, 0.08, 'sine', 0.18), 60);
+                setTimeout(() => playSynth(1567.98, 1600, 0.22, 'triangle', 0.15), 120);
+            } else {
+                // Dull wood thump
+                playSynth(180, 80, 0.12, 'sine', 0.25);
+            }
+        }
+
+        function playGroundHitSound() {
+            playSynth(90, 40, 0.14, 'sine', 0.15);
+        }
+
+        // Particle Class
+        class Particle {
+            constructor(x, y, vx, vy, color, r, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.r = r;
+                this.alpha = 1.0;
+                this.decay = 1.0 / life;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createSparkParticles(x, y, color, count = 12, speed = 3) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const sp = (Math.random() * speed + 1);
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * sp,
+                    Math.sin(angle) * sp,
+                    color,
+                    Math.random() * 2 + 1,
+                    Math.random() * 15 + 15
+                ));
+            }
+        }
+
+        // Float text scoring feedback
+        class FloatFeedback {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.alpha = 1.0;
+            }
+            update() {
+                this.y -= 1.0;
+                this.alpha -= 0.02;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.font = "800 1.2rem 'Outfit'";
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = this.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // Dynamic wind shifts
+        function shiftWind() {
+            if (gameMode === 'practice') {
+                windX = 0;
+                windY = 0;
+                windValueEl.textContent = 'YOK';
+                windValueEl.style.color = '#fff';
+            } else if (gameMode === 'wind' || gameMode === 'moving') {
+                // Random strong winds
+                windX = (Math.random() - 0.5) * 0.28;
+                windY = (Math.random() - 0.5) * 0.06;
+                
+                const speed = Math.abs(windX * 50).toFixed(1);
+                const arrowDir = windX > 0 ? '➔' : ' Bowman ➔';
+                windValueEl.textContent = `${speed} m/s ${windX > 0 ? '➔' : '⬅'}`;
+                
+                if (speed > 8) {
+                    windValueEl.style.color = 'var(--danger-glow)';
+                } else if (speed > 4) {
+                    windValueEl.style.color = 'var(--accent-glow)';
+                } else {
+                    windValueEl.style.color = 'var(--primary-glow)';
+                }
+            }
+        }
+
+        // Position resetting
+        function resetPositions() {
+            shiftWind();
+            activeArrow = null;
+            
+            // Randomize target position Y
+            target.y = 100 + Math.random() * 160;
+            target.vy = 1.2 + Math.random() * 1.5;
+            target.angle = 0;
+        }
+
+        // Hit handler
+        function scoreHit(arrowX, arrowY, distY) {
+            let hitScore = 0;
+            let text = '';
+            let color = '';
+
+            const absY = Math.abs(distY);
+
+            if (absY < 6) {
+                hitScore = 10;
+                text = 'KUSURSUZ! (10)';
+                color = 'var(--accent-glow)';
+                playTargetHitSound(true);
+                createSparkParticles(arrowX, arrowY, 'var(--accent-glow)', 30, 4);
+                triggerScreenShake();
+            } else if (absY < 13) {
+                hitScore = 8;
+                text = 'HARİKA (8)';
+                color = 'var(--primary-glow)';
+                playTargetHitSound(false);
+                createSparkParticles(arrowX, arrowY, 'var(--primary-glow)', 15, 2);
+            } else if (absY < 21) {
+                hitScore = 6;
+                text = 'İYİ (6)';
+                color = 'var(--secondary-glow)';
+                playTargetHitSound(false);
+                createSparkParticles(arrowX, arrowY, 'var(--secondary-glow)', 10, 1.5);
+            } else {
+                hitScore = 4;
+                text = 'SIYIRDI (4)';
+                color = '#ffffff';
+                playTargetHitSound(false);
+                createSparkParticles(arrowX, arrowY, '#ffffff', 6, 1);
+            }
+
+            score += hitScore;
+            scoreValueEl.textContent = score;
+
+            floatingFeedbacks.push(new FloatFeedback(target.x - 30, target.y - 40, text, color));
+
+            // Log stuck arrow relative offset to target center Y so it glides along
+            stuckArrows.push({
+                x: arrowX,
+                y: arrowY,
+                relativeY: distY,
+                angle: activeArrow.angle,
+                type: 'target'
+            });
+
+            activeArrow = null;
+            checkNextArrow();
+        }
+
+        function checkNextArrow() {
+            if (shotsTaken >= maxShots) {
+                setTimeout(endGame, 1000);
+            } else {
+                setTimeout(resetPositions, 800);
+            }
+        }
+
+        function triggerScreenShake() {
+            gameWrapper.classList.add('shake');
+            setTimeout(() => gameWrapper.classList.remove('shake'), 250);
+        }
+
+        // End Game menu triggers
+        function endGame() {
+            gameState = 'GAMEOVER';
+            gameOverStats.textContent = `${maxShots} atışta toplam ${score} skor elde ettiniz.`;
+            gameOverScreen.classList.add('active');
+        }
+
+        // Physics Engine updates
+        function updatePhysics() {
+            // 1. Move target depending on mode
+            if (gameMode === 'moving') {
+                target.y += target.vy;
+                if (target.y - target.r < 30 || target.y + target.r > GROUND_Y - 10) {
+                    target.vy *= -1;
+                }
+            }
+
+            // 2. Active Arrow flight simulation
+            if (activeArrow && activeArrow.active) {
+                activeArrow.vx += windX;
+                activeArrow.vy += GRAVITY + windY;
+                
+                activeArrow.x += activeArrow.vx;
+                activeArrow.y += activeArrow.vy;
+                
+                activeArrow.angle = Math.atan2(activeArrow.vy, activeArrow.vx);
+
+                // Check collision with Ground cushion
+                if (activeArrow.y > GROUND_Y) {
+                    activeArrow.active = false;
+                    playGroundHitSound();
+                    createSparkParticles(activeArrow.x, GROUND_Y, '#aaaaaa', 6, 1);
+                    
+                    stuckArrows.push({
+                        x: activeArrow.x,
+                        y: GROUND_Y,
+                        angle: activeArrow.angle,
+                        type: 'ground'
+                    });
+                    activeArrow = null;
+                    checkNextArrow();
+                }
+                // Check collision with Target rings vertical board
+                else if (activeArrow && activeArrow.x >= target.x - 4 && activeArrow.x <= target.x + 8) {
+                    // Check if y intersects with the target circular radius
+                    const distY = activeArrow.y - target.y;
+                    if (Math.abs(distY) < target.r) {
+                        activeArrow.active = false;
+                        scoreHit(activeArrow.x, activeArrow.y, distY);
+                    }
+                }
+                // Check if arrow left right borders
+                else if (activeArrow && activeArrow.x > FIELD_WIDTH + 50) {
+                    activeArrow = null;
+                    checkNextArrow();
+                }
+            }
+
+            // 3. Update active particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alpha <= 0) particles.splice(i, 1);
+            }
+
+            // 4. Update floating feedback texts
+            for (let i = floatingFeedbacks.length - 1; i >= 0; i--) {
+                floatingFeedbacks[i].update();
+                if (floatingFeedbacks[i].alpha <= 0) floatingFeedbacks.splice(i, 1);
+            }
+        }
+
+        // Render Canvas scenes
+        function drawField() {
+            // Felt backdrop
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+
+            // Subtle grids
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.02)';
+            ctx.lineWidth = 1.5;
+            const gridSpacing = 40;
+            for (let x = 0; x < FIELD_WIDTH; x += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, FIELD_HEIGHT);
+                ctx.stroke();
+            }
+            for (let y = 0; y < FIELD_HEIGHT; y += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(FIELD_WIDTH, y);
+                ctx.stroke();
+            }
+
+            // Draw Ground floor border
+            ctx.save();
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(FIELD_WIDTH, GROUND_Y);
+            ctx.stroke();
+            
+            // Ground hatch patterns
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < FIELD_WIDTH; x += 15) {
+                ctx.beginPath();
+                ctx.moveTo(x, GROUND_Y);
+                ctx.lineTo(x - 5, FIELD_HEIGHT);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Draw Target Board Stand & Concentric Rings (Yellow, Red, Blue)
+            ctx.save();
+            // Target board stand leg
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(target.x, target.y);
+            ctx.lineTo(target.x + 15, GROUND_Y);
+            ctx.stroke();
+
+            // Outer ring (Blue)
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.fillStyle = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, target.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Middle ring (Magenta)
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.fillStyle = 'var(--secondary-glow)';
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner ring (Black/Felt)
+            ctx.fillStyle = '#02010c';
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bullseye core (Gold/Yellow)
+            ctx.shadowColor = 'var(--accent-glow)';
+            ctx.fillStyle = 'var(--accent-glow)';
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Helper to draw neon arrows
+        function drawArrowEntity(x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(-20, 0);
+            ctx.lineTo(10, 0);
+            ctx.stroke();
+
+            // Arrowhead (Fletching)
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.moveTo(4, -4);
+            ctx.lineTo(10, 0);
+            ctx.lineTo(4, 4);
+            ctx.stroke();
+
+            // Fletching back fins
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.beginPath();
+            ctx.moveTo(-20, 0);
+            ctx.lineTo(-25, -4);
+            ctx.moveTo(-16, 0);
+            ctx.lineTo(-21, -4);
+            ctx.moveTo(-20, 0);
+            ctx.lineTo(-25, 4);
+            ctx.moveTo(-16, 0);
+            ctx.lineTo(-21, 4);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawEntities() {
+            // 1. Draw stuck arrows (attached logs)
+            stuckArrows.forEach(arr => {
+                if (arr.type === 'target') {
+                    // Update dynamic X/Y matching target moves
+                    const ax = target.x;
+                    const ay = target.y + arr.relativeY;
+                    drawArrowEntity(ax, ay, arr.angle);
+                } else {
+                    drawArrowEntity(arr.x, arr.y, arr.angle);
+                }
+            });
+
+            // 2. Draw active flying arrow
+            if (activeArrow && activeArrow.active) {
+                drawArrowEntity(activeArrow.x, activeArrow.y, activeArrow.angle);
+                
+                // Add glowing flight smoke trail
+                if (Math.random() < 0.6) {
+                    particles.push(new Particle(
+                        activeArrow.x - Math.cos(activeArrow.angle) * 12,
+                        activeArrow.y - Math.sin(activeArrow.angle) * 12,
+                        -activeArrow.vx * 0.1, -activeArrow.vy * 0.1,
+                        'var(--primary-glow)',
+                        1.5,
+                        12
+                    ));
+                }
+            }
+
+            // 3. Draw particles & text feedback alerts
+            particles.forEach(p => p.draw());
+            floatingFeedbacks.forEach(f => f.draw());
+
+            // 4. Draw Bow and String (slingshot pullback guides)
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'round';
+
+            // Draw glowing bow crescent curve arc centered at BOW_X, BOW_Y
+            ctx.beginPath();
+            // Arc going from -50 degrees to +50 degrees
+            ctx.arc(BOW_X - 10, BOW_Y, BOW_RADIUS, -Math.PI / 3, Math.PI / 3);
+            ctx.stroke();
+
+            // Bow String ends coordinates
+            const strTopX = BOW_X - 10 + Math.cos(-Math.PI/3) * BOW_RADIUS;
+            const strTopY = BOW_Y + Math.sin(-Math.PI/3) * BOW_RADIUS;
+            const strBotX = BOW_X - 10 + Math.cos(Math.PI/3) * BOW_RADIUS;
+            const strBotY = BOW_Y + Math.sin(Math.PI/3) * BOW_RADIUS;
+
+            // Draw Bow String line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            
+            if (pointerActive && gameState === 'PLAYING' && !activeArrow) {
+                // String gets flexed pulled back
+                const pullX = BOW_X - Math.cos(dragAngle) * (dragLength * 4.0);
+                const pullY = BOW_Y - Math.sin(dragAngle) * (dragLength * 4.0);
+                
+                ctx.moveTo(strTopX, strTopY);
+                ctx.lineTo(pullX, pullY);
+                ctx.lineTo(strBotX, strBotY);
+                ctx.stroke();
+
+                // Draw aiming dotted projection trajectory
+                ctx.restore();
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                // Integrate flight curve accounting for wind & gravity
+                let stepX = BOW_X;
+                let stepY = BOW_Y;
+                let stepVx = Math.cos(dragAngle) * dragLength;
+                let stepVy = Math.sin(dragAngle) * dragLength;
+
+                ctx.moveTo(stepX, stepY);
+                for (let i = 0; i < 45; i++) {
+                    stepVx += windX;
+                    stepVy += GRAVITY + windY;
+                    stepX += stepVx;
+                    stepY += stepVy;
+                    ctx.lineTo(stepX, stepY);
+                    
+                    if (stepY > GROUND_Y || stepX > FIELD_WIDTH + 20) break;
+                }
+                ctx.stroke();
+                
+                // Draw arrow loaded on string
+                ctx.restore();
+                drawArrowEntity(pullX, pullY, dragAngle);
+            } else {
+                // Flat straight string
+                ctx.moveTo(strTopX, strTopY);
+                ctx.lineTo(strBotX, strBotY);
+                ctx.stroke();
+                ctx.restore();
+                
+                // Draw idle loaded arrow if ready
+                if (gameState === 'PLAYING' && !activeArrow) {
+                    drawArrowEntity(BOW_X, BOW_Y, 0);
+                }
+            }
+        }
+
+        // Loop Runner
+        function loop() {
+            if (gameState === 'PLAYING') {
+                updatePhysics();
+            }
+            
+            drawField();
+            drawEntities();
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Interactive game launch triggers
+        window.startGame = function(mode) {
+            initAudio();
+            gameMode = mode;
+            score = 0;
+            shotsTaken = 0;
+            
+            scoreValueEl.textContent = '0';
+            shotsValueEl.textContent = `0 / ${maxShots}`;
+            
+            stuckArrows = [];
+            particles = [];
+            floatingFeedbacks = [];
+            activeArrow = null;
+
+            resetPositions();
+            
+            menuScreen.classList.remove('active');
+            gameState = 'PLAYING';
+        };
+
+        // Coordinate helper maps browser touches to 700x380
+        function mapInputCoords(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = FIELD_WIDTH / rect.width;
+            const scaleY = FIELD_HEIGHT / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handlePointerDown(x, y) {
+            initAudio();
+            if (gameState !== 'PLAYING' || activeArrow) return;
+
+            const coords = mapInputCoords(x, y);
+            
+            // Check if player click starts near bow pivot string
+            const dist = Math.hypot(coords.x - BOW_X, coords.y - BOW_Y);
+            if (dist < 50) {
+                pointerActive = true;
+                dragStart.x = BOW_X;
+                dragStart.y = BOW_Y;
+                dragCurrent.x = coords.x;
+                dragCurrent.y = coords.y;
+            }
+        }
+
+        function handlePointerMove(x, y) {
+            if (!pointerActive) return;
+            const coords = mapInputCoords(x, y);
+            dragCurrent.x = coords.x;
+            dragCurrent.y = coords.y;
+
+            // Calculate pullback displacement distance and angle
+            const dx = BOW_X - coords.x;
+            const dy = BOW_Y - coords.y;
+            const dist = Math.hypot(dx, dy);
+
+            // Pullback aiming angles
+            dragAngle = Math.atan2(dy, dx);
+            
+            // Pullback tension map to launch speed: max pullback displacement 150px = max force 14
+            dragLength = Math.min(14, dist * 0.1);
+
+            // Play bow string tension creak
+            if (Math.random() < 0.15) {
+                playBowPullSound(dragLength / 14);
+            }
+        }
+
+        function handlePointerUp() {
+            if (!pointerActive) return;
+            pointerActive = false;
+
+            if (dragLength > 1.2) {
+                // Fire loaded arrow!
+                activeArrow = {
+                    x: BOW_X,
+                    y: BOW_Y,
+                    vx: Math.cos(dragAngle) * dragLength,
+                    vy: Math.sin(dragAngle) * dragLength,
+                    angle: dragAngle,
+                    active: true
+                };
+
+                playReleaseWhoosh();
+                shotsTaken++;
+                shotsValueEl.textContent = `${shotsTaken} / ${maxShots}`;
+            }
+        }
+
+        // Mouse Listeners
+        canvas.addEventListener('mousedown', (e) => {
+            handlePointerDown(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            handlePointerMove(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => {
+            handlePointerUp();
+        });
+
+        // Touch Listeners (Mobile Screens)
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            handlePointerUp();
+        });
+
+        // Buttons
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.classList.remove('active');
+            menuScreen.classList.add('active');
+            gameState = 'MENU';
+        });
+
+        menuBtn.addEventListener('click', () => {
+            gameState = 'MENU';
+            menuScreen.classList.add('active');
+            gameOverScreen.classList.remove('active');
+        });
+
+        clearArrowsBtn.addEventListener('click', () => {
+            stuckArrows = [];
+        });
+
+        // Initial setup launch loop
+        loop();
+    </script>
+</body>
+</html>
