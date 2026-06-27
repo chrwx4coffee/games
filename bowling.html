@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Bowling // Cyber Bowling</title>
+    <!-- Google Fonts for outfit style -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #03001e;
+            --primary-glow: #00f2fe; /* Cyan */
+            --secondary-glow: #ff007f; /* Pink */
+            --accent-glow: #ffd700; /* Gold */
+            --felt-color: #040212;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(8, 4, 25, 0.75);
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0f0426 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 16px 20px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(0, 242, 254, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 440px);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        /* Bowling Scorecard Table Style */
+        .scorecard-container {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .score-frame {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.01);
+            font-size: 0.65rem;
+            position: relative;
+            min-height: 48px;
+            padding-bottom: 2px;
+        }
+
+        .frame-header {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 600;
+            margin-bottom: 2px;
+            font-size: 0.55rem;
+        }
+
+        .frame-rolls {
+            display: flex;
+            width: 100%;
+            justify-content: flex-end;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .roll-val {
+            flex: 1;
+            text-align: center;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 800;
+            color: var(--primary-glow);
+            min-height: 14px;
+        }
+
+        .frame-total {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--accent-glow);
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+            margin-top: auto;
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 18px;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.95);
+            width: 100%;
+            overflow: hidden;
+            aspect-ratio: 360/600;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: var(--felt-color);
+            width: 100%;
+            height: 100%;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(5, 2, 20, 0.96);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 85%;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--accent-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.15), rgba(ff, 0, 127, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+            padding: 12px 32px;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.3), rgba(ff, 0, 127, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 242, 254, 0.3);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .ctrl-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .shake {
+            animation: shake 0.25s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-3px, 0, 0); }
+            20%, 80% { transform: translate3d(5px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Bowling</h1>
+        
+        <!-- Frame scorecard -->
+        <div class="scorecard-container">
+            <!-- Dynamically populated frames -->
+            <div class="score-frame" id="frame1">
+                <span class="frame-header">F1</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r1_1"></span>
+                    <span class="roll-val" id="r1_2"></span>
+                </div>
+                <span class="frame-total" id="tot1"></span>
+            </div>
+            <div class="score-frame" id="frame2">
+                <span class="frame-header">F2</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r2_1"></span>
+                    <span class="roll-val" id="r2_2"></span>
+                </div>
+                <span class="frame-total" id="tot2"></span>
+            </div>
+            <div class="score-frame" id="frame3">
+                <span class="frame-header">F3</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r3_1"></span>
+                    <span class="roll-val" id="r3_2"></span>
+                </div>
+                <span class="frame-total" id="tot3"></span>
+            </div>
+            <div class="score-frame" id="frame4">
+                <span class="frame-header">F4</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r4_1"></span>
+                    <span class="roll-val" id="r4_2"></span>
+                </div>
+                <span class="frame-total" id="tot4"></span>
+            </div>
+            <div class="score-frame" id="frame5">
+                <span class="frame-header">F5</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r5_1"></span>
+                    <span class="roll-val" id="r5_2"></span>
+                </div>
+                <span class="frame-total" id="tot5"></span>
+            </div>
+            <div class="score-frame" id="frame6">
+                <span class="frame-header">F6</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r6_1"></span>
+                    <span class="roll-val" id="r6_2"></span>
+                </div>
+                <span class="frame-total" id="tot6"></span>
+            </div>
+            <div class="score-frame" id="frame7">
+                <span class="frame-header">F7</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r7_1"></span>
+                    <span class="roll-val" id="r7_2"></span>
+                </div>
+                <span class="frame-total" id="tot7"></span>
+            </div>
+            <div class="score-frame" id="frame8">
+                <span class="frame-header">F8</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r8_1"></span>
+                    <span class="roll-val" id="r8_2"></span>
+                </div>
+                <span class="frame-total" id="tot8"></span>
+            </div>
+            <div class="score-frame" id="frame9">
+                <span class="frame-header">F9</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r9_1"></span>
+                    <span class="roll-val" id="r9_2"></span>
+                </div>
+                <span class="frame-total" id="tot9"></span>
+            </div>
+            <div class="score-frame" id="frame10" style="min-width: 44px;">
+                <span class="frame-header">F10</span>
+                <div class="frame-rolls">
+                    <span class="roll-val" id="r10_1" style="font-size: 0.6rem;"></span>
+                    <span class="roll-val" id="r10_2" style="font-size: 0.6rem;"></span>
+                    <span class="roll-val" id="r10_3" style="font-size: 0.6rem; border-left: 1px solid rgba(255,255,255,0.05)"></span>
+                </div>
+                <span class="frame-total" id="tot10"></span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="360" height="600"></canvas>
+            
+            <!-- Menu Screen Overlay -->
+            <div class="screen-overlay active" id="menuScreen">
+                <h2>Cyber Bowling</h2>
+                <p>Neon lobutları devirin! Topu yana kaydırıp konumlandırın, geriye çekerek atış hızını, açısını ve <span>kavisini (hook spin)</span> ayarlayın.</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 style="color: var(--primary-glow); text-shadow: 0 0 25px rgba(0, 242, 254, 0.7);">Oyun Bitti!</h2>
+                <p>Ulaşılan Toplam Siber Skor: <span id="finalScore" style="color: var(--accent-glow);">148</span></p>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="ctrl-btn" id="menuBtn">Menü</button>
+            <button class="ctrl-btn" id="resetMatchBtn">Yeniden Başlat</button>
+        </div>
+
+        <div class="hint" id="hintText">1. AŞAMA: Topu yana sürükleyerek konumlandırın.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const resetMatchBtn = document.getElementById('resetMatchBtn');
+        const gameWrapper = document.getElementById('gameWrapper');
+        const finalScoreEl = document.getElementById('finalScore');
+        const hintText = document.getElementById('hintText');
+
+        // Physics constants
+        const BORDER_LEFT = 50;
+        const BORDER_RIGHT = 310;
+        const PIN_RADIUS = 7.5;
+        const BALL_RADIUS = 15;
+        const FRICTION = 0.99;
+        
+        // Official bowling structure
+        let gameState = 'MENU'; // MENU, PLACING, AIMING, ROLLING, SCORING, GAMEOVER
+        let currentFrame = 0; // 0 to 9 (10 frames)
+        let currentRoll = 0; // 0 or 1 (or 2 for 10th frame)
+        let score = 0;
+        
+        // Scoring structures: roll values [frameIndex][rollIndex]
+        let rolls = Array.from({ length: 10 }, () => []);
+        
+        // Bowling objects
+        let ball = { x: 180, y: 520, vx: 0, vy: 0, r: BALL_RADIUS, spin: 0, color: '#ffffff' };
+        let pins = [];
+        let particles = [];
+        let floatAnnouncements = [];
+        let sweeperY = -20; // Sweeper animation coordinate
+
+        // Interaction state
+        let pointerActive = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragCurrent = { x: 0, y: 0 };
+        let dragPower = 0;
+        let dragAngle = 0;
+
+        // Audio System
+        let audioCtx = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSynth(freqStart, freqEnd, duration, type = 'sine', volume = 0.2) {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+                if (freqEnd !== freqStart) {
+                    osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + duration);
+                }
+
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Noise sweeps for rolling rumble & pin crash
+        function playBallRollSound(volRatio = 1.0) {
+            // Low rumble pitch sliding
+            playSynth(110 + Math.random()*20, 80, 0.4, 'sine', 0.12 * volRatio);
+        }
+
+        function playPinCollisionSound(powerRatio = 1.0) {
+            // High noise clatter thud
+            playSynth(500 + Math.random()*200, 180, 0.15, 'sawtooth', 0.22 * powerRatio);
+        }
+
+        function playGutterSound() {
+            playSynth(300, 100, 0.3, 'sine', 0.15);
+        }
+
+        function playStrikeSound() {
+            setTimeout(() => playSynth(523, 523, 0.1, 'sine', 0.18), 0);
+            setTimeout(() => playSynth(659, 659, 0.1, 'sine', 0.18), 80);
+            setTimeout(() => playSynth(783, 783, 0.1, 'sine', 0.18), 160);
+            setTimeout(() => playSynth(1046, 1200, 0.3, 'triangle', 0.2), 240);
+        }
+
+        // Particle System
+        class Particle {
+            constructor(x, y, vx, vy, color, r, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.r = r;
+                this.alpha = 1.0;
+                this.decay = 1.0 / life;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createSparkParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 4 + 1;
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    color,
+                    Math.random() * 2 + 1,
+                    Math.random() * 15 + 15
+                ));
+            }
+        }
+
+        // Floating texts scoring announcements
+        class FloatAnnouncement {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.alpha = 1.0;
+            }
+            update() {
+                this.y -= 0.8;
+                this.alpha -= 0.015;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.font = "800 1.6rem 'Outfit'";
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // Setup Pins Triangle Racks
+        function rackPins() {
+            pins = [];
+            const pinRows = [
+                { y: 80, xList: [180] },
+                { y: 62, xList: [165, 195] },
+                { y: 44, xList: [150, 180, 210] },
+                { y: 26, xList: [135, 165, 195, 225] }
+            ];
+
+            let id = 1;
+            pinRows.forEach(row => {
+                row.xList.forEach(px => {
+                    pins.push({
+                        id: id++,
+                        x: px,
+                        y: row.y,
+                        startX: px,
+                        startY: row.y,
+                        vx: 0,
+                        vy: 0,
+                        r: PIN_RADIUS,
+                        knocked: false,
+                        color: 'var(--secondary-glow)'
+                    });
+                });
+            });
+        }
+
+        // Reset ball position on approach
+        function resetBall() {
+            ball.x = 180;
+            ball.y = 520;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.spin = 0;
+            gameState = 'PLACING';
+            hintText.textContent = "1. AŞAMA: Topu yana sürükleyerek konumlandırın.";
+        }
+
+        // Sweeper sweep animation clears lane
+        function runSweeperSweep(callback) {
+            sweeperY = -20;
+            
+            function animateSweeper() {
+                sweeperY += 12;
+                if (sweeperY < 240) {
+                    requestAnimationFrame(animateSweeper);
+                } else {
+                    // sweep back
+                    sweeperY = -20;
+                    callback();
+                }
+            }
+            
+            animateSweeper();
+        }
+
+        // Bowling scoring cycles (Official Scorer rules)
+        function registerRollResult(pinsKnockedThisRoll) {
+            const isFrame10 = (currentFrame === 9);
+            rolls[currentFrame].push(pinsKnockedThisRoll);
+
+            // Determine scoring feedback string
+            let text = `${pinsKnockedThisRoll} Lobut`;
+            let color = '#fff';
+
+            if (pinsKnockedThisRoll === 10 && rolls[currentFrame].length === 1) {
+                text = 'STRIKE!';
+                color = 'var(--accent-glow)';
+                playStrikeSound();
+                createSparkParticles(180, 80, 'var(--accent-glow)', 35);
+                triggerScreenShake();
+            } else if (rolls[currentFrame].length === 2 && (rolls[currentFrame][0] + rolls[currentFrame][1] === 10)) {
+                text = 'SPARE!';
+                color = 'var(--primary-glow)';
+                playStrikeSound();
+                createSparkParticles(180, 80, 'var(--primary-glow)', 20);
+            }
+
+            floatAnnouncements.push(new FloatAnnouncement(180, 200, text, color));
+
+            // Clean knocked-down pins from table list
+            runSweeperSweep(() => {
+                pins = pins.filter(p => !p.knocked);
+                
+                // Advance frame cycles
+                if (isFrame10) {
+                    const rollCount = rolls[9].length;
+                    const r1 = rolls[9][0];
+                    const r2 = rolls[9][1];
+                    
+                    if (rollCount === 1) {
+                        // If strike on roll 1, reset pins for roll 2
+                        if (r1 === 10) rackPins();
+                        resetBall();
+                    } else if (rollCount === 2) {
+                        // If strike/spare, player gets a 3rd extra roll
+                        if (r1 === 10 || r1 + r2 === 10) {
+                            if (r2 === 10 || r1 + r2 === 10) rackPins();
+                            resetBall();
+                        } else {
+                            // Frame 10 is over (no extra rolls)
+                            finishMatch();
+                        }
+                    } else if (rollCount === 3) {
+                        finishMatch();
+                    }
+                } else {
+                    // Normal frames 1-9
+                    const rollCount = rolls[currentFrame].length;
+                    const r1 = rolls[currentFrame][0];
+                    
+                    if (rollCount === 1) {
+                        if (r1 === 10) {
+                            // Strike! Frame complete immediately.
+                            currentFrame++;
+                            rackPins();
+                            resetBall();
+                        } else {
+                            // Roll 2
+                            resetBall();
+                        }
+                    } else {
+                        // Roll 2 complete. Frame ends.
+                        currentFrame++;
+                        rackPins();
+                        resetBall();
+                    }
+                }
+
+                updateScorecardUI();
+            });
+        }
+
+        // Sweeping check is triggered when everything stops moving
+        function evaluateRollResult() {
+            gameState = 'SCORING';
+            
+            // 1. Identify which pins are knocked down
+            let countKnocked = 0;
+            pins.forEach(p => {
+                // Pin is knocked down if it lies outside boundary limits or shifted from starting slot
+                const distMoved = Math.hypot(p.x - p.startX, p.y - p.startY);
+                if (p.y > 180 || p.x < BORDER_LEFT + 25 || p.x > BORDER_RIGHT - 25 || distMoved > 10) {
+                    p.knocked = true;
+                    countKnocked++;
+                }
+            });
+
+            // Adjust based on pins left active
+            registerRollResult(countKnocked);
+        }
+
+        // Scoring math formulas
+        function calculateCumulativeScore() {
+            let total = 0;
+            let frameScores = Array(10).fill(null);
+
+            for (let f = 0; f < 10; f++) {
+                const r = rolls[f];
+                if (!r || r.length === 0) break; // Frame not started
+
+                if (f === 9) {
+                    // Frame 10 rolls
+                    let sum = r.reduce((a, b) => a + b, 0);
+                    total += sum;
+                    frameScores[9] = total;
+                    break;
+                }
+
+                const nextFrameRolls = rolls[f+1] || [];
+                const doubleNextFrameRolls = rolls[f+2] || [];
+
+                // Strike
+                if (r[0] === 10) {
+                    if (nextFrameRolls.length >= 2) {
+                        total += 10 + nextFrameRolls[0] + nextFrameRolls[1];
+                    } else if (nextFrameRolls.length === 1) {
+                        // Next frame has only 1 roll (strike). Check the frame after.
+                        if (f === 8) {
+                            // In frame 9 next is frame 10 which can have multiple rolls
+                            total += 10 + nextFrameRolls[0] + (nextFrameRolls[1] || 0);
+                        } else {
+                            total += 10 + nextFrameRolls[0] + (doubleNextFrameRolls[0] || 0);
+                        }
+                    } else {
+                        // Not enough rolls calculated yet to determine strike bonus
+                        break;
+                    }
+                    frameScores[f] = total;
+                }
+                // Spare
+                else if (r[0] + r[1] === 10) {
+                    if (nextFrameRolls.length >= 1) {
+                        total += 10 + nextFrameRolls[0];
+                        frameScores[f] = total;
+                    } else {
+                        break;
+                    }
+                }
+                // Open frame
+                else if (r.length === 2) {
+                    total += r[0] + r[1];
+                    frameScores[f] = total;
+                }
+            }
+            return frameScores;
+        }
+
+        // Render scorecard HTML tables
+        function updateScorecardUI() {
+            const frameScores = calculateCumulativeScore();
+            
+            for (let f = 0; f < 10; f++) {
+                const r = rolls[f] || [];
+                const totEl = document.getElementById(`tot${f+1}`);
+                const r1El = document.getElementById(`r${f+1}_1`);
+                const r2El = document.getElementById(`r${f+1}_2`);
+                const r3El = document.getElementById(`r${f+1}_3`); // 10th frame only
+
+                // Display individual roll boxes
+                if (f === 9) {
+                    // Frame 10 specifics
+                    if (r.length >= 1) r1El.textContent = r[0] === 10 ? 'X' : r[0];
+                    if (r.length >= 2) {
+                        if (r[0] === 10 && r[1] === 10) r2El.textContent = 'X';
+                        else if (r[0] !== 10 && r[0] + r[1] === 10) r2El.textContent = '/';
+                        else r2El.textContent = r[1];
+                    }
+                    if (r.length >= 3) {
+                        if (r[2] === 10) r3El.textContent = 'X';
+                        else if (r[1] !== 10 && r[1] + r[2] === 10) r3El.textContent = '/';
+                        else r3El.textContent = r[2];
+                    }
+                } else {
+                    if (r.length >= 1) {
+                        r1El.textContent = r[0] === 10 ? 'X' : r[0];
+                    }
+                    if (r.length >= 2) {
+                        if (r[0] + r[1] === 10) {
+                            r2El.textContent = '/';
+                        } else {
+                            r2El.textContent = r[1];
+                        }
+                    }
+                }
+
+                // Cumulative frame totals
+                if (frameScores[f] !== null) {
+                    totEl.textContent = frameScores[f];
+                    score = frameScores[f]; // latest calculated total
+                }
+            }
+        }
+
+        function triggerScreenShake() {
+            gameWrapper.classList.add('shake');
+            setTimeout(() => gameWrapper.classList.remove('shake'), 250);
+        }
+
+        function finishMatch() {
+            gameState = 'GAMEOVER';
+            finalScoreEl.textContent = score;
+            gameOverScreen.classList.add('active');
+        }
+
+        function resetScorecardUI() {
+            rolls = Array.from({ length: 10 }, () => []);
+            score = 0;
+            currentFrame = 0;
+            currentRoll = 0;
+            
+            for (let f = 1; f <= 10; f++) {
+                document.getElementById(`tot${f}`).textContent = '';
+                document.getElementById(`r${f}_1`).textContent = '';
+                document.getElementById(`r${f}_2`).textContent = '';
+                if (f === 10) document.getElementById(`r10_3`).textContent = '';
+            }
+        }
+
+        // Physics Engine updates
+        function updatePhysics() {
+            if (gameState === 'ROLLING') {
+                // Add hook spin vector to ball horizontal velocity
+                ball.vx += ball.spin * 0.038;
+                
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Damp speed slightly due to friction
+                ball.vx *= FRICTION;
+                ball.vy *= FRICTION;
+
+                // Gutter ball checking
+                const actualLaneLeft = BORDER_LEFT + 30;
+                const actualLaneRight = BORDER_RIGHT - 30;
+
+                if (ball.x < actualLaneLeft) {
+                    // Gutters straight path guides
+                    ball.vx = 0;
+                    ball.x = BORDER_LEFT + 15;
+                    if (ball.vy !== 0) {
+                        playGutterSound();
+                    }
+                } else if (ball.x > actualLaneRight) {
+                    ball.vx = 0;
+                    ball.x = BORDER_RIGHT - 15;
+                    if (ball.vy !== 0) {
+                        playGutterSound();
+                    }
+                }
+
+                // Check ball off-screen at target top boundaries
+                if (ball.y < 0) {
+                    ball.vy = 0;
+                    ball.vx = 0;
+                }
+
+                // Collision resolving Ball-to-Pins
+                pins.forEach(p => {
+                    if (p.knocked) return;
+
+                    const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
+                    const minDist = p.r + ball.r;
+
+                    if (dist < minDist) {
+                        // resolve overlap
+                        const overlap = minDist - dist;
+                        const nx = (p.x - ball.x) / dist;
+                        const ny = (p.y - ball.y) / dist;
+
+                        p.x += nx * overlap;
+                        p.y += ny * overlap;
+
+                        // Momentum calculation
+                        const rvx = p.vx - ball.vx;
+                        const rvy = p.vy - ball.vy;
+                        const velAlongNormal = rvx * nx + rvy * ny;
+
+                        if (velAlongNormal < 0) {
+                            const restitution = 0.95;
+                            // Ball mass 8, Pin mass 1.2
+                            const impulse = -(1 + restitution) * velAlongNormal / (1/8 + 1/1.2);
+                            
+                            ball.vx -= (impulse / 8) * nx;
+                            ball.vy -= (impulse / 8) * ny;
+                            p.vx += (impulse / 1.2) * nx;
+                            p.vy += (impulse / 1.2) * ny;
+
+                            playPinCollisionSound(Math.abs(velAlongNormal) / 10);
+                            createSparkParticles(p.x, p.y, 'var(--secondary-glow)', 6);
+                        }
+                    }
+                });
+
+                // Pin-to-Pin collisions
+                for (let i = 0; i < pins.length; i++) {
+                    for (let j = i + 1; j < pins.length; j++) {
+                        const p1 = pins[i];
+                        const p2 = pins[j];
+                        
+                        if (p1.knocked || p2.knocked) continue;
+
+                        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                        const minDist = p1.r + p2.r;
+
+                        if (dist < minDist) {
+                            const overlap = minDist - dist;
+                            const nx = (p2.x - p1.x) / dist;
+                            const ny = (p2.y - p1.y) / dist;
+
+                            p1.x -= nx * overlap * 0.5;
+                            p1.y -= ny * overlap * 0.5;
+                            p2.x += nx * overlap * 0.5;
+                            p2.y += ny * overlap * 0.5;
+
+                            const rvx = p2.vx - p1.vx;
+                            const rvy = p2.vy - p1.vy;
+                            const velNormal = rvx * nx + rvy * ny;
+
+                            if (velNormal < 0) {
+                                const restitution = 0.95;
+                                const impulse = -(1 + restitution) * velNormal / (2 / 1.2);
+                                
+                                p1.vx -= (impulse / 1.2) * nx;
+                                p1.vy -= (impulse / 1.2) * ny;
+                                p2.vx += (impulse / 1.2) * nx;
+                                p2.vy += (impulse / 1.2) * ny;
+
+                                playPinCollisionSound(Math.abs(velNormal) / 8);
+                                createSparkParticles(p1.x + nx * p1.r, p1.y + ny * p1.r, '#ffffff', 4);
+                            }
+                        }
+                    }
+                }
+
+                // Move pins with friction
+                pins.forEach(p => {
+                    if (p.knocked) return;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vx *= 0.96;
+                    p.vy *= 0.96;
+
+                    // Bounce pins off kickback boundary walls
+                    if (p.x - p.r < BORDER_LEFT + 20) {
+                        p.x = BORDER_LEFT + 20 + p.r;
+                        p.vx = -p.vx * 0.5;
+                    } else if (p.x + p.r > BORDER_RIGHT - 20) {
+                        p.x = BORDER_RIGHT - 20 - p.r;
+                        p.vx = -p.vx * 0.5;
+                    }
+                });
+
+                // Check roll completion: ball is offscreen top & all items stopped moving
+                const allStopped = pins.every(p => p.knocked || (Math.abs(p.vx) < 0.05 && Math.abs(p.vy) < 0.05)) && (ball.y < 0 || (Math.abs(ball.vx) < 0.05 && Math.abs(ball.vy) < 0.05));
+                
+                if (allStopped) {
+                    evaluateRollResult();
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Update announcements
+            for (let i = floatAnnouncements.length - 1; i >= 0; i--) {
+                floatAnnouncements[i].update();
+                if (floatAnnouncements[i].alpha <= 0) floatAnnouncements.splice(i, 1);
+            }
+        }
+
+        // Render Canvas scenes
+        function drawField() {
+            // Background
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, TABLE_WIDTH, TABLE_HEIGHT);
+
+            // Gutter boxes (Dark grey blocks)
+            ctx.fillStyle = '#070512';
+            ctx.fillRect(BORDER_LEFT, 0, 30, FIELD_HEIGHT);
+            ctx.fillRect(BORDER_RIGHT - 30, 0, 30, FIELD_HEIGHT);
+
+            // Main lane surface (Wood grid pattern)
+            ctx.fillStyle = '#0c0721';
+            ctx.fillRect(BORDER_LEFT + 30, 0, BORDER_RIGHT - BORDER_LEFT - 60, FIELD_HEIGHT);
+
+            // Draw glowing board dividing lines (gutters boundaries)
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.moveTo(BORDER_LEFT + 30, 0);
+            ctx.lineTo(BORDER_LEFT + 30, FIELD_HEIGHT);
+            ctx.moveTo(BORDER_RIGHT - 30, 0);
+            ctx.lineTo(BORDER_RIGHT - 30, FIELD_HEIGHT);
+            ctx.stroke();
+            
+            // Reset shadows
+            ctx.shadowBlur = 0;
+
+            // Draw lane board panels lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            for (let x = BORDER_LEFT + 40; x < BORDER_RIGHT - 30; x += 15) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, FIELD_HEIGHT);
+                ctx.stroke();
+            }
+
+            // Draw arrows triangles dots on lane (targeting markers)
+            ctx.fillStyle = 'rgba(0, 242, 254, 0.15)';
+            const markersY = 320;
+            const markerOffsets = [-40, -20, 0, 20, 40];
+            markerOffsets.forEach(ox => {
+                ctx.beginPath();
+                ctx.moveTo(180 + ox, markersY);
+                ctx.lineTo(180 + ox - 4, markersY + 12);
+                ctx.lineTo(180 + ox + 4, markersY + 12);
+                ctx.fill();
+            });
+
+            // Target Pin deck visual indicator circle shadows
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            pins.forEach(p => {
+                if (p.knocked) return;
+                ctx.beginPath();
+                ctx.arc(p.startX, p.startY, p.r + 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawEntities() {
+            // 1. Draw particles & float alerts
+            particles.forEach(p => p.draw());
+            floatAnnouncements.forEach(f => f.draw());
+
+            // 2. Draw Pins (white cylinder with neon magenta bands)
+            pins.forEach(p => {
+                if (p.knocked) return;
+
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'var(--secondary-glow)';
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw central red stripes on pins
+                ctx.fillStyle = 'var(--secondary-glow)';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            });
+
+            // 3. Draw Bowling Ball (heavy cyan sphere)
+            if (gameState === 'ROLLING' || gameState === 'AIMING' || gameState === 'PLACING') {
+                ctx.save();
+                ctx.shadowBlur = (gameState === 'ROLLING') ? 22 : 12;
+                ctx.shadowColor = 'var(--primary-glow)';
+                ctx.fillStyle = 'var(--primary-glow)';
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw finger grip holes
+                ctx.fillStyle = '#02010c';
+                ctx.beginPath();
+                ctx.arc(ball.x - 3, ball.y - 3, 2.5, 0, Math.PI * 2);
+                ctx.arc(ball.x + 3, ball.y - 3, 2.5, 0, Math.PI * 2);
+                ctx.arc(ball.x, ball.y + 4, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Particle roll trail
+                if (gameState === 'ROLLING' && Math.random() < 0.3) {
+                    particles.push(new Particle(
+                        ball.x, ball.y,
+                        -ball.vx * 0.1, -ball.vy * 0.1,
+                        'var(--primary-glow)',
+                        1.5,
+                        15
+                    ));
+                }
+            }
+
+            // 4. Draw Aiming pullback guidelines & Hook Spin curve trajectory projection
+            if (gameState === 'AIMING' && pointerActive) {
+                // Projection curved path calculations
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.35)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                let stepX = ball.x;
+                let stepY = ball.y;
+                let stepVx = Math.cos(dragAngle) * dragPower;
+                let stepVy = Math.sin(dragAngle) * dragPower;
+
+                ctx.moveTo(stepX, stepY);
+                for (let i = 0; i < 45; i++) {
+                    // Apply hook spin curve drifts
+                    stepVx += ball.spin * 0.038;
+                    
+                    stepX += stepVx;
+                    stepY += stepVy;
+                    ctx.lineTo(stepX, stepY);
+                    
+                    if (stepY < 40 || stepX < BORDER_LEFT || stepX > BORDER_RIGHT) break;
+                }
+                ctx.stroke();
+                ctx.restore();
+
+                // Pullback visual strings
+                const pullX = ball.x - Math.cos(dragAngle) * (dragPower * 4.5);
+                const pullY = ball.y - Math.sin(dragAngle) * (dragPower * 4.5);
+
+                ctx.save();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(pullX, pullY);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 5. Draw Sweeper bar animation
+            if (sweeperY > -20) {
+                ctx.save();
+                ctx.strokeStyle = 'var(--accent-glow)';
+                ctx.lineWidth = 6;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'var(--accent-glow)';
+                ctx.beginPath();
+                ctx.moveTo(BORDER_LEFT, sweeperY);
+                ctx.lineTo(BORDER_RIGHT, sweeperY);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // Loop Runner
+        function loop() {
+            updatePhysics();
+            drawField();
+            drawEntities();
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Interactive matches starter
+        window.startGame = function() {
+            initAudio();
+            resetScorecardUI();
+            rackPins();
+            resetBall();
+            
+            menuScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            gameState = 'PLACING';
+        };
+
+        // Coordinate helper maps browser touches to 360x600 coordinates
+        function mapInputCoords(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = TABLE_WIDTH / rect.width;
+            const scaleY = TABLE_HEIGHT / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handlePointerDown(x, y) {
+            initAudio();
+            if (gameState === 'MENU' || gameState === 'GAMEOVER' || gameState === 'ROLLING' || gameState === 'SCORING') return;
+
+            const coords = mapInputCoords(x, y);
+
+            if (gameState === 'PLACING') {
+                // If clicked near ball, switch to aiming mode
+                const dist = Math.hypot(coords.x - ball.x, coords.y - ball.y);
+                if (dist < 35) {
+                    gameState = 'AIMING';
+                    pointerActive = true;
+                    dragStart.x = ball.x;
+                    dragStart.y = ball.y;
+                    dragCurrent.x = coords.x;
+                    dragCurrent.y = coords.y;
+                    
+                    hintText.textContent = "2. AŞAMA: Geriye çekip açı/güç verin. Sağa/sola bükerek kavis (spin) ekleyin.";
+                } else {
+                    // Slide ball horizontally
+                    if (coords.y > 480) {
+                        ball.x = Math.max(90, Math.min(270, coords.x));
+                    }
+                }
+            } else if (gameState === 'AIMING') {
+                // Fallback reset
+                pointerActive = false;
+                gameState = 'PLACING';
+            }
+        }
+
+        function handlePointerMove(x, y) {
+            const coords = mapInputCoords(x, y);
+
+            if (gameState === 'PLACING') {
+                // Slide ball
+                if (pointerActive || coords.y > 480) {
+                    ball.x = Math.max(90, Math.min(270, coords.x));
+                }
+            } else if (gameState === 'AIMING' && pointerActive) {
+                dragCurrent.x = coords.x;
+                dragCurrent.y = coords.y;
+
+                // Calculate pullback distance and angle
+                const dx = ball.x - coords.x;
+                const dy = ball.y - coords.y;
+                const dist = Math.hypot(dx, dy);
+
+                // Firing angles
+                dragAngle = Math.atan2(dy, dx);
+                
+                // Map pullback distance to roll force velocity: max 12
+                dragPower = Math.min(12, dist * 0.1);
+                
+                // Hook spin curve factor is mapped to horizontal drag offset
+                // Dragging to the left curves it left, to the right curves it right
+                ball.spin = -(dragStart.x - coords.x) * 0.08;
+                ball.spin = Math.max(-0.8, Math.min(0.8, ball.spin)); // cap hook spin
+            }
+        }
+
+        function handlePointerUp() {
+            if (gameState === 'AIMING' && pointerActive) {
+                pointerActive = false;
+
+                if (dragPower > 2.0) {
+                    // Fire the bowling ball!
+                    ball.vx = Math.cos(dragAngle) * dragPower;
+                    ball.vy = Math.sin(dragAngle) * dragPower;
+                    
+                    gameState = 'ROLLING';
+                    playSynth(130, 80, 0.4, 'sine', 0.2); // Rolling rumble sound
+                    
+                    hintText.textContent = "3. AŞAMA: Top fırlatıldı! Lobutların devrilmesini izleyin.";
+                } else {
+                    // Cancel draw back and return to placing
+                    gameState = 'PLACING';
+                    ball.spin = 0;
+                    hintText.textContent = "1. AŞAMA: Topu yana sürükleyerek konumlandırın.";
+                }
+            }
+        }
+
+        // Mouse listeners
+        canvas.addEventListener('mousedown', (e) => {
+            handlePointerDown(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            handlePointerMove(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => {
+            handlePointerUp();
+        });
+
+        // Touch listeners (Mobile screens)
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            handlePointerUp();
+        });
+
+        // Click buttons
+        startBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.classList.remove('active');
+            menuScreen.classList.add('active');
+            gameState = 'MENU';
+        });
+
+        menuBtn.addEventListener('click', () => {
+            gameState = 'MENU';
+            menuScreen.classList.add('active');
+            gameOverScreen.classList.remove('active');
+        });
+
+        resetMatchBtn.addEventListener('click', () => {
+            if (confirm("Mevcut oyunu sıfırlayıp en baştan başlamak istediğinize emin misiniz?")) {
+                startGame();
+            }
+        });
+
+        // Initial setup launch loop
+        TABLE_WIDTH = canvas.width;
+        TABLE_HEIGHT = canvas.height;
+        loop();
+    </script>
+</body>
+</html>
