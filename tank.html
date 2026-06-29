@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Tanklar // Cyber Tanks</title>
+    <!-- Google Fonts for outfit layout -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #03001e;
+            --primary-glow: #00f2fe; /* Cyan Player */
+            --secondary-glow: #ff007f; /* Pink AI */
+            --accent-glow: #ffd700; /* Gold */
+            --danger-glow: #ff3366; /* Red Blast */
+            --terrain-color: #39ff14; /* Green Neon Terrain */
+            --glass-bg: rgba(8, 4, 25, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #0f0426 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 20px 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(0, 242, 254, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            width: min(95vw, 740px);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: -4px;
+        }
+
+        .hud-panel {
+            display: flex;
+            gap: 12px;
+            padding: 10px 18px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1.2;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* Health Bar indicator styles */
+        .health-container {
+            width: 100%;
+            height: 14px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .health-player .health-bar {
+            background: linear-gradient(90deg, #00acc1, var(--primary-glow));
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .health-ai .health-bar {
+            background: linear-gradient(90deg, #d81b60, var(--secondary-glow));
+            box-shadow: 0 0 8px var(--secondary-glow);
+        }
+
+        .health-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 12px;
+            text-shadow: 0 1px 2px #000;
+        }
+
+        .hud-turn {
+            flex: 1.4;
+            font-weight: 800;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .turn-player {
+            color: var(--primary-glow);
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+        }
+
+        .turn-ai {
+            color: var(--secondary-glow);
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
+            width: 100%;
+            overflow: hidden;
+            aspect-ratio: 700/380;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #010008;
+            width: 100%;
+            height: 100%;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            background: rgba(5, 2, 20, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .screen-overlay h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .screen-overlay p {
+            font-size: 0.98rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .screen-overlay p span {
+            font-weight: 800;
+            color: var(--accent-glow);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.15), rgba(255, 0, 127, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+            padding: 12px 32px;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.3), rgba(255, 0, 127, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 242, 254, 0.35);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Controllers sliders panel below canvas */
+        .controls-panel {
+            width: 100%;
+            display: flex;
+            gap: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px 18px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            align-items: center;
+        }
+
+        .control-slider-group {
+            display: flex;
+            flex-direction: column;
+            flex: 2;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .slider-label span {
+            color: var(--primary-glow);
+            font-weight: 800;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 0 10px var(--primary-glow);
+            border: 2px solid var(--primary-glow);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        .control-actions {
+            display: flex;
+            flex: 1.2;
+            gap: 8px;
+            height: 100%;
+        }
+
+        .fire-btn {
+            flex: 2;
+            background: linear-gradient(45deg, rgba(0, 242, 254, 0.25), rgba(0, 172, 193, 0.25));
+            border: 1px solid var(--primary-glow);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.95rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.25);
+        }
+
+        .fire-btn:hover {
+            background: rgba(0, 242, 254, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .fire-btn:disabled {
+            background: rgba(255, 255, 255, 0.02) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: rgba(255, 255, 255, 0.2) !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .menu-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .hint {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .shake {
+            animation: shake 0.25s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-3px, 0, 0); }
+            20%, 80% { transform: translate3d(5px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper" id="gameWrapper">
+        <h1>Siber Tanklar</h1>
+        
+        <div class="hud-panel">
+            <div class="hud-item health-player">
+                <span class="hud-label">SENİN HP</span>
+                <div class="health-container">
+                    <div class="health-bar" id="hpPlayerBar"></div>
+                    <span class="health-text" id="hpPlayerText">100%</span>
+                </div>
+            </div>
+            
+            <div class="hud-turn turn-player" id="activeTurn">
+                SENİN ATISIN
+            </div>
+
+            <div class="hud-item health-ai">
+                <span class="hud-label">YAPAY ZEKA HP</span>
+                <div class="health-container">
+                    <div class="health-bar" id="hpAiBar"></div>
+                    <span class="health-text" id="hpAiText">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="700" height="380"></canvas>
+            
+            <!-- Menu Screen Overlay -->
+            <div class="screen-overlay active" id="menuScreen">
+                <h2>Cyber Tanks</h2>
+                <p>Harap edilebilir engebeli arazide kıyasıya tank savaşı! Namlu açınızı ve fırlatma gücünü ayarlayıp Yapay Zekayı yok edin.</p>
+                <button class="btn" id="startBtn">Savaşı Başlat</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="screen-overlay" id="gameOverScreen">
+                <h2 id="winnerText">ZAFER!</h2>
+                <p id="gameOverStats">Düşman tankını yok ettiniz.</p>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+        </div>
+        
+        <div class="controls-panel">
+            <div class="control-slider-group" style="margin-right: 12px;">
+                <div class="slider-label">AÇI: <span id="angleVal">45°</span></div>
+                <input type="range" id="angleSlider" min="0" max="180" value="45">
+            </div>
+
+            <div class="control-slider-group">
+                <div class="slider-label">GÜÇ: <span id="powerVal">9.0</span></div>
+                <input type="range" id="powerSlider" min="1" max="20" step="0.2" value="9">
+            </div>
+
+            <div class="control-actions">
+                <button class="fire-btn" id="fireBtn">ATEŞ</button>
+                <button class="menu-btn" id="menuBtn">Menü</button>
+            </div>
+        </div>
+
+        <div class="hint">Açı ve güç kaydırıcılarını kullanarak hedef alın, "ATEŞ" butonu ile siber roketi fırlatın.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const angleSlider = document.getElementById('angleSlider');
+        const powerSlider = document.getElementById('powerSlider');
+        const angleVal = document.getElementById('angleVal');
+        const powerVal = document.getElementById('powerVal');
+        const fireBtn = document.getElementById('fireBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const activeTurnEl = document.getElementById('activeTurn');
+        
+        const hpPlayerBar = document.getElementById('hpPlayerBar');
+        const hpPlayerText = document.getElementById('hpPlayerText');
+        const hpAiBar = document.getElementById('hpAiBar');
+        const hpAiText = document.getElementById('hpAiText');
+
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const gameWrapper = document.getElementById('gameWrapper');
+        const winnerText = document.getElementById('winnerText');
+        const gameOverStats = document.getElementById('gameOverStats');
+
+        // Virtual layout limits
+        const FIELD_WIDTH = 700;
+        const FIELD_HEIGHT = 380;
+        const GROUND_CEILING_Y = 365;
+        const GRAVITY = 0.16;
+
+        // Destructible terrain column array: terrain[x]
+        let terrain = [];
+        
+        // Tanks properties
+        let playerTank = { x: 120, y: 0, w: 22, h: 10, hp: 100, angle: 45, power: 9, color: 'var(--primary-glow)' };
+        let aiTank = { x: 580, y: 0, w: 22, h: 10, hp: 100, angle: 135, power: 9, color: 'var(--secondary-glow)' };
+
+        // Game State Loops
+        let gameState = 'MENU'; // MENU, PLAYING, ROLLING, TANK_FALLING, AI_THINKING, GAMEOVER
+        let turn = 'player'; // player, ai
+        let activeShell = null;
+        let particles = [];
+        let floatFeedbacks = [];
+
+        // Adaptive AI calibration error factor
+        let aiTargetError = 3.5;
+
+        // Audio System
+        let audioCtx = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSynth(freqStart, freqEnd, duration, type = 'sine', volume = 0.2) {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+                if (freqEnd !== freqStart) {
+                    osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + duration);
+                }
+
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Noise generators for fire & blast
+        function playFireSound() {
+            // Deep thud
+            playSynth(130, 45, 0.18, 'sine', 0.3);
+        }
+
+        function playExplosionSound() {
+            // Distorted low rumble sweep
+            playSynth(220, 30, 0.35, 'sawtooth', 0.26);
+        }
+
+        function playDamageSound() {
+            playSynth(600, 150, 0.15, 'sawtooth', 0.18);
+        }
+
+        function playWhistleSound(speedRatio) {
+            // Whistle frequency maps to descending Y shell speed
+            playSynth(800 - speedRatio*100, 500, 0.08, 'sine', 0.06);
+        }
+
+        // Particle Class
+        class Particle {
+            constructor(x, y, vx, vy, color, r, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.r = r;
+                this.alpha = 1.0;
+                this.decay = 1.0 / life;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createSparkParticles(x, y, color, count = 18, force = 4) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (Math.random() * force + 1.5);
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    color,
+                    Math.random() * 3 + 1,
+                    Math.random() * 20 + 20
+                ));
+            }
+        }
+
+        // Floating HP text feedbacks
+        class FloatFeedback {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.alpha = 1.0;
+            }
+            update() {
+                this.y -= 1.0;
+                this.alpha -= 0.015;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.font = "800 1.1rem 'Outfit'";
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // Procedural Terrain Builder
+        function generateTerrain() {
+            terrain = [];
+            // Generate beautiful rolling hills across 700 column slices
+            for (let x = 0; x < FIELD_WIDTH; x++) {
+                const y = 260 + Math.sin(x * 0.007) * 45 + Math.sin(x * 0.02) * 16;
+                terrain.push(Math.min(GROUND_CEILING_Y, Math.round(y)));
+            }
+        }
+
+        // Reset game rounds
+        function resetRounds() {
+            generateTerrain();
+            
+            playerTank.hp = 100;
+            aiTank.hp = 100;
+            
+            playerTank.x = 120;
+            playerTank.y = terrain[120];
+            
+            aiTank.x = 580;
+            aiTank.y = terrain[580];
+            
+            updateHUDBars();
+            
+            particles = [];
+            floatFeedbacks = [];
+            activeShell = null;
+            aiTargetError = 4.0; // reset AI accuracy
+            
+            turn = 'player';
+            gameState = 'PLAYING';
+            activeTurnEl.textContent = 'SENİN ATIŞIN';
+            activeTurnEl.className = 'hud-turn turn-player';
+            fireBtn.disabled = false;
+        }
+
+        function triggerScreenShake() {
+            gameWrapper.classList.add('shake');
+            setTimeout(() => gameWrapper.classList.remove('shake'), 220);
+        }
+
+        function updateHUDBars() {
+            // Player HP
+            hpPlayerBar.style.width = `${playerTank.hp}%`;
+            hpPlayerText.textContent = `${playerTank.hp}%`;
+            
+            // AI HP
+            hpAiBar.style.width = `${aiTank.hp}%`;
+            hpAiText.textContent = `${aiTank.hp}%`;
+        }
+
+        // Trigger explosion crater on terrain
+        function triggerCraterExplosion(x, y, radius = 26) {
+            playExplosionSound();
+            createSparkParticles(x, y, '#ff007f', 30, 5.0);
+            triggerScreenShake();
+
+            // Carve circular crater in terrainHeights columns
+            for (let cx = Math.floor(x - radius); cx <= Math.ceil(x + radius); cx++) {
+                if (cx >= 0 && cx < FIELD_WIDTH) {
+                    const dx = cx - x;
+                    const dy = Math.sqrt(radius * radius - dx * dx);
+                    
+                    // Dig down (increase Y coordinate)
+                    const targetDepth = y + dy;
+                    if (terrain[cx] < targetDepth) {
+                        terrain[cx] = Math.min(GROUND_CEILING_Y, Math.round(targetDepth));
+                    }
+                }
+            }
+
+            // Calculate damages based on radial distances to tanks
+            // centers offset slightly up from bottom coordinates
+            const centerPlayerY = playerTank.y - 4;
+            const centerAiY = aiTank.y - 4;
+
+            const distPlayer = Math.hypot(x - playerTank.x, y - centerPlayerY);
+            const distAi = Math.hypot(x - aiTank.x, y - centerAiY);
+
+            // Player Damage
+            if (distPlayer < radius + 15) {
+                const damage = Math.round(48 * (1 - distPlayer / (radius + 15)));
+                if (damage > 0) {
+                    playerTank.hp = Math.max(0, playerTank.hp - damage);
+                    floatFeedbacks.push(new FloatFeedback(playerTank.x, playerTank.y - 30, `-${damage} HP`, 'var(--danger-glow)'));
+                    playDamageSound();
+                    createSparkParticles(playerTank.x, playerTank.y, 'var(--primary-glow)', 8);
+                }
+            }
+
+            // AI Damage
+            if (distAi < radius + 15) {
+                const damage = Math.round(48 * (1 - distAi / (radius + 15)));
+                if (damage > 0) {
+                    aiTank.hp = Math.max(0, aiTank.hp - damage);
+                    floatFeedbacks.push(new FloatFeedback(aiTank.x, aiTank.y - 30, `-${damage} HP`, 'var(--danger-glow)'));
+                    playDamageSound();
+                    createSparkParticles(aiTank.x, aiTank.y, 'var(--secondary-glow)', 8);
+                }
+            }
+
+            updateHUDBars();
+            
+            // Check win conditions
+            if (playerTank.hp <= 0 || aiTank.hp <= 0) {
+                setTimeout(concludeMatch, 800);
+            } else {
+                // Apply gravity falling checks for tanks
+                gameState = 'TANK_FALLING';
+            }
+        }
+
+        // Conclude match overlays
+        function concludeMatch() {
+            gameState = 'GAMEOVER';
+            
+            if (playerTank.hp <= 0 && aiTank.hp <= 0) {
+                winnerText.textContent = 'BERABERE!';
+                winnerText.style.color = '#fff';
+                winnerText.style.textShadow = '0 0 10px #ffffff';
+                gameOverStats.textContent = 'İki tank da patladı.';
+            } else if (playerTank.hp <= 0) {
+                winnerText.textContent = 'BOZGUN!';
+                winnerText.style.color = 'var(--secondary-glow)';
+                winnerText.style.textShadow = '0 0 25px rgba(255, 0, 127, 0.7)';
+                gameOverStats.textContent = 'Yapay Zeka tankı galip geldi.';
+            } else {
+                winnerText.textContent = 'ZAFER SENİN!';
+                winnerText.style.color = 'var(--primary-glow)';
+                winnerText.style.textShadow = '0 0 25px rgba(0, 242, 254, 0.7)';
+                gameOverStats.textContent = 'Düşman siber tankını yok ettiniz.';
+            }
+            
+            gameOverScreen.classList.add('active');
+        }
+
+        // Fire shell bullet trigger
+        function fireShell(owner, angleDeg, power) {
+            initAudio();
+            playFireSound();
+            
+            const rad = angleDeg * Math.PI / 180;
+            const startX = owner === 'player' ? playerTank.x : aiTank.x;
+            const startY = owner === 'player' ? playerTank.y - 12 : aiTank.y - 12;
+
+            // Cannon end points
+            const barrelX = startX + Math.cos(rad) * 14;
+            const barrelY = startY + Math.sin(rad) * 14;
+
+            activeShell = {
+                x: barrelX,
+                y: barrelY,
+                vx: Math.cos(rad) * power * 0.95,
+                vy: Math.sin(rad) * power * 0.95,
+                r: 3.5,
+                owner: owner
+            };
+
+            createSparkParticles(barrelX, barrelY, owner === 'player' ? 'var(--primary-glow)' : 'var(--secondary-glow)', 8);
+
+            gameState = 'ROLLING';
+            fireBtn.disabled = true;
+        }
+
+        // Switch turn cycle
+        function swapTurn() {
+            activeShell = null;
+            
+            if (turn === 'player') {
+                turn = 'ai';
+                activeTurnEl.textContent = 'YAPAY ZEKA HAZIRLANIYOR...';
+                activeTurnEl.className = 'hud-turn turn-ai';
+                gameState = 'AI_THINKING';
+                setTimeout(runAIShot, 1600); // AI thinks then fires
+            } else {
+                turn = 'player';
+                activeTurnEl.textContent = 'SENİN ATIŞIN';
+                activeTurnEl.className = 'hud-turn turn-player';
+                gameState = 'PLAYING';
+                fireBtn.disabled = false;
+            }
+        }
+
+        // Adaptive AI targeting calculations
+        function runAIShot() {
+            if (gameState !== 'AI_THINKING') return;
+
+            // Target coordinates
+            const dx = playerTank.x - aiTank.x; // ~-460 pixels (aim left)
+
+            // Select random angle between 120 and 150 degrees (points left-up)
+            const angle = 120 + Math.random() * 30; // degrees
+            const rad = angle * Math.PI / 180;
+            
+            // Ballistic power estimation
+            // R = (v^2 * sin(2*theta)) / g. So v = sqrt(dist * g / sin(2*theta))
+            const angleFromHorizontal = angle - 90; // angle offset from vertical up
+            const sin2theta = Math.sin(2 * (180 - angle) * Math.PI / 180);
+            
+            let idealPower = Math.sqrt((Math.abs(dx) * GRAVITY) / (sin2theta || 0.9));
+            if (isNaN(idealPower)) idealPower = 9;
+
+            // Apply adaptive calibration mistake offsets
+            const error = (Math.random() - 0.5) * aiTargetError;
+            aiTank.power = Math.max(4.0, Math.min(18.0, idealPower + error));
+            aiTank.angle = angle;
+
+            // Reduce mistake factor for next turns to lock in targets
+            aiTargetError = Math.max(0.3, aiTargetError * 0.72);
+
+            fireShell('ai', aiTank.angle, aiTank.power);
+        }
+
+        // Physics Engine updates
+        function updatePhysics() {
+            // 1. Ballistic shell movements
+            if (gameState === 'ROLLING' && activeShell) {
+                activeShell.vy += GRAVITY;
+                activeShell.x += activeShell.vx;
+                activeShell.y += activeShell.vy;
+
+                // Play soft flight whistling sound
+                if (Math.random() < 0.15) {
+                    playWhistleSound(activeShell.vy);
+                }
+
+                // Check out of bounds
+                if (activeShell.x < 0 || activeShell.x > FIELD_WIDTH) {
+                    swapTurn();
+                    return;
+                }
+
+                // Check collision with terrain curves
+                const terrainIdx = Math.floor(activeShell.x);
+                if (activeShell.y >= terrain[terrainIdx]) {
+                    triggerCraterExplosion(activeShell.x, activeShell.y);
+                }
+            }
+
+            // 2. Tank smooth falling mechanics (under gravity)
+            if (gameState === 'TANK_FALLING') {
+                let falling = false;
+                
+                // Player Tank
+                const targetPlayerY = terrain[playerTank.x];
+                if (playerTank.y < targetPlayerY) {
+                    playerTank.y = Math.min(targetPlayerY, playerTank.y + 2.5);
+                    falling = true;
+                    // Spark trail on slide
+                    if (Math.random() < 0.3) {
+                        createSparkParticles(playerTank.x, playerTank.y, 'var(--primary-glow)', 1, 0.5);
+                    }
+                }
+                
+                // AI Tank
+                const targetAiY = terrain[aiTank.x];
+                if (aiTank.y < targetAiY) {
+                    aiTank.y = Math.min(targetAiY, aiTank.y + 2.5);
+                    falling = true;
+                    if (Math.random() < 0.3) {
+                        createSparkParticles(aiTank.x, aiTank.y, 'var(--secondary-glow)', 1, 0.5);
+                    }
+                }
+
+                if (!falling) {
+                    swapTurn();
+                }
+            }
+
+            // 3. Update active particles & float chimes
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alpha <= 0) particles.splice(i, 1);
+            }
+
+            for (let i = floatFeedbacks.length - 1; i >= 0; i--) {
+                floatFeedbacks[i].update();
+                if (floatFeedbacks[i].alpha <= 0) floatFeedbacks.splice(i, 1);
+            }
+        }
+
+        // Render Canvas scenes
+        function drawField() {
+            // Felt backdrop
+            ctx.fillStyle = '#02010d';
+            ctx.fillRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+
+            // Subtle grids
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.02)';
+            ctx.lineWidth = 1.5;
+            const gridSpacing = 30;
+            for (let x = 0; x < FIELD_WIDTH; x += gridSpacing) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, FIELD_HEIGHT); ctx.stroke();
+            }
+            for (let y = 0; y < FIELD_HEIGHT; y += gridSpacing) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(FIELD_WIDTH, y); ctx.stroke();
+            }
+
+            // Draw destructible neon terrain curves
+            ctx.save();
+            ctx.strokeStyle = 'var(--terrain-color)';
+            ctx.lineWidth = 3.5;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'var(--terrain-color)';
+            ctx.fillStyle = '#040d02'; // dark green fill below terrain
+            
+            ctx.beginPath();
+            ctx.moveTo(0, FIELD_HEIGHT);
+            for (let x = 0; x < FIELD_WIDTH; x++) {
+                ctx.lineTo(x, terrain[x]);
+            }
+            ctx.lineTo(FIELD_WIDTH, FIELD_HEIGHT);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper to draw neon tanks
+        function drawTankEntity(t, isPlayer) {
+            ctx.save();
+            ctx.translate(t.x, t.y);
+
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = t.color;
+            ctx.fillStyle = t.color;
+
+            // Draw tank chassis body base rectangle
+            // sitting slightly above terrain bottom
+            ctx.beginPath();
+            ctx.roundRect(-t.w / 2, -t.h, t.w, t.h, 3);
+            ctx.fill();
+
+            // Cockpit center dome
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = 0.55;
+            ctx.beginPath();
+            ctx.arc(0, -t.h, 6, Math.PI, 0);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // Draw Cannon barrel segment
+            const rad = t.angle * Math.PI / 180;
+            const endX = Math.cos(rad) * 14;
+            const endY = -t.h + Math.sin(rad) * 14;
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, -t.h);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Draw small cannon muzzle flash indicator on active turn aiming
+            if (gameState === 'PLAYING' && isPlayer) {
+                ctx.strokeStyle = 'var(--primary-glow)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                // aim projection trajectory preview line short segment
+                ctx.lineTo(endX * 3, -t.h + Math.sin(rad) * 42);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawEntities() {
+            // 1. Draw particles & float HP feedbacks
+            particles.forEach(p => p.draw());
+            floatFeedbacks.forEach(f => f.draw());
+
+            // 2. Draw Cyan Player Tank
+            if (playerTank.hp > 0) {
+                drawTankEntity(playerTank, true);
+            }
+
+            // 3. Draw Magenta AI Tank
+            if (aiTank.hp > 0) {
+                drawTankEntity(aiTank, false);
+            }
+
+            // 4. Draw active flying shell bullet
+            if (gameState === 'ROLLING' && activeShell) {
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = activeShell.owner === 'player' ? 'var(--primary-glow)' : 'var(--secondary-glow)';
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(activeShell.x, activeShell.y, activeShell.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // glowing flight trail particles
+                if (Math.random() < 0.55) {
+                    particles.push(new Particle(
+                        activeShell.x - activeShell.vx * 0.6,
+                        activeShell.y - activeShell.vy * 0.6,
+                        -activeShell.vx * 0.1, -activeShell.vy * 0.1,
+                        activeShell.owner === 'player' ? 'var(--primary-glow)' : 'var(--secondary-glow)',
+                        1.5,
+                        10
+                    ));
+                }
+            }
+        }
+
+        // Loop Runner
+        function loop() {
+            if (gameState === 'PLAYING' || gameState === 'ROLLING' || gameState === 'TANK_FALLING') {
+                updatePhysics();
+            }
+            
+            drawField();
+            drawEntities();
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Slider inputs listeners
+        angleSlider.addEventListener('input', () => {
+            if (gameState !== 'PLAYING') return;
+            playerTank.angle = parseInt(angleSlider.value);
+            angleVal.textContent = `${playerTank.angle}°`;
+        });
+
+        powerSlider.addEventListener('input', () => {
+            if (gameState !== 'PLAYING') return;
+            playerTank.power = parseFloat(powerSlider.value);
+            powerVal.textContent = playerTank.power.toFixed(1);
+        });
+
+        // Fire shell trigger click
+        fireBtn.addEventListener('click', () => {
+            if (gameState !== 'PLAYING' || turn !== 'player') return;
+            fireShell('player', playerTank.angle, playerTank.power);
+        });
+
+        // Overlay actions buttons
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            menuScreen.classList.remove('active');
+            resetRounds();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.classList.remove('active');
+            menuScreen.classList.add('active');
+            gameState = 'MENU';
+        });
+
+        menuBtn.addEventListener('click', () => {
+            gameState = 'MENU';
+            menuScreen.classList.add('active');
+            gameOverScreen.classList.remove('active');
+        });
+
+        // Initial setup launch loop
+        loop();
+    </script>
+</body>
+</html>
