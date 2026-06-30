@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Helix // Cyber Helix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #040216;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-color: #00ffcc;
+            --secondary-color: #ff00ff;
+            --danger-color: #ff1744;
+            --gold-color: #ffd700;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #140835 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            width: min(95vw, 420px);
+        }
+
+        .header {
+            text-align: center;
+            width: 100%;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            text-transform: uppercase;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .progress-bar-bg {
+            flex: 1;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 0 10px var(--primary-color);
+            transition: width 0.1s linear;
+        }
+
+        .level-lbl {
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 70px;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .score-current .stat-value { color: var(--primary-color); text-shadow: 0 0 15px rgba(0, 255, 204, 0.6); }
+        .score-best .stat-value { color: var(--secondary-color); text-shadow: 0 0 15px rgba(255, 0, 255, 0.6); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+            width: 100%;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #02010b;
+            width: 100%;
+            height: 480px;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--danger-color);
+            text-shadow: 0 0 20px rgba(255, 23, 68, 0.6);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .overlay h2.victory {
+            color: var(--gold-color);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-color);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 480px) {
+            .wrapper { padding: 12px; border-radius: 15px; gap: 10px; width: 95vw; }
+            canvas { height: 400px; }
+            h1 { font-size: 1.7rem; }
+            .stat-value { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Helix</h1>
+        </div>
+
+        <div class="hud">
+            <div class="progress-container">
+                <span class="level-lbl" id="levelStart">Seviye 1</span>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <span class="level-lbl" id="levelEnd">Seviye 2</span>
+            </div>
+
+            <div class="stats">
+                <div class="stat-box score-current">
+                    <span class="stat-label">Skor</span>
+                    <span class="stat-value" id="score">0</span>
+                </div>
+                <div class="stat-box score-best">
+                    <span class="stat-label">En Yüksek</span>
+                    <span class="stat-value" id="bestScore">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="360" height="600"></canvas>
+            
+            <!-- Game Over Screen -->
+            <div class="overlay" id="gameOverScreen">
+                <h2>Oyun Bitti!</h2>
+                <p>Skorunuz: <span id="finalScore" style="color:var(--primary-color); font-weight:800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+
+            <!-- Start Screen -->
+            <div class="overlay active" id="startScreen" style="background: rgba(0,0,0,0.75);">
+                <h2 style="color: var(--primary-color); text-shadow: 0 0 20px var(--primary-color);">Cyber Helix</h2>
+                <p>Kuleyi döndürmek için kaydırın veya yön tuşlarını kullanın. Boşluklardan geçip hedefe ulaşın!</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Victory Screen -->
+            <div class="overlay" id="victoryScreen">
+                <h2 class="victory">Tebrikler!</h2>
+                <p>Seviye Tamamlandı! Toplam Skor: <span id="victoryScore" style="color:var(--primary-color); font-weight:800;">0</span></p>
+                <button class="btn" id="nextLevelBtn">Sonraki Seviye</button>
+            </div>
+        </div>
+
+        <div class="hint">Yön tuşları (← / →) veya Fare / Dokunma sürükleme ile kuleyi döndürün.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('bestScore');
+        const levelStartEl = document.getElementById('levelStart');
+        const levelEndEl = document.getElementById('levelEnd');
+        const progressBarEl = document.getElementById('progressBar');
+        
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+        
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const nextLevelBtn = document.getElementById('nextLevelBtn');
+        const finalScoreEl = document.getElementById('finalScore');
+        const victoryScoreEl = document.getElementById('victoryScore');
+
+        // Game State Variables
+        let level = 1;
+        let score = 0;
+        let bestScore = Math.floor(localStorage.getItem('neonHelixBest')) || 0;
+        bestScoreEl.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING, GAMEOVER, VICTORY
+        let animationFrameId;
+        
+        // Physics and Camera Settings
+        const centerX = canvas.width / 2;
+        const ballScreenY = 220; // Fixed vertical baseline
+        const r1 = 30; // Tower cylinder inner radius
+        const r2 = 110; // Platform outer radius
+        const tilt = 0.25; // Ellipse vertical scale for 3D illusion
+        const platformSpacing = 160; // Distance between platforms
+        
+        let towerTheta = 0; // Current rotation of the tower in radians
+        let rotationVelocity = 0; // Smooth spin velocity
+        let cameraY = 0; // Smooth vertical scroll position
+        
+        let ball = {
+            y: 0,
+            dy: 0,
+            gravity: 0.38,
+            bounceForce: -7.5,
+            radius: 10,
+            color: '#ffffff',
+            glowColor: '#00ffcc'
+        };
+        
+        let prevBallY = 0;
+        let platforms = [];
+        let particles = [];
+        let splats = [];
+        let shatteredSectors = [];
+        let isFireball = false;
+        let passedPlatformsCount = 0;
+        let screenShake = 0;
+
+        // Input state
+        let isDragging = false;
+        let lastDragX = 0;
+
+        // Web Audio Procedural Sound Synthesizer
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'bounce':
+                    const bOsc = audioCtx.createOscillator();
+                    const bGain = audioCtx.createGain();
+                    bOsc.type = 'triangle';
+                    bOsc.frequency.setValueAtTime(150, now);
+                    bOsc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+                    bGain.gain.setValueAtTime(0.2, now);
+                    bGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    bOsc.connect(bGain);
+                    bGain.connect(audioCtx.destination);
+                    bOsc.start();
+                    bOsc.stop(now + 0.12);
+                    break;
+                    
+                case 'whoosh':
+                    const wOsc = audioCtx.createOscillator();
+                    const wGain = audioCtx.createGain();
+                    wOsc.type = 'sine';
+                    wOsc.frequency.setValueAtTime(320, now);
+                    wOsc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                    wGain.gain.setValueAtTime(0.08, now);
+                    wGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    wOsc.connect(wGain);
+                    wGain.connect(audioCtx.destination);
+                    wOsc.start();
+                    wOsc.stop(now + 0.15);
+                    break;
+
+                case 'shatter':
+                    // White noise blast
+                    const sSize = audioCtx.sampleRate * 0.3;
+                    const sBuf = audioCtx.createBuffer(1, sSize, audioCtx.sampleRate);
+                    const sData = sBuf.getChannelData(0);
+                    for (let i = 0; i < sSize; i++) {
+                        sData[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = sBuf;
+                    
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 1200;
+                    filter.Q.value = 3;
+
+                    const noiseGain = audioCtx.createGain();
+                    noiseGain.gain.setValueAtTime(0.4, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    
+                    noise.connect(filter);
+                    filter.connect(noiseGain);
+                    noiseGain.connect(audioCtx.destination);
+
+                    // Glass chime metallic resonance
+                    const cOsc = audioCtx.createOscillator();
+                    cOsc.type = 'sawtooth';
+                    cOsc.frequency.setValueAtTime(850, now);
+                    cOsc.frequency.linearRampToValueAtTime(200, now + 0.2);
+                    const cGain = audioCtx.createGain();
+                    cGain.gain.setValueAtTime(0.15, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+
+                    noise.start();
+                    cOsc.start();
+                    noise.stop(now + 0.3);
+                    cOsc.stop(now + 0.3);
+                    break;
+
+                case 'fireball':
+                    const fOsc = audioCtx.createOscillator();
+                    const fGain = audioCtx.createGain();
+                    fOsc.type = 'sawtooth';
+                    fOsc.frequency.setValueAtTime(90, now);
+                    fOsc.frequency.exponentialRampToValueAtTime(650, now + 0.25);
+                    fGain.gain.setValueAtTime(0.25, now);
+                    fGain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    fOsc.connect(fGain);
+                    fGain.connect(audioCtx.destination);
+                    fOsc.start();
+                    fOsc.stop(now + 0.35);
+                    break;
+
+                case 'gameover':
+                    const gOsc = audioCtx.createOscillator();
+                    const gGain = audioCtx.createGain();
+                    gOsc.type = 'sawtooth';
+                    gOsc.frequency.setValueAtTime(260, now);
+                    gOsc.frequency.linearRampToValueAtTime(70, now + 0.5);
+                    gGain.gain.setValueAtTime(0.3, now);
+                    gGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    gOsc.connect(gGain);
+                    gGain.connect(audioCtx.destination);
+                    gOsc.start();
+                    gOsc.stop(now + 0.6);
+                    break;
+
+                case 'victory':
+                    const notes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C4, E4, G4, C5, E5
+                    notes.forEach((freq, idx) => {
+                        const vOsc = audioCtx.createOscillator();
+                        const vGain = audioCtx.createGain();
+                        vOsc.type = 'sine';
+                        vOsc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        vGain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                        vGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.4);
+                        vOsc.connect(vGain);
+                        vGain.connect(audioCtx.destination);
+                        vOsc.start(now + idx * 0.08);
+                        vOsc.stop(now + idx * 0.08 + 0.4);
+                    });
+                    break;
+            }
+        }
+
+        // Procedural Platform Generator
+        function generateLevel(targetLevel) {
+            platforms = [];
+            splats = [];
+            shatteredSectors = [];
+            const numPlatforms = 10 + targetLevel * 3;
+            
+            // First platform (Starter - always safe)
+            platforms.push({
+                y: 0,
+                localOffset: 0,
+                rotationSpeed: 0,
+                sectors: [1, 1, 1, 1, 1, 1, 1, 0], // 7 safe sectors, 1 gap
+                shattered: false
+            });
+
+            for (let i = 1; i < numPlatforms; i++) {
+                const sectors = [];
+                const gapIndex1 = Math.floor(Math.random() * 8);
+                const gapIndex2 = (gapIndex1 + 4) % 8;
+                const hasTwoGaps = Math.random() < 0.25 + (targetLevel * 0.02);
+
+                const maxDangers = Math.min(5, Math.floor(targetLevel / 2) + 1);
+                const numDangers = Math.max(1, Math.floor(Math.random() * maxDangers));
+                const dangerIndices = new Set();
+                
+                while (dangerIndices.size < numDangers) {
+                    const idx = Math.floor(Math.random() * 8);
+                    if (idx !== gapIndex1 && (!hasTwoGaps || idx !== gapIndex2)) {
+                        dangerIndices.add(idx);
+                    }
+                }
+
+                for (let j = 0; j < 8; j++) {
+                    if (j === gapIndex1 || (hasTwoGaps && j === gapIndex2)) {
+                        sectors.push(0); // Gap
+                    } else if (dangerIndices.has(j)) {
+                        sectors.push(2); // Danger
+                    } else {
+                        sectors.push(1); // Normal safe
+                    }
+                }
+
+                // Rotating platforms on higher levels
+                let rotationSpeed = 0;
+                if (targetLevel >= 3 && Math.random() < 0.3) {
+                    rotationSpeed = (Math.random() > 0.5 ? 1 : -1) * (0.004 + Math.random() * 0.008 + (targetLevel * 0.0005));
+                }
+
+                platforms.push({
+                    y: i * platformSpacing,
+                    localOffset: Math.random() * Math.PI * 2,
+                    rotationSpeed: rotationSpeed,
+                    sectors: sectors,
+                    shattered: false
+                });
+            }
+
+            // Target Final Platform (Gold victory disc)
+            platforms.push({
+                y: numPlatforms * platformSpacing,
+                localOffset: 0,
+                rotationSpeed: 0,
+                sectors: [3, 3, 3, 3, 3, 3, 3, 3], // 100% Win sectors
+                shattered: false
+            });
+
+            levelStartEl.textContent = `Seviye ${targetLevel}`;
+            levelEndEl.textContent = `Seviye ${targetLevel + 1}`;
+            progressBarEl.style.width = '0%';
+        }
+
+        // Draw individual ring sector in 3D projection
+        function drawSector(centerX, centerY, r_in, r_out, a1, a2, color, strokeColor) {
+            ctx.beginPath();
+            const steps = 12;
+            
+            // Outer arc clockwise
+            for (let i = 0; i <= steps; i++) {
+                const a = a1 + (a2 - a1) * (i / steps);
+                const x = centerX + r_out * Math.cos(a);
+                const y = centerY + r_out * Math.sin(a) * tilt;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            
+            // Inner arc counter-clockwise
+            for (let i = steps; i >= 0; i--) {
+                const a = a1 + (a2 - a1) * (i / steps);
+                const x = centerX + r_in * Math.cos(a);
+                const y = centerY + r_in * Math.sin(a) * tilt;
+                ctx.lineTo(x, y);
+            }
+            
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            if (strokeColor) {
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        // Particle Generators
+        function createSplashParticles(x, y, color) {
+            const count = 12;
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: -1 - Math.random() * 4,
+                    r: 2 + Math.random() * 3,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.02,
+                    color: color
+                });
+            }
+        }
+
+        function createFlameParticles(x, y) {
+            const count = 3;
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x + (Math.random() - 0.5) * 12,
+                    y: y + (Math.random() - 0.5) * 12,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: 1.5 + Math.random() * 2, // Rise relative to descending camera
+                    r: 3 + Math.random() * 4,
+                    life: 1.0,
+                    decay: 0.07,
+                    color: Math.random() > 0.5 ? '#ffaa00' : '#ff3c00'
+                });
+            }
+        }
+
+        function shatterPlatform(p) {
+            screenShake = 15;
+            playSound('shatter');
+            
+            const sectorAngle = Math.PI / 4;
+            for (let j = 0; j < 8; j++) {
+                if (p.sectors[j] === 0) continue; // Skip gaps
+                
+                const type = p.sectors[j];
+                let color, strokeColor;
+                if (type === 1) { color = 'rgba(0, 255, 204, 0.7)'; strokeColor = '#00ffcc'; }
+                else if (type === 2) { color = 'rgba(255, 23, 68, 0.7)'; strokeColor = '#ff1744'; }
+                else { color = 'rgba(255, 215, 0, 0.7)'; strokeColor = '#ffd700'; }
+
+                shatteredSectors.push({
+                    y: p.y,
+                    localOffset: p.localOffset,
+                    j: j,
+                    color: color,
+                    strokeColor: strokeColor,
+                    radiusOffset: 0,
+                    yOffset: 0,
+                    vy: -4 - Math.random() * 4,
+                    life: 1.0,
+                    decay: 0.025 + Math.random() * 0.015
+                });
+            }
+        }
+
+        // Handle Game Over
+        function handleGameOver() {
+            gameState = 'GAMEOVER';
+            playSound('gameover');
+            
+            // Shatter ball into sparks
+            createSplashParticles(centerX, ballScreenY + (ball.y - cameraY), '#ffffff');
+            createSplashParticles(centerX, ballScreenY + (ball.y - cameraY), '#ff1744');
+            
+            finalScoreEl.textContent = score;
+            setTimeout(() => {
+                gameOverScreen.classList.add('active');
+            }, 500);
+        }
+
+        // Handle Victory
+        function handleVictory() {
+            gameState = 'VICTORY';
+            playSound('victory');
+            
+            // Firework sparks
+            for(let i=0; i<3; i++) {
+                setTimeout(() => {
+                    createSplashParticles(centerX + (Math.random()-0.5)*100, ballScreenY + 50, '#ffd700');
+                    createSplashParticles(centerX + (Math.random()-0.5)*100, ballScreenY + 50, '#ff00ff');
+                }, i*150);
+            }
+
+            victoryScoreEl.textContent = score;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonHelixBest', bestScore);
+                bestScoreEl.textContent = bestScore;
+            }
+
+            setTimeout(() => {
+                victoryScreen.classList.add('active');
+            }, 600);
+        }
+
+        // Physics Updates
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // Apply inertia to tower rotation
+            towerTheta += rotationVelocity;
+            rotationVelocity *= 0.88;
+
+            // Update independent rotating platforms
+            for (let p of platforms) {
+                if (p.rotationSpeed !== 0) {
+                    p.localOffset += p.rotationSpeed;
+                }
+            }
+
+            // Ball Physics
+            prevBallY = ball.y;
+            ball.dy += ball.gravity;
+            ball.y += ball.dy;
+
+            // Cap maximum fall velocity
+            if (ball.dy > 12) ball.dy = 12;
+
+            // Screen shake dampening
+            if (screenShake > 0) screenShake -= 0.8;
+
+            // Collision mapping with platforms
+            const numPlatforms = platforms.length;
+            for (let i = 0; i < numPlatforms; i++) {
+                const p = platforms[i];
+                if (p.shattered) continue;
+
+                // Detect crossing of platform height (from above)
+                if (ball.y >= p.y && prevBallY < p.y) {
+                    // Match the fixed front coordinates (Math.PI / 2) with rotating sectors
+                    let localAngle = (Math.PI / 2 - towerTheta - p.localOffset) % (Math.PI * 2);
+                    if (localAngle < 0) localAngle += Math.PI * 2;
+                    
+                    const sectorIndex = Math.floor(localAngle / (Math.PI / 4)) % 8;
+                    const sectorType = p.sectors[sectorIndex];
+
+                    if (sectorType === 0) {
+                        // Gap fall!
+                        passedPlatformsCount++;
+                        playSound('whoosh');
+                        score += 15 * passedPlatformsCount;
+                        scoreEl.textContent = score;
+
+                        if (passedPlatformsCount >= 3 && !isFireball) {
+                            isFireball = true;
+                            playSound('fireball');
+                        }
+                    } else {
+                        // Landed on solid ground
+                        if (isFireball) {
+                            // Shatter platform and continue falling
+                            p.shattered = true;
+                            shatterPlatform(p);
+                            ball.dy = 5.0; // small speed kick downwards
+                            isFireball = false;
+                            passedPlatformsCount = 0;
+                        } else {
+                            if (sectorType === 1) {
+                                // Normal platform: Bounce
+                                ball.y = p.y;
+                                ball.dy = ball.bounceForce;
+                                passedPlatformsCount = 0;
+                                isFireball = false;
+                                playSound('bounce');
+                                
+                                // Paint splat stamp local coordinate
+                                const splatAngle = (Math.PI / 2 - towerTheta - p.localOffset);
+                                splats.push({
+                                    pY: p.y,
+                                    localOffset: p.localOffset,
+                                    angle: splatAngle,
+                                    radius: 35 + Math.random() * 50,
+                                    r: 6 + Math.random() * 8,
+                                    color: 'rgba(0, 255, 204, 0.35)'
+                                });
+
+                                createSplashParticles(centerX, ballScreenY + (p.y - cameraY), '#00ffcc');
+                            } else if (sectorType === 2) {
+                                // Danger hazard: Game over
+                                handleGameOver();
+                            } else if (sectorType === 3) {
+                                // Goal platform: Victory
+                                handleVictory();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Smooth Camera Follow
+            cameraY += (ball.y - cameraY) * 0.15;
+            if (cameraY < 0) cameraY = 0;
+
+            // Level Progress update
+            const totalDistance = (platforms.length - 1) * platformSpacing;
+            const progress = Math.max(0, Math.min(100, (ball.y / totalDistance) * 100));
+            progressBarEl.style.width = `${progress}%`;
+
+            // Fireball particles
+            if (isFireball) {
+                createFlameParticles(centerX, ballScreenY + (ball.y - cameraY));
+            }
+
+            // Update normal particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.15; // particle gravity
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Update shattered platform fragments
+            for (let i = shatteredSectors.length - 1; i >= 0; i--) {
+                const s = shatteredSectors[i];
+                s.radiusOffset += 5.5;
+                s.yOffset += s.vy;
+                s.vy += 0.3; // fragment gravity
+                s.life -= s.decay;
+                if (s.life <= 0) {
+                    shatteredSectors.splice(i, 1);
+                }
+            }
+        }
+
+        // Draw everything
+        function draw() {
+            // Apply screenshake
+            ctx.save();
+            if (screenShake > 0) {
+                const dx = (Math.random() - 0.5) * screenShake;
+                const dy = (Math.random() - 0.5) * screenShake;
+                ctx.translate(dx, dy);
+            }
+
+            // Background fill with slight alpha for trails
+            ctx.fillStyle = 'rgba(2, 1, 10, 0.32)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Background glowing cyber grid
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            // Scrolling horizontal lines based on camera movement
+            let gridOffset = (-cameraY * 0.4) % 40;
+            if (gridOffset < 0) gridOffset += 40;
+            for (let y = gridOffset; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            const sectorAngle = Math.PI / 4;
+            const visibleRange = 400; // Skip drawing outside screen
+
+            // --- 1. BACK SECTORS AND SPLATS PASS ---
+            for (let p of platforms) {
+                const screenY = ballScreenY + (p.y - cameraY);
+                if (screenY < -100 || screenY > canvas.height + 100 || p.shattered) continue;
+
+                // Draw Back Platform Sectors (sin < 0)
+                for (let j = 0; j < 8; j++) {
+                    if (p.sectors[j] === 0) continue;
+                    
+                    const a1 = j * sectorAngle + towerTheta + p.localOffset;
+                    const a2 = (j + 1) * sectorAngle + towerTheta + p.localOffset;
+                    const am = (a1 + a2) / 2;
+
+                    if (Math.sin(am) < 0) {
+                        const type = p.sectors[j];
+                        let color, strokeColor;
+                        
+                        if (type === 1) { color = 'rgba(0, 180, 255, 0.5)'; strokeColor = '#00ffcc'; }
+                        else if (type === 2) { color = 'rgba(230, 20, 60, 0.5)'; strokeColor = '#ff1744'; }
+                        else { color = 'rgba(220, 180, 0, 0.6)'; strokeColor = '#ffd700'; }
+
+                        drawSector(centerX, screenY, r1, r2, a1, a2, color, strokeColor);
+                    }
+                }
+
+                // Draw Back Splat Decals
+                for (let s of splats) {
+                    if (s.pY !== p.y) continue;
+                    const absAngle = s.angle + towerTheta + (p.localOffset - s.localOffset);
+                    if (Math.sin(absAngle) < 0) {
+                        const sx = centerX + s.radius * Math.cos(absAngle);
+                        const sy = screenY + s.radius * Math.sin(absAngle) * tilt;
+                        ctx.fillStyle = s.color;
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // --- 2. TOWER COLUMN CYLINDER PASS ---
+            const columnTopY = ballScreenY + (0 - cameraY);
+            const columnBotY = ballScreenY + (platforms.length * platformSpacing - cameraY);
+            
+            if (columnBotY > 0 && columnTopY < canvas.height) {
+                // Column 3D Metallic Gradient
+                const colGrad = ctx.createLinearGradient(centerX - r1, 0, centerX + r1, 0);
+                colGrad.addColorStop(0, '#06021d');
+                colGrad.addColorStop(0.3, '#100845');
+                colGrad.addColorStop(0.5, '#00ffcc');
+                colGrad.addColorStop(0.7, '#100845');
+                colGrad.addColorStop(1, '#06021d');
+
+                ctx.fillStyle = colGrad;
+                ctx.fillRect(centerX - r1, Math.max(0, columnTopY), r1 * 2, Math.min(canvas.height, columnBotY) - Math.max(0, columnTopY));
+
+                // Draw top/bottom cylinder elliptical caps
+                ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+                ctx.lineWidth = 1;
+                if (columnTopY > 0 && columnTopY < canvas.height) {
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, columnTopY, r1, r1 * tilt, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                if (columnBotY > 0 && columnBotY < canvas.height) {
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, columnBotY, r1, r1 * tilt, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+
+            // --- 3. FRONT SECTORS AND SPLATS PASS ---
+            for (let p of platforms) {
+                const screenY = ballScreenY + (p.y - cameraY);
+                if (screenY < -100 || screenY > canvas.height + 100 || p.shattered) continue;
+
+                // Draw Front Platform Sectors (sin >= 0)
+                for (let j = 0; j < 8; j++) {
+                    if (p.sectors[j] === 0) continue;
+                    
+                    const a1 = j * sectorAngle + towerTheta + p.localOffset;
+                    const a2 = (j + 1) * sectorAngle + towerTheta + p.localOffset;
+                    const am = (a1 + a2) / 2;
+
+                    if (Math.sin(am) >= 0) {
+                        const type = p.sectors[j];
+                        let color, strokeColor;
+                        
+                        if (type === 1) { color = 'rgba(0, 255, 204, 0.65)'; strokeColor = '#00ffcc'; }
+                        else if (type === 2) { color = 'rgba(255, 23, 68, 0.65)'; strokeColor = '#ff1744'; }
+                        else { color = 'rgba(255, 215, 0, 0.75)'; strokeColor = '#ffd700'; }
+
+                        drawSector(centerX, screenY, r1, r2, a1, a2, color, strokeColor);
+                    }
+                }
+
+                // Draw Front Splat Decals
+                for (let s of splats) {
+                    if (s.pY !== p.y) continue;
+                    const absAngle = s.angle + towerTheta + (p.localOffset - s.localOffset);
+                    if (Math.sin(absAngle) >= 0) {
+                        const sx = centerX + s.radius * Math.cos(absAngle);
+                        const sy = screenY + s.radius * Math.sin(absAngle) * tilt;
+                        ctx.fillStyle = s.color;
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // --- 4. SHATTERED PLATFORM FRAGMENTS PASS ---
+            for (let s of shatteredSectors) {
+                const screenY = ballScreenY + (s.y - cameraY) + s.yOffset;
+                const r_in = r1 + s.radiusOffset;
+                const r_out = r2 + s.radiusOffset;
+                const a1 = s.j * sectorAngle + towerTheta + s.localOffset;
+                const a2 = (s.j + 1) * sectorAngle + towerTheta + s.localOffset;
+
+                ctx.save();
+                ctx.globalAlpha = s.life;
+                drawSector(centerX, screenY, r_in, r_out, a1, a2, s.color, s.strokeColor);
+                ctx.restore();
+            }
+
+            // --- 5. PARTICLES PASS ---
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+            ctx.shadowBlur = 0;
+
+            // --- 6. NEON BALL PASS ---
+            if (gameState === 'PLAYING' || gameState === 'VICTORY') {
+                const screenBallYPos = ballScreenY + (ball.y - cameraY);
+                
+                ctx.shadowBlur = isFireball ? 25 : 15;
+                ctx.shadowColor = isFireball ? '#ff3c00' : ball.glowColor;
+                
+                // Draw trailing flame/neon glow on ball
+                if (isFireball) {
+                    ctx.fillStyle = '#ff7700';
+                } else {
+                    ctx.fillStyle = ball.color;
+                }
+
+                ctx.beginPath();
+                ctx.arc(centerX, screenBallYPos, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Inner core
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(centerX, screenBallYPos, ball.radius * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore(); // Restore screenshake translation
+        }
+
+        // Main Loop
+        function loop() {
+            update();
+            draw();
+            animationFrameId = requestAnimationFrame(loop);
+        }
+
+        // Game Controls - Restart & Start
+        function startGame() {
+            initAudio();
+            gameState = 'PLAYING';
+            score = 0;
+            scoreEl.textContent = '0';
+            cameraY = 0;
+            ball.y = 0;
+            ball.dy = 0;
+            passedPlatformsCount = 0;
+            isFireball = false;
+            splats = [];
+            particles = [];
+            shatteredSectors = [];
+            rotationVelocity = 0;
+            
+            generateLevel(level);
+            
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            victoryScreen.classList.remove('active');
+        }
+
+        function nextLevel() {
+            level++;
+            startGame();
+        }
+
+        // Input Listeners
+        // 1. Mouse Drag
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            initAudio();
+            isDragging = true;
+            lastDragX = e.clientX;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || gameState !== 'PLAYING') return;
+            const deltaX = e.clientX - lastDragX;
+            rotationVelocity = deltaX * 0.0075;
+            lastDragX = e.clientX;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // 2. Touch Swipes (Mobile)
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameState !== 'PLAYING') return;
+            initAudio();
+            isDragging = true;
+            lastDragX = e.touches[0].clientX;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging || gameState !== 'PLAYING') return;
+            const deltaX = e.touches[0].clientX - lastDragX;
+            rotationVelocity = deltaX * 0.012; // slightly more sensitive on touch
+            lastDragX = e.touches[0].clientX;
+        }, {passive: true});
+
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // 3. Desktop Keyboard Controls
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            initAudio();
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                rotationVelocity = -0.07;
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                rotationVelocity = 0.07;
+            }
+        });
+
+        // Button Click handlers
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+        nextLevelBtn.addEventListener('click', nextLevel);
+
+        // Run Init Loop
+        generateLevel(level);
+        loop();
+    </script>
+</body>
+</html>
