@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Curling // Cyber Curling</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030112;
+            --container-bg: rgba(8, 4, 22, 0.85);
+            --primary-glow: #00ffcc; /* Player Cyan */
+            --secondary-glow: #ff00ff; /* AI Magenta */
+            --accent-glow: #ffea00; /* Ring Yellow */
+            --danger-glow: #ff1744; /* Ring Red */
+            --house-blue: #0088ff;
+            --glass: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #130632 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.active { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 234, 0, 0.4); }
+
+        .stone-dots {
+            display: flex;
+            gap: 4px;
+            margin-top: 3px;
+        }
+
+        .stone-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .stone-dot.player { background: var(--primary-glow); box-shadow: 0 0 6px var(--primary-glow); }
+        .stone-dot.ai { background: var(--secondary-glow); box-shadow: 0 0 6px var(--secondary-glow); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 234, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .scoreboard-table {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 15px 30px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .scoreboard-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 600px) {
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.6rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+            .scoreboard-table { padding: 10px 20px; gap: 20px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Curling</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">End (End)</span>
+                <span class="hud-val active" id="hudRound">1 / 3</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Sıra</span>
+                <span class="hud-val" id="hudTurn" style="color: var(--primary-glow);">OYUNCU</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Taşların</span>
+                <div class="stone-dots" id="playerStonesDots"></div>
+            </div>
+            <div class="hud-item" style="min-width: 60px;">
+                <span class="hud-label">Skor</span>
+                <span class="hud-val" style="color: #fff;"><span style="color:var(--primary-glow);" id="hudPlayerScore">0</span> - <span style="color:var(--secondary-glow);" id="hudAiScore">0</span></span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">AI Taşları</span>
+                <div class="stone-dots" id="aiStonesDots"></div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Curling</h2>
+                <p>Taşınızı sol taraftan geriye doğru çekip fırlatın. Taş kayarken farenizi taşın önünde hızlıca kaydırıp buzu fırçalayarak (sweep) sürtünmeyi azaltın ve yönünü bükün. Rakip taşları dışarı atın!</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- End (Round) Summary Overlay -->
+            <div class="overlay" id="roundOverScreen">
+                <h2 id="roundWinnerText">End Tamamlandı!</h2>
+                <p id="roundSummaryText">Bu end sonucunda puan kazandınız.</p>
+                
+                <div class="scoreboard-table">
+                    <div class="scoreboard-col">
+                        <span style="color:rgba(255,255,255,0.4); font-size:0.8rem; text-transform:uppercase;">TAKIM</span>
+                        <span style="color:var(--primary-glow);">OYUNCU</span>
+                        <span style="color:var(--secondary-glow);">YAPAY ZEKA</span>
+                    </div>
+                    <div class="scoreboard-col">
+                        <span style="color:rgba(255,255,255,0.4); font-size:0.8rem; text-transform:uppercase;">KAZANILAN</span>
+                        <span id="scoreboardRoundPlayer">0</span>
+                        <span id="scoreboardRoundAi">0</span>
+                    </div>
+                    <div class="scoreboard-col">
+                        <span style="color:rgba(255,255,255,0.4); font-size:0.8rem; text-transform:uppercase;">TOPLAM</span>
+                        <span id="scoreboardTotalPlayer" style="color:var(--primary-glow);">0</span>
+                        <span id="scoreboardTotalAi" style="color:var(--secondary-glow);">0</span>
+                    </div>
+                </div>
+
+                <button class="btn" id="nextRoundBtn">Sonraki End</button>
+            </div>
+
+            <!-- Game Over Concluding Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 id="winnerText" class="win">Zafer Senin!</h2>
+                <p>3 End sonunda toplam maç skoru: <span id="finalScore" style="font-weight:800; color:var(--accent-glow);">0 - 0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+        </div>
+
+        <div class="hint">Taşı atmak için fırlatma alanından geriye doğru sürükleyin.<br>Taş kayarken, buzu fırçalamak için hemen önünde farenizi hızlıca sürükleyin.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudRound = document.getElementById('hudRound');
+        const hudTurn = document.getElementById('hudTurn');
+        const playerStonesDots = document.getElementById('playerStonesDots');
+        const aiStonesDots = document.getElementById('aiStonesDots');
+        const hudPlayerScore = document.getElementById('hudPlayerScore');
+        const hudAiScore = document.getElementById('hudAiScore');
+
+        const startScreen = document.getElementById('startScreen');
+        const roundOverScreen = document.getElementById('roundOverScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const nextRoundBtn = document.getElementById('nextRoundBtn');
+        const restartBtn = document.getElementById('restartBtn');
+
+        const roundWinnerText = document.getElementById('roundWinnerText');
+        const roundSummaryText = document.getElementById('roundSummaryText');
+        const scoreboardRoundPlayer = document.getElementById('scoreboardRoundPlayer');
+        const scoreboardRoundAi = document.getElementById('scoreboardRoundAi');
+        const scoreboardTotalPlayer = document.getElementById('scoreboardTotalPlayer');
+        const scoreboardTotalAi = document.getElementById('scoreboardTotalAi');
+        const winnerText = document.getElementById('winnerText');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const BASE_FRICTION = 0.0042; // Normal deceleration per frame
+        const SWEPT_FRICTION = 0.0008; // Swept friction deceleration
+        const STONE_RADIUS = 16;
+        const PULL_SCALE = 0.06;
+        const HOG_LINE_X = 180;
+        const MAX_PULL = 110;
+
+        // House Circles Config
+        const HOUSE_X = 575;
+        const HOUSE_Y = 200;
+        const R_OUTER = 90;
+        const R_MIDDLE = 60;
+        const R_INNER = 30;
+        const R_BUTTON = 8;
+
+        // Start pad
+        const PAD_X = 100;
+        const PAD_Y = 200;
+
+        // Game State Variables
+        let currentEnd = 1;
+        let totalEnds = 3;
+        let playerScore = 0;
+        let aiScore = 0;
+        let roundPlayerPoints = 0;
+        let roundAiPoints = 0;
+
+        let gameState = 'START'; // START, PLAYING_AIM, SLIDING, AI_THINKING, ROUND_OVER, GAME_OVER
+        let turn = 'player'; // 'player' or 'ai'
+        
+        let playerStonesRemaining = 4;
+        let aiStonesRemaining = 4;
+        let stones = []; // List of thrown stone objects {x, y, vx, vy, owner, color}
+        let activeStone = null; // The stone currently sliding
+
+        let isAiming = false;
+        let pullX = 0;
+        let pullY = 0;
+
+        // Particles & Sweeping Tracker
+        let particles = [];
+        let sweepTracks = []; // [{x, y, age}]
+        let lastSweepX = 0;
+        let lastSweepY = 0;
+        let sweepIntensity = 0; // tracks how fast scrubbing is happening
+
+        let loopId;
+        let waitTimer = null;
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        let rumbleOsc = null;
+        let rumbleGain = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startRumbleSound() {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                rumbleOsc = audioCtx.createOscillator();
+                rumbleGain = audioCtx.createGain();
+                rumbleOsc.type = 'triangle';
+                rumbleOsc.frequency.setValueAtTime(55, audioCtx.currentTime);
+                rumbleGain.gain.setValueAtTime(0, audioCtx.currentTime);
+                
+                rumbleOsc.connect(rumbleGain);
+                rumbleGain.connect(audioCtx.destination);
+                
+                rumbleOsc.start();
+            } catch(e) {}
+        }
+
+        function updateRumbleVolume(speed) {
+            if (!rumbleGain || !audioCtx) return;
+            const targetGain = Math.min(0.24, speed * 0.05);
+            rumbleGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.05);
+            rumbleOsc.frequency.setTargetAtTime(35 + speed * 12, audioCtx.currentTime, 0.05);
+        }
+
+        function stopRumbleSound() {
+            if (rumbleOsc) {
+                try { rumbleOsc.stop(); } catch(e) {}
+                rumbleOsc = null;
+            }
+            rumbleGain = null;
+        }
+
+        function playSound(type, volumeScale = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'launch':
+                    const lOsc = audioCtx.createOscillator();
+                    const lGain = audioCtx.createGain();
+                    lOsc.type = 'triangle';
+                    lOsc.frequency.setValueAtTime(140, now);
+                    lOsc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+                    lGain.gain.setValueAtTime(0.3 * volumeScale, now);
+                    lGain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    lOsc.connect(lGain);
+                    lGain.connect(audioCtx.destination);
+                    lOsc.start();
+                    lOsc.stop(now + 0.35);
+                    break;
+                    
+                case 'sweep':
+                    // Quick scratch brush sweep
+                    const sOsc = audioCtx.createOscillator();
+                    const sGain = audioCtx.createGain();
+                    sOsc.type = 'sine';
+                    sOsc.frequency.setValueAtTime(950, now);
+                    sOsc.frequency.linearRampToValueAtTime(1400, now + 0.06);
+                    sGain.gain.setValueAtTime(0.07 * volumeScale, now);
+                    sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    sOsc.connect(sGain);
+                    sGain.connect(audioCtx.destination);
+                    sOsc.start();
+                    sOsc.stop(now + 0.06);
+                    break;
+
+                case 'clack':
+                    // Stone-to-stone impact
+                    const cOsc1 = audioCtx.createOscillator();
+                    const cOsc2 = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc1.type = 'triangle';
+                    cOsc2.type = 'sine';
+                    cOsc1.frequency.setValueAtTime(180, now);
+                    cOsc2.frequency.setValueAtTime(260, now);
+                    
+                    const vol = Math.min(0.38, 0.05 + volumeScale * 0.08);
+                    cGain.gain.setValueAtTime(vol, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                    
+                    cOsc1.connect(cGain);
+                    cOsc2.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc1.start();
+                    cOsc2.start();
+                    cOsc1.stop(now + 0.22);
+                    cOsc2.stop(now + 0.22);
+                    break;
+
+                case 'chime':
+                    const notes = [293.66, 349.23, 440.00, 523.25]; // D4, F4, A4, C5
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.12, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.4);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.4);
+                    });
+                    break;
+
+                case 'victory':
+                    const vNotes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C4, E4, G4, C5, E5
+                    vNotes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.06);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.06 + 0.4);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.06);
+                        osc.stop(now + idx * 0.06 + 0.4);
+                    });
+                    break;
+
+                case 'defeat':
+                    const dOsc = audioCtx.createOscillator();
+                    const dGain = audioCtx.createGain();
+                    dOsc.type = 'sawtooth';
+                    dOsc.frequency.setValueAtTime(220, now);
+                    dOsc.frequency.linearRampToValueAtTime(50, now + 0.6);
+                    dGain.gain.setValueAtTime(0.25, now);
+                    dGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    dOsc.connect(dGain);
+                    dGain.connect(audioCtx.destination);
+                    dOsc.start();
+                    dOsc.stop(now + 0.6);
+                    break;
+            }
+        }
+
+        // Confetti / Sparks Particles
+        function createSparks(x, y, color, count = 10, force = 3) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 1.5 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        function createSweepingSparks(x, y, color) {
+            particles.push({
+                x: x + (Math.random() - 0.5) * 35,
+                y: y + (Math.random() - 0.5) * 20,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: (Math.random() - 0.5) * 1.5,
+                r: 1 + Math.random() * 2,
+                life: 1.0,
+                decay: 0.08,
+                color: color
+            });
+        }
+
+        // Level & Rounds Initializer
+        function setupEnd(targetEnd) {
+            currentEnd = targetEnd;
+            hudRound.textContent = `${currentEnd} / ${totalEnds}`;
+            
+            stones = [];
+            activeStone = null;
+            playerStonesRemaining = 4;
+            aiStonesRemaining = 4;
+
+            updateHUDStones();
+            
+            gameState = 'PLAYING_AIM';
+            turn = 'player';
+            
+            hudTurn.textContent = 'OYUNCU';
+            hudTurn.style.color = 'var(--primary-glow)';
+            
+            startScreen.classList.remove('active');
+            roundOverScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+        }
+
+        function resetStoneAim() {
+            isAiming = false;
+            pullX = 0;
+            pullY = 0;
+            if (activeStone) {
+                activeStone.x = PAD_X;
+                activeStone.y = PAD_Y;
+            }
+        }
+
+        function updateHUDStones() {
+            // Player
+            playerStonesDots.innerHTML = '';
+            for(let i=0; i<playerStonesRemaining; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'stone-dot player';
+                playerStonesDots.appendChild(dot);
+            }
+            
+            // AI
+            aiStonesDots.innerHTML = '';
+            for(let i=0; i<aiStonesRemaining; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'stone-dot ai';
+                aiStonesDots.appendChild(dot);
+            }
+        }
+
+        // Scoring rules: Traditional Curling Score evaluation
+        function evaluateEndScore() {
+            // Filter stones that reside inside the house (dist from center < R_OUTER)
+            const stonesInHouse = stones.filter(s => {
+                const dist = Math.hypot(s.x - HOUSE_X, s.y - HOUSE_Y);
+                return dist < R_OUTER + STONE_RADIUS;
+            });
+
+            // If empty house
+            if (stonesInHouse.length === 0) {
+                roundPlayerPoints = 0;
+                roundAiPoints = 0;
+                roundWinnerText.textContent = 'End Tamamlandı! (Boş End)';
+                roundSummaryText.textContent = 'İki taraf da hedefe taş sokamadı.';
+                concludeEndScoreTable();
+                return;
+            }
+
+            // Sort all stones in house by distance to center
+            stonesInHouse.forEach(s => {
+                s.dist = Math.hypot(s.x - HOUSE_X, s.y - HOUSE_Y);
+            });
+            stonesInHouse.sort((a, b) => a.dist - b.dist);
+
+            const winner = stonesInHouse[0].owner;
+            let points = 0;
+
+            if (winner === 'player') {
+                // Count player stones closer than the closest AI stone
+                const firstAiStone = stonesInHouse.find(s => s.owner === 'ai');
+                const cutoff = firstAiStone ? firstAiStone.dist : Infinity;
+
+                for (let s of stonesInHouse) {
+                    if (s.owner === 'player' && s.dist < cutoff) {
+                        points++;
+                    } else if (s.owner === 'ai') {
+                        break;
+                    }
+                }
+                
+                roundPlayerPoints = points;
+                roundAiPoints = 0;
+                playerScore += points;
+                
+                roundWinnerText.textContent = 'End Kazanıldı!';
+                roundSummaryText.textContent = `Bu end sonucunda ${points} puan aldınız!`;
+            } else {
+                // Count AI stones closer than the closest player stone
+                const firstPlayerStone = stonesInHouse.find(s => s.owner === 'player');
+                const cutoff = firstPlayerStone ? firstPlayerStone.dist : Infinity;
+
+                for (let s of stonesInHouse) {
+                    if (s.owner === 'ai' && s.dist < cutoff) {
+                        points++;
+                    } else if (s.owner === 'player') {
+                        break;
+                    }
+                }
+
+                roundAiPoints = points;
+                roundPlayerPoints = 0;
+                aiScore += points;
+
+                roundWinnerText.textContent = 'End Kaybedildi!';
+                roundSummaryText.textContent = `Yapay Zeka bu end sonucunda ${points} puan kazandı.`;
+            }
+
+            hudPlayerScore.textContent = playerScore;
+            hudAiScore.textContent = aiScore;
+
+            concludeEndScoreTable();
+        }
+
+        function concludeEndScoreTable() {
+            scoreboardRoundPlayer.textContent = roundPlayerPoints;
+            scoreboardRoundAi.textContent = roundAiPoints;
+            scoreboardTotalPlayer.textContent = playerScore;
+            scoreboardTotalAi.textContent = aiScore;
+
+            playSound('chime');
+            gameState = 'ROUND_OVER';
+            roundOverScreen.classList.add('active');
+        }
+
+        // Conclude full game after 3 Ends
+        function concludeMatch() {
+            gameState = 'GAME_OVER';
+            finalScore.textContent = `${playerScore} - ${aiScore}`;
+            
+            if (playerScore > aiScore) {
+                winnerText.textContent = 'Zafer Senin!';
+                winnerText.className = 'win';
+                winnerText.style.textShadow = '0 0 25px rgba(255, 234, 0, 0.6)';
+                playSound('victory');
+            } else if (playerScore < aiScore) {
+                winnerText.textContent = 'Mağlubiyet!';
+                winnerText.className = 'lost';
+                winnerText.style.textShadow = '0 0 25px rgba(255, 23, 68, 0.6)';
+                playSound('defeat');
+            } else {
+                winnerText.textContent = 'Beraberlik!';
+                winnerText.className = '';
+                winnerText.style.textShadow = '0 0 20px #fff';
+                playSound('chime');
+            }
+
+            gameOverScreen.classList.add('active');
+        }
+
+        // Stone collision checker and reflection solver
+        function resolveStoneCollisions() {
+            const numStones = stones.length;
+            for (let i = 0; i < numStones; i++) {
+                for (let j = i + 1; j < numStones; j++) {
+                    const s1 = stones[i];
+                    const s2 = stones[j];
+
+                    const dx = s2.x - s1.x;
+                    const dy = s2.y - s1.y;
+                    const dist = Math.hypot(dx, dy);
+                    const minDist = STONE_RADIUS * 2;
+
+                    if (dist < minDist) {
+                        // Collision normal
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+
+                        // Push overlapping circles apart equally
+                        const overlap = minDist - dist;
+                        s1.x -= nx * overlap * 0.5;
+                        s1.y -= ny * overlap * 0.5;
+                        s2.x += nx * overlap * 0.5;
+                        s2.y += ny * overlap * 0.5;
+
+                        // Swap relative velocities along collision normal (equal weight)
+                        const kx = s1.vx - s2.vx;
+                        const ky = s1.vy - s2.vy;
+                        const p = (kx * nx + ky * ny);
+
+                        s1.vx -= p * nx;
+                        s1.vy -= p * ny;
+                        s2.vx += p * nx;
+                        s2.vy += p * ny;
+
+                        // Trigger visual clack splash
+                        const strikeForce = Math.abs(p);
+                        if (strikeForce > 0.15) {
+                            playSound('clack', strikeForce);
+                            createSparks((s1.x + s2.x)/2, (s1.y + s2.y)/2, '#ffffff', 8, strikeForce * 1.5);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Throwing Stone Actions
+        function launchStone(owner, vx, vy) {
+            initAudio();
+            playSound('launch');
+            startRumbleSound();
+
+            const newStone = {
+                x: PAD_X,
+                y: PAD_Y,
+                vx: vx,
+                vy: vy,
+                owner: owner,
+                color: owner === 'player' ? 'var(--primary-glow)' : 'var(--secondary-glow)',
+                trail: []
+            };
+
+            stones.push(newStone);
+            activeStone = newStone;
+
+            if (owner === 'player') {
+                playerStonesRemaining--;
+            } else {
+                aiStonesRemaining--;
+            }
+
+            updateHUDStones();
+            gameState = 'SLIDING';
+        }
+
+        // Swapping Turn loops
+        function handleTurnTransition() {
+            stopRumbleSound();
+            
+            // Check if active stone survived hog line boundary checks
+            if (activeStone) {
+                const tooShort = activeStone.x < HOG_LINE_X;
+                const outOfBounds = activeStone.y < STONE_RADIUS || activeStone.y > canvas.height - STONE_RADIUS || activeStone.x > canvas.width + STONE_RADIUS;
+                
+                if (tooShort || outOfBounds) {
+                    // Remove stone
+                    const idx = stones.indexOf(activeStone);
+                    if (idx > -1) stones.splice(idx, 1);
+                    createSparks(activeStone.x, activeStone.y, 'rgba(255,255,255,0.4)', 12, 2);
+                }
+            }
+
+            activeStone = null;
+
+            // Turn swapping cycle
+            if (playerStonesRemaining === 0 && aiStonesRemaining === 0) {
+                // End finished, calculate scores
+                evaluateEndScore();
+            } else {
+                if (turn === 'player') {
+                    turn = 'ai';
+                    hudTurn.textContent = 'YAPAY ZEKA';
+                    hudTurn.style.color = 'var(--secondary-glow)';
+                    gameState = 'AI_THINKING';
+                    
+                    clearTimeout(waitTimer);
+                    waitTimer = setTimeout(triggerAiThrow, 1200);
+                } else {
+                    turn = 'player';
+                    hudTurn.textContent = 'OYUNCU';
+                    hudTurn.style.color = 'var(--primary-glow)';
+                    gameState = 'PLAYING_AIM';
+                }
+            }
+        }
+
+        // Smart Adaptive AI Calculations
+        function triggerAiThrow() {
+            if (gameState !== 'AI_THINKING') return;
+
+            // Decision: check if Player has stones very close to the button/center
+            // If so, AI attempts a takeout bump. Else, it throws a standard draw towards the house.
+            const playerStonesInHouse = stones.filter(s => s.owner === 'player' && Math.hypot(s.x - HOUSE_X, s.y - HOUSE_Y) < R_MIDDLE);
+            
+            let targetVx, targetVy;
+            
+            if (playerStonesInHouse.length > 0 && Math.random() < 0.6) {
+                // Target takeout shot: slam nearest player stone
+                playerStonesInHouse.sort((a,b) => Math.hypot(a.x-HOUSE_X, a.y-HOUSE_Y) - Math.hypot(b.x-HOUSE_X, b.y-HOUSE_Y));
+                const target = playerStonesInHouse[0];
+                
+                // Angle to target
+                const angle = Math.atan2(target.y - PAD_Y, target.x - PAD_X);
+                // Heavy takeout velocity
+                const force = 5.2 + (Math.random() - 0.5) * 0.4; 
+                targetVx = Math.cos(angle) * force;
+                targetVy = Math.sin(angle) * force;
+            } else {
+                // Standard draw shot towards center house
+                const angle = Math.atan2(HOUSE_Y - PAD_Y, HOUSE_X - PAD_X);
+                // Calculate required draw force to slide under normal friction friction decay
+                const drawForce = 4.15 + (Math.random() - 0.5) * 0.5;
+                targetVx = Math.cos(angle) * drawForce;
+                targetVy = Math.sin(angle) * drawForce;
+            }
+
+            launchStone('ai', targetVx, targetVy);
+        }
+
+        // Physics Update loop
+        function updatePhysics() {
+            // Update active and previously thrown stones friction
+            for (let s of stones) {
+                s.x += s.vx;
+                s.y += s.vy;
+
+                // Standard sliding friction decay
+                let decel = BASE_FRICTION;
+                
+                // If this is the active stone, check if sweeping melts the ice in front of it
+                if (s === activeStone && s.owner === 'player' && sweepIntensity > 15) {
+                    const distToSweep = Math.hypot(lastSweepX - s.x, lastSweepY - s.y);
+                    const isAhead = lastSweepX > s.x; // sweep is in front of stone
+
+                    if (distToSweep < 85 && isAhead) {
+                        decel = SWEPT_FRICTION; // melt ice, decrease friction
+                        
+                        // Curving/Curling trajectory pushes
+                        const lateralOffset = lastSweepY - s.y;
+                        if (Math.abs(lateralOffset) > 10) {
+                            // Sweep above stone pushes stone down, below pushes stone up
+                            s.vy += (lateralOffset > 0 ? 0.015 : -0.015);
+                        }
+
+                        if (Math.random() < 0.3) {
+                            createSweepingSparks(s.x + 35, s.y, 'rgba(0, 255, 204, 0.4)');
+                        }
+                    }
+                }
+
+                // Apply velocity deceleration
+                const speed = Math.hypot(s.vx, s.vy);
+                if (speed > 0) {
+                    const nextSpeed = Math.max(0, speed - decel);
+                    s.vx = (s.vx / speed) * nextSpeed;
+                    s.vy = (s.vy / speed) * nextSpeed;
+                }
+
+                // Add to trail
+                if (speed > 0.2) {
+                    s.trail.push({ x: s.x, y: s.y });
+                    if (s.trail.length > 25) s.trail.shift();
+                } else {
+                    s.trail = [];
+                }
+            }
+
+            // Resolve bounces between stones
+            resolveStoneCollisions();
+
+            // Sound and Stopping evaluation
+            if (gameState === 'SLIDING' && activeStone) {
+                const activeSpeed = Math.hypot(activeStone.vx, activeStone.vy);
+                updateRumbleVolume(activeSpeed);
+
+                // Decay sweep intensity
+                sweepIntensity *= 0.92;
+
+                // Stop check
+                if (activeSpeed < 0.05) {
+                    activeStone.vx = 0;
+                    activeStone.vy = 0;
+                    
+                    // Wait brief moment then switch turns
+                    gameState = 'AI_THINKING'; // lock controls
+                    clearTimeout(waitTimer);
+                    waitTimer = setTimeout(handleTurnTransition, 1000);
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.95;
+                p.vy *= 0.95;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Update sweep track visual lines
+            for (let i = sweepTracks.length - 1; i >= 0; i--) {
+                sweepTracks[i].age -= 0.04;
+                if (sweepTracks[i].age <= 0) {
+                    sweepTracks.splice(i, 1);
+                }
+            }
+        }
+
+        // Draw HUD scoreboard elements
+        function drawRink() {
+            // Ice reflection fill
+            ctx.fillStyle = '#02010b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Neon rink boundary lines
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.15)';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+            // Hog line boundary (X=180)
+            ctx.strokeStyle = 'rgba(255, 23, 68, 0.4)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(HOG_LINE_X, 0);
+            ctx.lineTo(HOG_LINE_X, canvas.height);
+            ctx.stroke();
+
+            // Draw center house target
+            ctx.save();
+            ctx.lineWidth = 5;
+            ctx.shadowBlur = 10;
+
+            // Outer House (Red outline)
+            ctx.strokeStyle = 'var(--danger-glow)';
+            ctx.shadowColor = 'var(--danger-glow)';
+            ctx.beginPath();
+            ctx.arc(HOUSE_X, HOUSE_Y, R_OUTER, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Middle House (White outline)
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowColor = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(HOUSE_X, HOUSE_Y, R_MIDDLE, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner House (Blue outline)
+            ctx.strokeStyle = 'var(--house-blue)';
+            ctx.shadowColor = 'var(--house-blue)';
+            ctx.beginPath();
+            ctx.arc(HOUSE_X, HOUSE_Y, R_INNER, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Center Button (Yellow dot)
+            ctx.fillStyle = 'var(--accent-glow)';
+            ctx.shadowColor = 'var(--accent-glow)';
+            ctx.beginPath();
+            ctx.arc(HOUSE_X, HOUSE_Y, R_BUTTON, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Center cross hairs lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.moveTo(HOUSE_X - R_OUTER - 20, HOUSE_Y);
+            ctx.lineTo(HOUSE_X + R_OUTER + 20, HOUSE_Y);
+            ctx.moveTo(HOUSE_X, HOUSE_Y - R_OUTER - 20);
+            ctx.lineTo(HOUSE_X, HOUSE_Y + R_OUTER + 20);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Draw aiming path vector
+        function drawAimPath() {
+            if (!isAiming || gameState !== 'PLAYING_AIM') return;
+
+            const pullDist = Math.hypot(pullX, pullY);
+            if (pullDist < 12) return;
+
+            const force = pullDist * PULL_SCALE;
+            const angle = Math.atan2(-pullY, -pullX);
+
+            ctx.save();
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--primary-glow)';
+
+            // Aim line arrow
+            const endX = PAD_X + Math.cos(angle) * (pullDist * 1.5);
+            const endY = PAD_Y + Math.sin(angle) * (pullDist * 1.5);
+
+            ctx.beginPath();
+            ctx.moveTo(PAD_X, PAD_Y);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Draw arrow head caps
+            const arrowAngle = 0.45;
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 12 * Math.cos(angle - arrowAngle), endY - 12 * Math.sin(angle - arrowAngle));
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 12 * Math.cos(angle + arrowAngle), endY - 12 * Math.sin(angle + arrowAngle));
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Draw active sweeping track marks
+        function drawSweepTracks() {
+            ctx.save();
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            for (let st of sweepTracks) {
+                ctx.strokeStyle = `rgba(0, 255, 204, ${st.age * 0.15})`;
+                ctx.beginPath();
+                ctx.arc(st.x, st.y, 10, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Draw individual stones
+        function drawStones() {
+            ctx.save();
+            for (let s of stones) {
+                // Draw trailing line
+                if (s.trail.length > 0) {
+                    ctx.strokeStyle = s.owner === 'player' ? 'rgba(0, 255, 204, 0.15)' : 'rgba(255, 0, 255, 0.15)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(s.trail[0].x, s.trail[0].y);
+                    for(let i=1; i<s.trail.length; i++) {
+                        ctx.lineTo(s.trail[i].x, s.trail[i].y);
+                    }
+                    ctx.stroke();
+                }
+
+                // 1. Draw glowing stone base body
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = s.color;
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, STONE_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Inner rim core ring
+                ctx.strokeStyle = '#02010c';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, STONE_RADIUS - 4, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 2. Draw black/white handle grip cap
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Handle neck bar
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(s.x - 7, s.y);
+                ctx.lineTo(s.x + 7, s.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Draw particles sparks
+        function drawParticles() {
+            ctx.save();
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // Game drawing loops
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawRink();
+            drawSweepTracks();
+            drawAimPath();
+            drawStones();
+            drawParticles();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Start / Next / Restart overlays triggers
+        function startGame() {
+            initAudio();
+            playerScore = 0;
+            aiScore = 0;
+            hudPlayerScore.textContent = playerScore;
+            hudAiScore.textContent = aiScore;
+            
+            setupEnd(1);
+        }
+
+        function playNextRound() {
+            if (currentEnd >= totalEnds) {
+                concludeMatch();
+            } else {
+                setupEnd(currentEnd + 1);
+            }
+        }
+
+        // Input Mouse/Touch coordinates math
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: ((e.clientX || e.touches[0].clientX) - rect.left) * scaleX,
+                y: ((e.clientY || e.touches[0].clientY) - rect.top) * scaleY
+            };
+        }
+
+        // Throw stones inputs
+        function onThrowStart(e) {
+            if (gameState !== 'PLAYING_AIM') return;
+            initAudio();
+
+            const coords = getCoords(e);
+            const dist = Math.hypot(coords.x - PAD_X, coords.y - PAD_Y);
+            if (dist < 40) {
+                isAiming = true;
+                onThrowMove(e);
+            }
+        }
+
+        function onThrowMove(e) {
+            if (!isAiming || gameState !== 'PLAYING_AIM') return;
+            const coords = getCoords(e);
+            
+            let dx = coords.x - PAD_X;
+            let dy = coords.y - PAD_Y;
+            const dist = Math.hypot(dx, dy);
+
+            if (dist > MAX_PULL) {
+                dx = (dx / dist) * MAX_PULL;
+                dy = (dy / dist) * MAX_PULL;
+            }
+
+            pullX = dx;
+            pullY = dy;
+        }
+
+        function onThrowRelease() {
+            if (!isAiming || gameState !== 'PLAYING_AIM') return;
+            isAiming = false;
+
+            const dist = Math.hypot(pullX, pullY);
+            if (dist < 12) {
+                resetStoneAim();
+                return;
+            }
+
+            const force = dist * PULL_SCALE;
+            const angle = Math.atan2(-pullY, -pullX);
+
+            const launchVx = Math.cos(angle) * force;
+            const launchVy = Math.sin(angle) * force;
+
+            launchStone('player', launchVx, launchVy);
+        }
+
+        // Active Sweeping/Brushing Brushes Inputs scrubbing
+        function onSweepMove(e) {
+            if (gameState !== 'SLIDING' || !activeStone || activeStone.owner !== 'player') return;
+            
+            const coords = getCoords(e);
+            
+            // Scrubbing calculations (movement velocity)
+            const dx = coords.x - lastSweepX;
+            const dy = coords.y - lastSweepY;
+            const distMoved = Math.hypot(dx, dy);
+
+            lastSweepX = coords.x;
+            lastSweepY = coords.y;
+
+            if (distMoved > 2) {
+                sweepIntensity += distMoved;
+                
+                // Add sweep visual tracks lines
+                sweepTracks.push({
+                    x: coords.x,
+                    y: coords.y,
+                    age: 1.0
+                });
+
+                if (sweepIntensity > 20 && Math.random() < 0.4) {
+                    playSound('sweep', Math.min(1.0, sweepIntensity / 60));
+                }
+            }
+        }
+
+        // Event bindings
+        // 1. Throw Click mouse aim
+        canvas.addEventListener('mousedown', onThrowStart);
+        window.addEventListener('mousemove', (e) => {
+            onThrowMove(e);
+            onSweepMove(e);
+        });
+        window.addEventListener('mouseup', onThrowRelease);
+
+        // 2. Mobile touch swipes aim
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            onThrowStart(e);
+        }, {passive: false});
+
+        window.addEventListener('touchmove', (e) => {
+            onThrowMove(e);
+            onSweepMove(e);
+        }, {passive: true});
+
+        window.addEventListener('touchend', onThrowRelease);
+
+        // Buttons click listeners
+        startBtn.addEventListener('click', startGame);
+        nextRoundBtn.addEventListener('click', playNextRound);
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.classList.remove('active');
+            startGame();
+        });
+
+        // Initialize Main render cycle
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
