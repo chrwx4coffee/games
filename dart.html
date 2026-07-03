@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Dart // Cyber Darts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #00ffff; /* Neon Cyan */
+            --secondary-glow: #ff00ff; /* Neon Magenta */
+            --accent-glow: #ffd700; /* Neon Gold */
+            --danger-glow: #ff1744; /* Neon Red */
+            --success-glow: #00ff66; /* Neon Green */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.primary { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 255, 0.4); }
+        .hud-val.secondary { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .dart-dots {
+            display: flex;
+            gap: 4px;
+            margin-top: 3px;
+        }
+
+        .dart-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .dart-dot.active { background: var(--primary-glow); box-shadow: 0 0 6px var(--primary-glow); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01000b;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 600px) {
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.6rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Dart</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Seviye</span>
+                <span class="hud-val accent" id="hudLevel">1</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Oklar</span>
+                <div class="dart-dots" id="dartDotsContainer"></div>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Hedef Skor</span>
+                <span class="hud-val" id="hudTarget" style="color: #fff;">0 / 80</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Rüzgar</span>
+                <span class="hud-val primary" id="hudWind">DURGUN</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Skor</span>
+                <span class="hud-val secondary" id="hudScore">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Yüksek</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Dart</h2>
+                <p>Oyun alanının altından geriye doğru çekerek nişan alın ve ekrana doğru fırlatın. Dönen hedef tahtasında yüksek skorlu bölgeleri vurun. Rüzgar sapmalarına dikkat edin!</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Oyun Bitti!</h2>
+                <p>Hedeflenen skora ulaşamadınız. Toplam Skorunuz: <span id="finalScore" style="color:var(--secondary-glow); font-weight:800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+
+            <!-- Victory Screen Overlay -->
+            <div class="overlay" id="victoryScreen">
+                <h2 class="win">Seviye Tamamlandı!</h2>
+                <p>Tebrikler! Bir sonraki seviyede hedef tahtası daha hızlı dönecek ve rüzgar şiddeti artacak.</p>
+                <button class="btn" id="nextBtn">Sonraki Seviye</button>
+            </div>
+        </div>
+
+        <div class="hint">Alt ortadaki sapan alanından sürükleyip bırakarak ok atın. <br>İç kırmızı hedef (Bullseye) 50, dış yeşil halka (Outer Bull) 25 puan değerindedir.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLevel = document.getElementById('hudLevel');
+        const dartDotsContainer = document.getElementById('dartDotsContainer');
+        const hudTarget = document.getElementById('hudTarget');
+        const hudWind = document.getElementById('hudWind');
+        const hudScore = document.getElementById('hudScore');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const GRAVITY = 0.08;
+        const Z_BOARD = 500;
+        const PAD_X = 360;
+        const PAD_Y = 320;
+        const MAX_PULL = 110;
+        const PULL_SCALE_X = 0.07;
+        const PULL_SCALE_Y = 0.095;
+
+        // Board geometry center
+        const boardX = 360;
+        const boardY = 170;
+        const boardRadius = 140;
+
+        const SEGMENTS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+
+        // Game State Variables
+        let level = 1;
+        let score = 0;
+        let bestScore = Math.floor(localStorage.getItem('neonDartBest')) || 0;
+        hudBest.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING, FLYING, RESETTING, GAMEOVER, VICTORY
+        let remainingDarts = 6;
+        let targetScore = 80;
+        
+        let windX = 0; // horizontal wind force
+        let windStr = 0;
+        let windDir = '';
+
+        let boardTheta = 0; // rotation angle of the dartboard
+        let rotationSpeed = 0; // rad per frame
+
+        let loopId;
+        let resetTimer = null;
+        let floatText = null; // {x, y, text, life, color}
+
+        // Entities
+        let dart = {
+            x: PAD_X,
+            y: PAD_Y,
+            z: 0,
+            vx: 0,
+            vy: 0,
+            vz: 0,
+            trail: []
+        };
+
+        let stuckDarts = []; // [{r, angle, color}]
+        let particles = [];
+        let windLines = [];
+
+        let isAiming = false;
+        let pullX = 0;
+        let pullY = 0;
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'stretch':
+                    const sOsc = audioCtx.createOscillator();
+                    const sGain = audioCtx.createGain();
+                    sOsc.type = 'sine';
+                    sOsc.frequency.setValueAtTime(80 * pitchModifier, now);
+                    sOsc.frequency.linearRampToValueAtTime(160 * pitchModifier, now + 0.1);
+                    sGain.gain.setValueAtTime(0.08, now);
+                    sGain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+                    sOsc.connect(sGain);
+                    sGain.connect(audioCtx.destination);
+                    sOsc.start();
+                    sOsc.stop(now + 0.1);
+                    break;
+                    
+                case 'launch':
+                    const lOsc = audioCtx.createOscillator();
+                    const lGain = audioCtx.createGain();
+                    lOsc.type = 'triangle';
+                    lOsc.frequency.setValueAtTime(200, now);
+                    lOsc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+                    lGain.gain.setValueAtTime(0.12, now);
+                    lGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    lOsc.connect(lGain);
+                    lGain.connect(audioCtx.destination);
+                    lOsc.start();
+                    lOsc.stop(now + 0.12);
+                    break;
+
+                case 'thud':
+                    // Dartboard cork hit thud
+                    const tOsc = audioCtx.createOscillator();
+                    const tGain = audioCtx.createGain();
+                    tOsc.type = 'triangle';
+                    tOsc.frequency.setValueAtTime(110 * pitchModifier, now);
+                    tGain.gain.setValueAtTime(0.35, now);
+                    tGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    tOsc.connect(tGain);
+                    tGain.connect(audioCtx.destination);
+                    tOsc.start();
+                    tOsc.stop(now + 0.15);
+                    break;
+
+                case 'chime':
+                    // Bullseye ringing chime
+                    const cOsc1 = audioCtx.createOscillator();
+                    const cOsc2 = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc1.type = 'sine';
+                    cOsc2.type = 'triangle';
+                    cOsc1.frequency.setValueAtTime(980 * pitchModifier, now);
+                    cOsc2.frequency.setValueAtTime(1470 * pitchModifier, now);
+                    cGain.gain.setValueAtTime(0.18, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    cOsc1.connect(cGain);
+                    cOsc2.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc1.start();
+                    cOsc2.start();
+                    cOsc1.stop(now + 0.3);
+                    cOsc2.stop(now + 0.3);
+                    break;
+
+                case 'miss':
+                    // Metal clink if dart misses board
+                    const mOsc = audioCtx.createOscillator();
+                    const mGain = audioCtx.createGain();
+                    mOsc.type = 'sawtooth';
+                    mOsc.frequency.setValueAtTime(350, now);
+                    mOsc.frequency.exponentialRampToValueAtTime(120, now + 0.2);
+                    mGain.gain.setValueAtTime(0.1, now);
+                    mGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    mOsc.connect(mGain);
+                    mGain.connect(audioCtx.destination);
+                    mOsc.start();
+                    mOsc.stop(now + 0.2);
+                    break;
+
+                case 'victory':
+                    const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                        gain.gain.setValueAtTime(0.12, now + idx * 0.07);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.07 + 0.4);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.07);
+                        osc.stop(now + idx * 0.07 + 0.4);
+                    });
+                    break;
+
+                case 'defeat':
+                    const dOsc = audioCtx.createOscillator();
+                    const dGain = audioCtx.createGain();
+                    dOsc.type = 'sawtooth';
+                    dOsc.frequency.setValueAtTime(180, now);
+                    dOsc.frequency.linearRampToValueAtTime(55, now + 0.6);
+                    dGain.gain.setValueAtTime(0.22, now);
+                    dGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    dOsc.connect(dGain);
+                    dGain.connect(audioCtx.destination);
+                    dOsc.start();
+                    dOsc.stop(now + 0.6);
+                    break;
+            }
+        }
+
+        // Particle Generators
+        function createConfetti(x, y, color, count = 15, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.5,
+                    r: 2 + Math.random() * 2.5,
+                    life: 1.0,
+                    decay: 0.02 + Math.random() * 0.02,
+                    color: color
+                });
+            }
+        }
+
+        // Wind Generator
+        function setWind() {
+            if (level <= 2) {
+                windX = 0;
+                hudWind.textContent = 'DURGUN';
+                hudWind.style.color = 'var(--success-glow)';
+                return;
+            }
+
+            const maxWind = Math.min(5, level - 2);
+            windStr = Math.max(1, Math.floor(Math.random() * maxWind) + 1);
+            const isEast = Math.random() > 0.5;
+            
+            windX = isEast ? windStr * 0.012 : -windStr * 0.012;
+            windDir = isEast ? 'DOĞU' : 'BATI';
+            
+            hudWind.textContent = `${windStr} m/s ${windDir}`;
+            hudWind.style.color = '#ff00ff';
+
+            // Reset wind lines
+            windLines = [];
+            for (let i = 0; i < 6; i++) {
+                windLines.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * 260 + 20,
+                    len: 20 + Math.random() * 25,
+                    speed: (3 + windStr) * (isEast ? 1 : -1)
+                });
+            }
+        }
+
+        // Level setup
+        function initLevel(targetLevel) {
+            level = targetLevel;
+            hudLevel.textContent = level;
+            
+            score = 0;
+            remainingDarts = 6;
+            targetScore = 60 + level * 20;
+            
+            hudTarget.textContent = `${score} / ${targetScore}`;
+            hudScore.textContent = score;
+
+            stuckDarts = [];
+            particles = [];
+            floatText = null;
+
+            // Rotation speed increases with levels
+            rotationSpeed = level === 1 ? 0 : 0.006 + level * 0.003;
+
+            setWind();
+            resetDart();
+            updateHUDDarts();
+            
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            victoryScreen.classList.remove('active');
+            
+            gameState = 'PLAYING';
+        }
+
+        function resetDart() {
+            dart.x = PAD_X;
+            dart.y = PAD_Y;
+            dart.z = 0;
+            dart.vx = 0;
+            dart.vy = 0;
+            dart.vz = 0;
+            dart.trail = [];
+            isAiming = false;
+            if (gameState === 'RESETTING') {
+                gameState = 'PLAYING';
+            }
+        }
+
+        function updateHUDDarts() {
+            dartDotsContainer.innerHTML = '';
+            for(let i=0; i<remainingDarts; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dart-dot active';
+                dartDotsContainer.appendChild(dot);
+            }
+        }
+
+        // Scoring rules calculations using polar mapping
+        function evaluateHitScore(hx, hy) {
+            const dx = hx - boardX;
+            const dy = hy - boardY;
+            const r = Math.hypot(dx, dy);
+
+            if (r >= boardRadius) {
+                // Missed the board
+                playSound('miss');
+                showFloatText(hx, hy - 15, "ISKA!", 'rgba(255, 23, 68, 0.8)');
+                return;
+            }
+
+            let value = 0;
+            let label = "";
+            let color = "var(--primary-glow)";
+
+            if (r < 8) {
+                // Inner Bullseye
+                value = 50;
+                label = "BULLSEYE! +50";
+                color = "var(--accent-glow)";
+                playSound('chime', 1.25);
+                createConfetti(boardX, boardY, 'var(--accent-glow)', 20, 4);
+            } else if (r < 20) {
+                // Outer Bullseye
+                value = 25;
+                label = "BULL! +25";
+                color = "var(--success-glow)";
+                playSound('chime', 1.0);
+                createConfetti(boardX, boardY, 'var(--success-glow)', 12, 3);
+            } else {
+                // Normal sector checking
+                let angle = Math.atan2(dy, dx);
+                // local angle relative to board rotation
+                let localAngle = angle - boardTheta;
+                if (localAngle < 0) localAngle += Math.PI * 2;
+
+                // Shift angle so segment 20 starts at 0 index
+                let shifted = localAngle + Math.PI / 2 + Math.PI / 20;
+                shifted = shifted % (Math.PI * 2);
+                if (shifted < 0) shifted += Math.PI * 2;
+
+                const segmentIndex = Math.floor(shifted / (Math.PI / 10)) % 20;
+                const baseVal = SEGMENTS[segmentIndex];
+
+                if (r >= 75 && r < 87) {
+                    // Triple Ring
+                    value = baseVal * 3;
+                    label = `ÜÇLÜ ${baseVal}! +${value}`;
+                    color = "var(--secondary-glow)";
+                    playSound('chime', 0.9);
+                    createConfetti(hx, hy, 'var(--secondary-glow)', 10, 2.5);
+                } else if (r >= 125 && r < 140) {
+                    // Double Ring
+                    value = baseVal * 2;
+                    label = `İKİLİ ${baseVal}! +${value}`;
+                    color = "var(--primary-glow)";
+                    playSound('thud', 1.15);
+                    createConfetti(hx, hy, 'var(--primary-glow)', 8, 2);
+                } else {
+                    // Single segments
+                    value = baseVal;
+                    label = `${baseVal} PUAN`;
+                    color = "#ffffff";
+                    playSound('thud', 0.95);
+                    createConfetti(hx, hy, '#ffffff', 4, 1.5);
+                }
+            }
+
+            // Register stuck dart local rotation values
+            const angleLocal = Math.atan2(dy, dx) - boardTheta;
+            stuckDarts.push({
+                r: r,
+                angle: angleLocal,
+                color: color
+            });
+
+            score += value;
+            hudScore.textContent = score;
+            hudTarget.textContent = `${score} / ${targetScore}`;
+
+            showFloatText(hx, hy - 15, label, color);
+
+            // Level conclusions check
+            if (score >= targetScore) {
+                clearTimeout(resetTimer);
+                setTimeout(handleLevelVictory, 1000);
+            } else {
+                startShotResetTimer(1200);
+            }
+        }
+
+        function showFloatText(x, y, text, color) {
+            floatText = {
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1.0
+            };
+        }
+
+        function startShotResetTimer(delay) {
+            gameState = 'RESETTING';
+            clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => {
+                if (remainingDarts > 0 && score < targetScore) {
+                    resetDart();
+                } else if (remainingDarts === 0 && score < targetScore) {
+                    handleGameOver();
+                }
+            }, delay);
+        }
+
+        function handleLevelVictory() {
+            gameState = 'VICTORY';
+            playSound('victory');
+            
+            // Celebration confetti/sparks
+            for(let i=0; i<3; i++) {
+                setTimeout(() => {
+                    createConfetti(canvas.width / 2 + (Math.random() - 0.5) * 200, 120, 'var(--accent-glow)', 20, 4);
+                }, i * 180);
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonDartBest', bestScore);
+                hudBest.textContent = bestScore;
+            }
+
+            victoryScreen.classList.add('active');
+        }
+
+        function handleGameOver() {
+            gameState = 'GAMEOVER';
+            playSound('defeat');
+            finalScore.textContent = score;
+            gameOverScreen.classList.add('active');
+        }
+
+        // Kinematics and flight projections updates
+        function updatePhysics() {
+            if (gameState !== 'FLYING' && gameState !== 'RESETTING') return;
+
+            // Apply acceleration
+            dart.vx += windX;
+            dart.vy += GRAVITY;
+
+            // Apply position
+            dart.x += dart.vx;
+            dart.y += dart.vy;
+            dart.z += dart.vz;
+
+            // Save trail
+            dart.trail.push({ x: dart.x, y: dart.y, z: dart.z });
+            if (dart.trail.length > 8) dart.trail.shift();
+
+            // Collision check with Z board plane
+            if (dart.z >= Z_BOARD) {
+                // Register hit coordinate at board depth
+                evaluateHitScore(dart.x, dart.y);
+            }
+        }
+
+        // Rendering Functions
+        function drawBoard() {
+            ctx.save();
+            ctx.translate(boardX, boardY);
+
+            // Outer dark target background border ring
+            ctx.fillStyle = '#06041c';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(0, 255, 255, 0.15)';
+            ctx.beginPath();
+            ctx.arc(0, 0, boardRadius + 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const sectorAngle = Math.PI / 10;
+            
+            // Draw alternating segments
+            for (let i = 0; i < 20; i++) {
+                const a1 = i * sectorAngle + boardTheta;
+                const a2 = (i + 1) * sectorAngle + boardTheta;
+                const isEven = i % 2 === 0;
+
+                // 1. Double Ring (Radius 125 to 140)
+                const doubleCol = isEven ? 'var(--success-glow)' : 'var(--danger-glow)';
+                drawSectorArc(0, 0, 125, 140, a1, a2, doubleCol);
+
+                // 2. Single Ring Outer (Radius 87 to 125)
+                const singleOuterCol = isEven ? '#08051a' : '#1b1b32';
+                drawSectorArc(0, 0, 87, 125, a1, a2, singleOuterCol);
+
+                // 3. Triple Ring (Radius 75 to 87)
+                const tripleCol = isEven ? 'var(--success-glow)' : 'var(--danger-glow)';
+                drawSectorArc(0, 0, 75, 87, a1, a2, tripleCol);
+
+                // 4. Single Ring Inner (Radius 20 to 75)
+                const singleInnerCol = isEven ? '#08051a' : '#1b1b32';
+                drawSectorArc(0, 0, 20, 75, a1, a2, singleInnerCol);
+
+                // Sector dividing lines (wires)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.lineWidth = 1.0;
+                ctx.beginPath();
+                ctx.moveTo(20 * Math.cos(a1), 20 * Math.sin(a1));
+                ctx.lineTo(140 * Math.cos(a1), 140 * Math.sin(a1));
+                ctx.stroke();
+            }
+
+            // Draw concentric wire rings
+            ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+            ctx.lineWidth = 1.0;
+            const wires = [20, 75, 87, 125, 140];
+            for (let w of wires) {
+                ctx.beginPath();
+                ctx.arc(0, 0, w, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Outer Green Bull ring (Radius 8 to 20)
+            ctx.fillStyle = 'var(--success-glow)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.stroke();
+
+            // Inner Red Bullseye (Radius 0 to 8)
+            ctx.fillStyle = 'var(--danger-glow)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw segment numbers around rotating board
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+            ctx.font = "bold 0.85rem 'Outfit'";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < 20; i++) {
+                const a1 = i * sectorAngle + boardTheta;
+                const a2 = (i + 1) * sectorAngle + boardTheta;
+                const am = (a1 + a2) / 2;
+
+                const textX = (boardRadius + 15) * Math.cos(am);
+                const textY = (boardRadius + 15) * Math.sin(am);
+
+                ctx.save();
+                ctx.translate(textX, textY);
+                // Rotate text to stand upright or relative
+                ctx.rotate(am + Math.PI / 2);
+                ctx.fillText(SEGMENTS[i], 0, 0);
+                ctx.restore();
+            }
+
+            // Draw stuck darts rotating with the board
+            for (let sd of stuckDarts) {
+                const angle = sd.angle + boardTheta;
+                const sx = sd.r * Math.cos(angle);
+                const sy = sd.r * Math.sin(angle);
+
+                // Small projected dart visual from behind
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = sd.color;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Faded tail fins
+                ctx.strokeStyle = sd.color;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(sx - 3, sy - 3);
+                ctx.lineTo(sx + 3, sy + 3);
+                ctx.moveTo(sx + 3, sy - 3);
+                ctx.lineTo(sx - 3, sy + 3);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.restore();
+        }
+
+        function drawSectorArc(cx, cy, r_in, r_out, a1, a2, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r_out, a1, a2);
+            ctx.arc(cx, cy, r_in, a2, a1, true);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#02010a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Glowing cyber grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Launch pad base boundary ring
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(PAD_X, PAD_Y, 20, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawWindLines() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
+            ctx.lineWidth = 1.5;
+            for (let wl of windLines) {
+                wl.x += wl.speed;
+                if (wl.speed > 0 && wl.x > canvas.width) wl.x = -wl.len;
+                if (wl.speed < 0 && wl.x < -wl.len) wl.x = canvas.width;
+
+                ctx.beginPath();
+                ctx.moveTo(wl.x, wl.y);
+                ctx.lineTo(wl.x + wl.len, wl.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawDart() {
+            if (gameState !== 'FLYING' && gameState !== 'RESETTING') return;
+
+            // Project current dart coordinate
+            const scale = 1 - (dart.z / Z_BOARD) * 0.75;
+            const sx = boardX + (dart.x - boardX) * scale;
+            const sy = boardY + (dart.y - boardY) * scale;
+
+            // Draw trail
+            ctx.save();
+            for (let i = 0; i < dart.trail.length; i++) {
+                const t = dart.trail[i];
+                const tScale = 1 - (t.z / Z_BOARD) * 0.75;
+                const tsx = boardX + (t.x - boardX) * tScale;
+                const tsy = boardY + (t.y - boardY) * tScale;
+                
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.25)';
+                ctx.globalAlpha = i / dart.trail.length * 0.4;
+                ctx.beginPath();
+                ctx.arc(tsx, tsy, 4 * tScale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Draw Dart Shaft line (tip to tail)
+            // Tail coordinate is slightly offset in Z depth
+            const tailZ = Math.max(0, dart.z - 25);
+            const tailScale = 1 - (tailZ / Z_BOARD) * 0.75;
+            // tail slightly lags in trajectory direction
+            const tailVx = dart.vx * 1.5;
+            const tailVy = dart.vy * 1.5;
+            const tx = boardX + (dart.x - tailVx - boardX) * tailScale;
+            const ty = boardY + (dart.y - tailVy - boardY) * tailScale;
+
+            ctx.save();
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5 * scale;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(tx, ty);
+            ctx.stroke();
+
+            // Draw tail fins (feathers) at tail coordinate
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.lineWidth = 3.5 * tailScale;
+            
+            // horizontal / vertical cross feathers
+            ctx.beginPath();
+            ctx.moveTo(tx - 4 * tailScale, ty - 4 * tailScale);
+            ctx.lineTo(tx + 4 * tailScale, ty + 4 * tailScale);
+            ctx.moveTo(tx + 4 * tailScale, ty - 4 * tailScale);
+            ctx.lineTo(tx - 4 * tailScale, ty + 4 * tailScale);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Draw launch aiming projected dots
+        function drawAimPath() {
+            if (!isAiming) return;
+
+            const pullDist = Math.hypot(pullX, pullY);
+            if (pullDist < 10) return;
+
+            const launchVx = -pullX * PULL_SCALE_X;
+            const launchVy = -pullY * PULL_SCALE_Y;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#fff';
+
+            let tempX = PAD_X;
+            let tempY = PAD_Y;
+            let tempZ = 0;
+            let tempVx = launchVx;
+            let tempVy = launchVy;
+
+            // Project path for 25 frames
+            for (let f = 0; f < 25; f++) {
+                tempVx += windX;
+                tempVy += GRAVITY;
+                tempX += tempVx;
+                tempY += tempVy;
+                tempZ += 11;
+
+                if (tempZ >= Z_BOARD) break;
+
+                const scale = 1 - (tempZ / Z_BOARD) * 0.75;
+                const sx = boardX + (tempX - boardX) * scale;
+                const sy = boardY + (tempY - boardY) * scale;
+
+                const size = Math.max(1, 3.5 - (f * 0.1));
+                ctx.beginPath();
+                ctx.arc(sx, sy, size * scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Update
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawFloatText() {
+            if (!floatText) return;
+
+            ctx.save();
+            ctx.globalAlpha = floatText.life;
+            ctx.font = "800 1.25rem 'Outfit'";
+            ctx.fillStyle = floatText.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = floatText.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(floatText.text, floatText.x, floatText.y);
+            ctx.restore();
+
+            floatText.y -= 0.8;
+            floatText.life -= 0.02;
+            if (floatText.life <= 0) {
+                floatText = null;
+            }
+        }
+
+        // Render main cycle loop
+        function mainLoop(timestamp) {
+            // Update board rotation angle
+            boardTheta += rotationSpeed;
+            if (boardTheta > Math.PI * 2) boardTheta -= Math.PI * 2;
+
+            updatePhysics();
+            
+            drawAimPath();
+            drawBackground();
+            drawWindLines();
+            drawBoard();
+            drawDart();
+            drawParticles();
+            drawFloatText();
+
+            // Render launch pad indicator if aiming
+            if (isAiming) {
+                ctx.save();
+                ctx.strokeStyle = 'var(--primary-glow)';
+                ctx.lineWidth = 2.5;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'var(--primary-glow)';
+                ctx.beginPath();
+                ctx.moveTo(PAD_X, PAD_Y);
+                ctx.lineTo(PAD_X + pullX, PAD_Y + pullY);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(PAD_X + pullX, PAD_Y + pullY, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Actions
+        function startGame() {
+            initAudio();
+            initLevel(1);
+        }
+
+        function nextLevel() {
+            initLevel(level + 1);
+        }
+
+        // Inputs mouse/touch coordinates mapping
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: ((e.clientX || e.touches[0].clientX) - rect.left) * scaleX,
+                y: ((e.clientY || e.touches[0].clientY) - rect.top) * scaleY
+            };
+        }
+
+        function onAimStart(e) {
+            if (gameState !== 'PLAYING') return;
+            initAudio();
+            
+            const coords = getCoords(e);
+            const dist = Math.hypot(coords.x - PAD_X, coords.y - PAD_Y);
+            if (dist < 40) {
+                isAiming = true;
+                onAimMove(e);
+            }
+        }
+
+        function onAimMove(e) {
+            if (!isAiming || gameState !== 'PLAYING') return;
+            const coords = getCoords(e);
+
+            let dx = coords.x - PAD_X;
+            let dy = coords.y - PAD_Y;
+            const dist = Math.hypot(dx, dy);
+
+            if (dist > MAX_PULL) {
+                dx = (dx / dist) * MAX_PULL;
+                dy = (dy / dist) * MAX_PULL;
+            }
+
+            pullX = dx;
+            pullY = dy;
+
+            if (Math.random() < 0.15) {
+                playSound('stretch', 0.5 + (dist / MAX_PULL));
+            }
+        }
+
+        function onAimRelease() {
+            if (!isAiming || gameState !== 'PLAYING') return;
+            isAiming = false;
+
+            const pullDist = Math.hypot(pullX, pullY);
+            if (pullDist < 12) {
+                resetDart();
+                return;
+            }
+
+            const launchVx = -pullX * PULL_SCALE_X;
+            const launchVy = -pullY * PULL_SCALE_Y;
+
+            dart.x = PAD_X;
+            dart.y = PAD_Y;
+            dart.z = 0;
+            dart.vx = launchVx;
+            dart.vy = launchVy;
+            dart.vz = 11.5; // Forward velocity
+
+            remainingDarts--;
+            updateHUDDarts();
+            playSound('launch');
+            
+            gameState = 'FLYING';
+        }
+
+        // Listeners bindings
+        canvas.addEventListener('mousedown', onAimStart);
+        window.addEventListener('mousemove', onAimMove);
+        window.addEventListener('mouseup', onAimRelease);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            onAimStart(e);
+        }, {passive: false});
+
+        window.addEventListener('touchmove', (e) => {
+            onAimMove(e);
+        }, {passive: true});
+
+        window.addEventListener('touchend', onAimRelease);
+
+        // HUD overlay button clicks
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', () => initLevel(level));
+        nextBtn.addEventListener('click', nextLevel);
+
+        // Run Init loop
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
