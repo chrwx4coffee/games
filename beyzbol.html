@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Beyzbol // Cyber Baseball</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #00ffcc; /* Cyan Batter */
+            --secondary-glow: #ff00ff; /* Magenta Pitcher */
+            --accent-glow: #ffd700; /* Gold Home Run */
+            --danger-glow: #ff1744; /* Red Out/Strike */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.primary { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.secondary { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 600px) {
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.6rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Beyzbol</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Atışlar</span>
+                <span class="hud-val accent" id="hudPitches">10</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Rüzgar</span>
+                <span class="hud-val primary" id="hudWind">DURGUN</span>
+            </div>
+            <div class="hud-item" style="min-width: 80px;">
+                <span class="hud-label">Out / Strike</span>
+                <span class="hud-val" style="color: #fff;"><span style="color:var(--danger-glow);" id="hudOuts">O</span> / <span style="color:var(--accent-glow);" id="hudStrikes">O</span></span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Home Run</span>
+                <span class="hud-val accent" id="hudHomeRuns" style="color: var(--accent-glow);">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Skor</span>
+                <span class="hud-val primary" id="hudScore">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Yüksek</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Beyzbol</h2>
+                <p>Home Run Derby başladı! Pitcher'ın fırlattığı top vuruş alanına girdiğinde ekrana tıklayarak veya Boşluk (Space) tuşuna basarak sopayı sallayın. Zamanlamayı tutturup topu stadyum dışına fırlatın!</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="win">Derby Tamamlandı!</h2>
+                <p>10 Pitch sonucunda attığınız Home Run sayısı: <span id="finalHR" style="color:var(--accent-glow); font-weight:800;">0</span>. Toplam Skorunuz: <span id="finalScore" style="color:var(--primary-glow); font-weight:800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Oyna</button>
+            </div>
+        </div>
+
+        <div class="hint">Vurmak için: Ekrana Tıkla / Dokun veya Boşluk (Space) tuşuna bas. <br>Zamanlama mükemmel olduğunda top uzağa uçar!</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudPitches = document.getElementById('hudPitches');
+        const hudWind = document.getElementById('hudWind');
+        const hudOuts = document.getElementById('hudOuts');
+        const hudStrikes = document.getElementById('hudStrikes');
+        const hudHomeRuns = document.getElementById('hudHomeRuns');
+        const hudScore = document.getElementById('hudScore');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        
+        const finalHR = document.getElementById('finalHR');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const GRAVITY = 0.13;
+        const GROUND_Y = 310;
+        const PITCHER_X = 120;
+        const PITCHER_Y = 250;
+        const BAT_PIVOT_X = 570;
+        const BAT_PIVOT_Y = 275;
+        const BAT_LENGTH = 50;
+
+        // Game State Variables
+        let score = 0;
+        let bestScore = Math.floor(localStorage.getItem('neonBaseballBest')) || 0;
+        hudBest.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING_PITCH, FLYING, RESETTING, GAMEOVER
+        let remainingPitches = 10;
+        let strikeCount = 0;
+        let outCount = 0;
+        let homeRunsCount = 0;
+
+        let windX = 0;
+        let windStr = 0;
+        let windDir = '';
+
+        let loopId;
+        let resetTimer = null;
+        let floatText = null;
+
+        // Camera scroll
+        let cameraX = 0;
+        let cameraY = 0;
+        let targetCameraX = 0;
+        let targetCameraY = 0;
+
+        // Entities
+        let ball = {
+            x: PITCHER_X,
+            y: PITCHER_Y,
+            vx: 0,
+            vy: 0,
+            r: 8,
+            trail: []
+        };
+
+        let pitcherAngle = 0;
+        let bat = {
+            angle: -Math.PI / 3, // Idle angle (pointing back/up)
+            targetAngle: Math.PI * 0.6,
+            isSwinging: false,
+            swingFrame: 0,
+            totalSwingFrames: 11
+        };
+
+        let pitchType = 'fastball'; // fastball, curveball, changeup, slider
+        let particles = [];
+        let fireworks = [];
+        let windLines = [];
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'swing':
+                    // Quick whoosh air swipe
+                    const sOsc = audioCtx.createOscillator();
+                    const sGain = audioCtx.createGain();
+                    sOsc.type = 'sine';
+                    sOsc.frequency.setValueAtTime(450 * pitchModifier, now);
+                    sOsc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                    sGain.gain.setValueAtTime(0.12, now);
+                    sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    sOsc.connect(sGain);
+                    sGain.connect(audioCtx.destination);
+                    sOsc.start();
+                    sOsc.stop(now + 0.1);
+                    break;
+                    
+                case 'pitch':
+                    // soft whistle as ball approaches
+                    const pOsc = audioCtx.createOscillator();
+                    const pGain = audioCtx.createGain();
+                    pOsc.type = 'sine';
+                    pOsc.frequency.setValueAtTime(300, now);
+                    pOsc.frequency.linearRampToValueAtTime(400, now + 0.5);
+                    pGain.gain.setValueAtTime(0.03, now);
+                    pGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+                    pOsc.connect(pGain);
+                    pGain.connect(audioCtx.destination);
+                    pOsc.start();
+                    pOsc.stop(now + 0.55);
+                    break;
+
+                case 'crack':
+                    // Wood bat CRACK! (Thud + noise burst)
+                    const cOsc = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc.type = 'triangle';
+                    cOsc.frequency.setValueAtTime(160, now);
+                    cGain.gain.setValueAtTime(0.4 * pitchModifier, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+
+                    // High noise burst
+                    const bufSize = audioCtx.sampleRate * 0.05;
+                    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < bufSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buf;
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 1600;
+                    const nGain = audioCtx.createGain();
+                    nGain.gain.setValueAtTime(0.3 * pitchModifier, now);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+                    noise.connect(filter);
+                    filter.connect(nGain);
+                    nGain.connect(audioCtx.destination);
+
+                    cOsc.start();
+                    noise.start();
+                    cOsc.stop(now + 0.22);
+                    noise.stop(now + 0.05);
+                    break;
+
+                case 'siren':
+                    // Home Run alarm sirens
+                    const sOsc1 = audioCtx.createOscillator();
+                    const sOsc2 = audioCtx.createOscillator();
+                    const sg = audioCtx.createGain();
+                    sOsc1.type = 'sawtooth';
+                    sOsc2.type = 'square';
+                    sOsc1.frequency.setValueAtTime(500, now);
+                    sOsc2.frequency.setValueAtTime(505, now);
+                    sOsc1.frequency.linearRampToValueAtTime(900, now + 0.4);
+                    sOsc2.frequency.linearRampToValueAtTime(905, now + 0.4);
+
+                    sg.gain.setValueAtTime(0.12, now);
+                    sg.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                    sOsc1.connect(sg);
+                    sOsc2.connect(sg);
+                    sg.connect(audioCtx.destination);
+
+                    sOsc1.start();
+                    sOsc2.start();
+                    sOsc1.stop(now + 0.45);
+                    sOsc2.stop(now + 0.45);
+                    break;
+
+                case 'chime':
+                    const notes = [293.66, 349.23, 440.00, 523.25]; // D4, F4, A4, C5
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.1, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.35);
+                    });
+                    break;
+
+                case 'defeat':
+                    const goOsc = audioCtx.createOscillator();
+                    const goGain = audioCtx.createGain();
+                    goOsc.type = 'sawtooth';
+                    goOsc.frequency.setValueAtTime(200, now);
+                    goOsc.frequency.linearRampToValueAtTime(60, now + 0.5);
+                    goGain.gain.setValueAtTime(0.2, now);
+                    goGain.gain.exponentialRampToValueAtTime(0.01, now + 0.55);
+                    goOsc.connect(goGain);
+                    goGain.connect(audioCtx.destination);
+                    goOsc.start();
+                    goOsc.stop(now + 0.55);
+                    break;
+            }
+        }
+
+        // Visual Particles & Fireworks
+        function createSparks(x, y, color, count = 12, force = 4) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.02 + Math.random() * 0.02,
+                    color: color
+                });
+            }
+        }
+
+        function createFirework(x, y, color) {
+            const count = 25;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                fireworks.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 2.5 + Math.random() * 2.5,
+                    life: 1.0,
+                    decay: 0.015 + Math.random() * 0.015,
+                    color: color
+                });
+            }
+        }
+
+        // Wind Shifter
+        function setWind() {
+            const maxWind = Math.min(4, Math.floor(level / 2));
+            windStr = Math.floor(Math.random() * maxWind);
+            const isLeft = Math.random() > 0.5;
+
+            windX = isLeft ? -windStr * 0.015 : windStr * 0.015;
+            windDir = isLeft ? 'BATI' : 'DOĞU';
+
+            hudWind.textContent = windStr === 0 ? 'DURGUN' : `${windStr} m/s ${windDir}`;
+            hudWind.style.color = windStr === 0 ? 'var(--primary-glow)' : 'var(--secondary-glow)';
+
+            // Reset wind lines
+            windLines = [];
+            for (let i = 0; i < 6; i++) {
+                windLines.push({
+                    x: Math.random() * -1200, // extend to left outfield
+                    y: Math.random() * 200 + 20,
+                    len: 25 + Math.random() * 25,
+                    speed: (3 + windStr) * (isLeft ? -1 : 1)
+                });
+            }
+        }
+
+        // Setup Pitch types
+        function preparePitch() {
+            gameState = 'PLAYING_PITCH';
+            
+            ball.x = PITCHER_X;
+            ball.y = PITCHER_Y;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.trail = [];
+            bat.isSwinging = false;
+            bat.angle = -Math.PI / 3;
+
+            // Smooth camera reset
+            targetCameraX = 0;
+            targetCameraY = 0;
+
+            const rand = Math.random();
+            if (rand < 0.35) {
+                pitchType = 'fastball';
+            } else if (rand < 0.6) {
+                pitchType = 'curveball';
+            } else if (rand < 0.8) {
+                pitchType = 'changeup';
+            } else {
+                pitchType = 'slider';
+            }
+
+            // Calculate launch velocity
+            if (pitchType === 'fastball') {
+                ball.vx = 7.8 + Math.random() * 1.0;
+                ball.vy = -0.5;
+            } else if (pitchType === 'curveball') {
+                ball.vx = 6.2;
+                ball.vy = -2.2; // arches up then curves down
+            } else if (pitchType === 'changeup') {
+                ball.vx = 4.4;
+                ball.vy = 0.2;
+            } else if (pitchType === 'slider') {
+                ball.vx = 7.0;
+                ball.vy = -0.8;
+            }
+
+            remainingPitches--;
+            hudPitches.textContent = remainingPitches;
+            
+            playSound('pitch');
+        }
+
+        function triggerSwing() {
+            if (gameState !== 'PLAYING_PITCH' || bat.isSwinging) return;
+            initAudio();
+            playSound('swing');
+            bat.isSwinging = true;
+            bat.swingFrame = 0;
+        }
+
+        // Score Evaluator on outfield landings
+        function evaluateLanding() {
+            gameState = 'RESETTING';
+            playSound('chime');
+
+            // Landing points calculations based on X coordinate
+            // Batter plate: x = 580. outfield extends leftwards towards negative x
+            const distance = 580 - ball.x;
+            let resultLabel = "";
+            let resultScore = 0;
+            let resultColor = "#fff";
+            let isHR = false;
+
+            if (distance < 200) {
+                // Caught or weak pop fly
+                resultLabel = "OUT / ISKA";
+                resultScore = 0;
+                resultColor = "var(--danger-glow)";
+                outCount++;
+                playSound('defeat', 0.9);
+            } else if (distance >= 200 && distance < 450) {
+                // Tekli (Single)
+                resultLabel = "TEKLİ (Single) +10";
+                resultScore = 10;
+                resultColor = "var(--primary-glow)";
+                createSparks(ball.x, ball.y, 'var(--primary-glow)', 10, 3);
+            } else if (distance >= 450 && distance < 750) {
+                // İkili (Double)
+                resultLabel = "İKİLİ (Double) +20";
+                resultScore = 20;
+                resultColor = "var(--secondary-glow)";
+                createSparks(ball.x, ball.y, 'var(--secondary-glow)', 15, 3.5);
+            } else if (distance >= 750 && distance < 1050) {
+                // Üçlü (Triple)
+                resultLabel = "ÜÇLÜ (Triple) +30";
+                resultScore = 30;
+                resultColor = "var(--primary-glow)";
+                createSparks(ball.x, ball.y, 'var(--primary-glow)', 18, 4);
+            } else {
+                // Beyond 1050px -> HOME RUN!
+                resultLabel = "HOME RUN! +50";
+                resultScore = 50;
+                resultColor = "var(--accent-glow)";
+                isHR = true;
+                homeRunsCount++;
+                hudHomeRuns.textContent = homeRunsCount;
+                playSound('siren');
+
+                // Home Run celebration fireworks
+                for(let i=0; i<4; i++) {
+                    setTimeout(() => {
+                        createFirework(ball.x + (Math.random()-0.5)*150, 100 + (Math.random()-0.5)*50, 'var(--accent-glow)');
+                    }, i * 200);
+                }
+            }
+
+            score += resultScore;
+            hudScore.textContent = score;
+            showFloatText(ball.x, ball.y - 30, resultLabel, resultColor);
+
+            updateHUDOuts();
+
+            // Next pitch triggers
+            clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => {
+                if (remainingPitches > 0) {
+                    preparePitch();
+                    setWind();
+                } else {
+                    handleGameOver();
+                }
+            }, 2500);
+        }
+
+        function showFloatText(x, y, text, color) {
+            floatText = {
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1.0
+            };
+        }
+
+        function updateHUDOuts() {
+            // outs dots
+            let outStr = "";
+            for(let i=0; i<3; i++) {
+                outStr += (i < outCount) ? "X" : "O";
+            }
+            hudOuts.textContent = outStr;
+
+            // strikes dots
+            let strikeStr = "";
+            for(let i=0; i<3; i++) {
+                strikeStr += (i < strikeCount) ? "X" : "O";
+            }
+            hudStrikes.textContent = strikeStr;
+        }
+
+        function handleGameOver() {
+            gameState = 'GAMEOVER';
+            playSound('victory');
+            
+            finalHR.textContent = homeRunsCount;
+            finalScore.textContent = score;
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonBaseballBest', bestScore);
+                hudBest.textContent = bestScore;
+            }
+
+            gameOverScreen.classList.add('active');
+        }
+
+        // Kinematics and bat sweep collisions updates
+        function updatePhysics() {
+            // Update wind lines positions
+            for (let wl of windLines) {
+                wl.x += wl.speed;
+                if (wl.speed > 0 && wl.x > canvas.width) wl.x = -1300;
+                if (wl.speed < 0 && wl.x < -1300) wl.x = canvas.width;
+            }
+
+            // 1. Bat swing frames update
+            if (bat.isSwinging) {
+                bat.swingFrame++;
+                const ratio = bat.swingFrame / bat.totalSwingFrames;
+                bat.angle = -Math.PI / 3 + (bat.targetAngle - (-Math.PI / 3)) * ratio;
+
+                if (bat.swingFrame >= bat.totalSwingFrames) {
+                    bat.isSwinging = false;
+                    bat.angle = -Math.PI / 3;
+                }
+            }
+
+            // 2. Ball flight physics
+            if (gameState === 'PLAYING_PITCH') {
+                // Pitcher curves mechanics updates in flight
+                if (pitchType === 'curveball' && ball.x > 320) {
+                    ball.vy += 0.22; // rapid vertical dip
+                } else if (pitchType === 'slider') {
+                    // Zigzag vertical motion
+                    ball.vy = Math.sin(ball.x * 0.04) * 2.5;
+                }
+
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Save trail
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > 8) ball.trail.shift();
+
+                // Collision with Bat Check
+                // Sweet spot hits timing check (when ball is near home plate)
+                if (ball.x >= 540 && ball.x <= 600 && ball.y >= 210 && ball.y <= 315) {
+                    if (bat.isSwinging && bat.swingFrame >= 1 && bat.swingFrame <= 9) {
+                        // HIT registered!
+                        playSound('crack');
+                        gameState = 'FLYING';
+
+                        const timing = bat.swingFrame;
+                        let launchAngle = 0;
+                        let launchPower = 0;
+                        let hitLabel = "";
+                        let hitColor = "#fff";
+
+                        if (timing >= 3 && timing <= 6) {
+                            // Perfect sweet spot hit! High velocity parabola
+                            launchAngle = Math.PI * 0.23 + (Math.random() - 0.5) * 0.05; // 41 degrees up
+                            launchPower = 14.5 + Math.random() * 2.5;
+                            hitLabel = "MÜKEMMEL ZAMANLAMA!";
+                            hitColor = "var(--accent-glow)";
+                            createSparks(ball.x, ball.y, 'var(--accent-glow)', 15, 4);
+                            strikeCount = 0;
+                        } else if (timing < 3) {
+                            // Early swing: Pop fly vertical/short
+                            launchAngle = Math.PI * 0.38 + (Math.random() - 0.5) * 0.05; // 68 degrees up (too high)
+                            launchPower = 9.0 + Math.random() * 2.0;
+                            hitLabel = "ERKEN SALINIM (Pop Fly)";
+                            hitColor = "var(--primary-glow)";
+                            createSparks(ball.x, ball.y, 'var(--primary-glow)', 8, 2.5);
+                            strikeCount = 0;
+                        } else {
+                            // Late swing: Low grounder or foul tip
+                            launchAngle = Math.PI * 0.12 + (Math.random() - 0.5) * 0.05; // 21 degrees low (grounder)
+                            launchPower = 10.5 + Math.random() * 2.0;
+                            hitLabel = "GEÇ SALINIM (Grounder)";
+                            hitColor = "var(--secondary-glow)";
+                            createSparks(ball.x, ball.y, 'var(--secondary-glow)', 8, 2.5);
+                            strikeCount = 0;
+                        }
+
+                        // Apply launch velocity (flying leftwards into outfield)
+                        ball.vx = -Math.cos(launchAngle) * launchPower;
+                        ball.vy = -Math.sin(launchAngle) * launchPower;
+
+                        showFloatText(ball.x, ball.y - 25, hitLabel, hitColor);
+                        updateHUDOuts();
+                    }
+                }
+
+                // If ball passes batter plate without hitting -> STRIKE!
+                if (ball.x > 610) {
+                    gameState = 'RESETTING';
+                    strikeCount++;
+                    playSound('defeat', 1.1);
+                    showFloatText(ball.x - 40, ball.y, "STRIKE!", "var(--danger-glow)");
+
+                    if (strikeCount >= 3) {
+                        outCount++;
+                        strikeCount = 0;
+                        showFloatText(570, 240, "OUT!", "var(--danger-glow)");
+                    }
+                    updateHUDOuts();
+
+                    clearTimeout(resetTimer);
+                    resetTimer = setTimeout(() => {
+                        if (remainingPitches > 0) {
+                            preparePitch();
+                            setWind();
+                        } else {
+                            handleGameOver();
+                        }
+                    }, 1500);
+                }
+            }
+
+            else if (gameState === 'FLYING') {
+                // Outfield flight dynamics: gravity and lateral wind forces
+                ball.vx += windX;
+                ball.vy += GRAVITY;
+
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Save trail
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > 15) ball.trail.shift();
+
+                // Camera follow clamping coordinates
+                targetCameraX = ball.x - 220;
+                targetCameraY = ball.y - 180;
+
+                // Restrict camera bounds
+                if (targetCameraX > 0) targetCameraX = 0;
+                if (targetCameraX < -1300) targetCameraX = -1300;
+                if (targetCameraY > 0) targetCameraY = 0;
+                if (targetCameraY < -320) targetCameraY = -320;
+
+                // Landing threshold collision on ground (310)
+                if (ball.y >= GROUND_Y - ball.r) {
+                    ball.y = GROUND_Y - ball.r;
+                    ball.vx = 0;
+                    ball.vy = 0;
+
+                    evaluateLanding();
+                }
+            }
+
+            // Smooth camera follow LERP
+            cameraX += (targetCameraX - cameraX) * 0.12;
+            cameraY += (targetCameraY - cameraY) * 0.12;
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.08;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Update fireworks
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const f = fireworks[i];
+                f.x += f.vx;
+                f.y += f.vy;
+                f.vy += 0.06;
+                f.life -= f.decay;
+                if (f.life <= 0) {
+                    fireworks.splice(i, 1);
+                }
+            }
+        }
+
+        // Rendering Functions
+        function drawBackground() {
+            // Apply camera scroll translation offset
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            // Stadium pitch and scrolling outfield ground lines
+            ctx.fillStyle = '#02010a';
+            ctx.fillRect(-1500, 0, 720 + 1500, canvas.height);
+
+            // Glowing cyber grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+            ctx.lineWidth = 1;
+            for (let x = -1300; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(-1300, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw field turf baseline
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.25)';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(-1300, GROUND_Y);
+            ctx.lineTo(canvas.width, GROUND_Y);
+            ctx.stroke();
+
+            // Yard Markers lines and text Labels
+            // Batter is at x = 580. Outfield X decreases leftwards
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.font = "bold 0.85rem 'Outfit'";
+            ctx.textAlign = 'center';
+
+            const markers = [
+                { x: 380, text: '100 FT' },
+                { x: 180, text: '200 FT' },
+                { x: -20, text: '300 FT' },
+                { x: -220, text: '400 FT' },
+                { x: -420, text: '500 FT' },
+                { x: -620, text: '600 FT' }
+            ];
+
+            for (let m of markers) {
+                // Tick line
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(m.x, GROUND_Y - 8);
+                ctx.lineTo(m.x, GROUND_Y);
+                ctx.stroke();
+
+                // Text
+                ctx.fillText(m.text, m.x, GROUND_Y + 16);
+            }
+
+            // Draw Outfield wall fence barrier at X = -320 (450 FT)
+            const fenceX = -320;
+            ctx.save();
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--accent-glow)';
+            ctx.strokeStyle = 'var(--accent-glow)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(fenceX, GROUND_Y - 55);
+            ctx.lineTo(fenceX, GROUND_Y);
+            ctx.stroke();
+
+            // Wall mesh texture
+            ctx.strokeStyle = 'rgba(255, 215, 0, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 0;
+            for (let y = GROUND_Y - 50; y < GROUND_Y; y += 12) {
+                ctx.beginPath();
+                ctx.moveTo(fenceX, y);
+                ctx.lineTo(fenceX - 10, y + 8);
+                ctx.stroke();
+            }
+
+            // HOME RUN label billboard above fence wall
+            ctx.fillStyle = 'var(--accent-glow)';
+            ctx.font = "800 1.2rem 'Outfit'";
+            ctx.fillText("HOME RUN WALL 450 FT", fenceX - 80, GROUND_Y - 70);
+            ctx.restore();
+
+            // Draw pitcher (Magenta dot) and batter plate (Cyan dot) silhouettes
+            ctx.save();
+            ctx.shadowBlur = 12;
+            
+            // Pitcher
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.fillStyle = 'var(--secondary-glow)';
+            ctx.beginPath();
+            ctx.arc(PITCHER_X, PITCHER_Y, 14, 0, Math.PI * 2);
+            ctx.fill();
+            // Pitcher base stand plate
+            ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(PITCHER_X - 18, GROUND_Y, 36, 1);
+
+            // Batter / Home Plate
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.fillStyle = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.arc(580, 290, 14, 0, Math.PI * 2);
+            ctx.fill();
+            // Home plate stand
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(580 - 15, GROUND_Y, 30, 1);
+
+            ctx.restore();
+        }
+
+        function drawWindLines() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.08)';
+            ctx.lineWidth = 1.5;
+            for (let wl of windLines) {
+                ctx.beginPath();
+                ctx.moveTo(wl.x, wl.y);
+                ctx.lineTo(wl.x + wl.len, wl.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawBat() {
+            ctx.save();
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+
+            // Draw bat glowing segment line swinging from pivot
+            const endX = BAT_PIVOT_X + Math.cos(bat.angle) * BAT_LENGTH;
+            const endY = BAT_PIVOT_Y + Math.sin(bat.angle) * BAT_LENGTH;
+
+            ctx.beginPath();
+            ctx.moveTo(BAT_PIVOT_X, BAT_PIVOT_Y);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Draw handle grip
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3.5;
+            const gripEndX = BAT_PIVOT_X + Math.cos(bat.angle) * 12;
+            const gripEndY = BAT_PIVOT_Y + Math.sin(bat.angle) * 12;
+            ctx.beginPath();
+            ctx.moveTo(BAT_PIVOT_X, BAT_PIVOT_Y);
+            ctx.lineTo(gripEndX, gripEndY);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawBall() {
+            if (gameState !== 'PLAYING_PITCH' && gameState !== 'FLYING' && gameState !== 'RESETTING') return;
+
+            // Trail
+            ctx.save();
+            for (let i = 0; i < ball.trail.length; i++) {
+                const ratio = i / ball.trail.length;
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
+                ctx.globalAlpha = ratio * 0.45;
+                ctx.beginPath();
+                ctx.arc(ball.trail[i].x, ball.trail[i].y, ball.r * ratio, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Ball Body
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'var(--accent-glow)';
+            ctx.fillStyle = 'var(--accent-glow)';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.r * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            // normal sparks
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // fireworks
+            for (let f of fireworks) {
+                ctx.fillStyle = f.color;
+                ctx.globalAlpha = f.life;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = f.color;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawFloatText() {
+            if (!floatText) return;
+
+            ctx.save();
+            ctx.globalAlpha = floatText.life;
+            ctx.font = "800 1.25rem 'Outfit'";
+            ctx.fillStyle = floatText.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = floatText.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(floatText.text, floatText.x, floatText.y);
+            ctx.restore();
+
+            floatText.y -= 0.8;
+            floatText.life -= 0.025;
+            if (floatText.life <= 0) {
+                floatText = null;
+            }
+        }
+
+        // Render main cycle loop
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawBackground();
+            drawWindLines();
+            drawBat();
+            drawBall();
+            drawParticles();
+            drawFloatText();
+
+            // restore camera translations offset
+            ctx.restore();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Actions
+        function startGame() {
+            initAudio();
+            score = 0;
+            remainingPitches = 10;
+            outCount = 0;
+            strikeCount = 0;
+            homeRunsCount = 0;
+
+            hudScore.textContent = score;
+            hudPitches.textContent = remainingPitches;
+            hudHomeRuns.textContent = homeRunsCount;
+
+            updateHUDOuts();
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+
+            preparePitch();
+            setWind();
+        }
+
+        // Event Listeners
+        // Swing trigger bindings
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                triggerSwing();
+            }
+        });
+
+        canvas.addEventListener('mousedown', triggerSwing);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            triggerSwing();
+        }, {passive: false});
+
+        // HUD overlay button clicks
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // Run Init loop
+        drawBackground();
+        drawBat();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
