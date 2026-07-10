@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Disk Savaşları // Cyber Discs</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #00ffcc; /* Player Cyan */
+            --secondary-glow: #ff00ff; /* AI Magenta */
+            --accent-glow: #ffd700; /* Gold Disc */
+            --danger-glow: #ff1744; /* Goal Red */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .mobile-controls {
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+            gap: 20px;
+            padding: 5px 10px;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .m-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        .m-btn:active {
+            background: rgba(0, 255, 204, 0.25);
+            border-color: var(--primary-glow);
+            transform: scale(0.95);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 700px) {
+            .mobile-controls { display: flex; }
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.5rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Disk Savaşları</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Seviye</span>
+                <span class="hud-val accent" id="hudLevel">1</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Ralli Hızı</span>
+                <span class="hud-val primary" id="hudSpeed">1.0x</span>
+            </div>
+            <div class="hud-item" style="min-width: 90px;">
+                <span class="hud-label">Skor (Hedef: 15)</span>
+                <span class="hud-val" style="color: #fff;"><span class="player" id="hudPlayerScore">0</span> - <span class="ai" id="hudAiScore">0</span></span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Yüksek</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Disk Savaşları</h2>
+                <p>Yarı sahanızda WASD veya Yön Tuşlarıyla hareket edin. Disk size ulaştığında otomatik yakalarsınız. Yakaladığınızda yönünüzü ayarlayıp Boşluk (Space) veya ekrana tıklayarak fırlatın! <br>Aşırtma (Lob) atmak için Shift tuşuna basın. Hedef rakip kaleler!</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Mağlubiyet!</h2>
+                <p>Maçı Yapay Zekaya karşı kaybettiniz. Toplam Skor: <span id="finalScore" style="color:var(--secondary-glow); font-weight:800;">0 - 0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+
+            <!-- Victory Screen Overlay -->
+            <div class="overlay" id="victoryScreen">
+                <h2 class="win">Zafer Senin!</h2>
+                <p>Tebrikler! Bir sonraki seviyede Yapay Zeka daha hızlı hareket edecek ve diski daha sert kavislerle fırlatacak.</p>
+                <button class="btn" id="nextBtn">Sonraki Seviye</button>
+            </div>
+        </div>
+
+        <!-- Mobile Controls Panel -->
+        <div class="mobile-controls">
+            <div class="control-group">
+                <div class="m-btn" id="mUp">↑</div>
+                <div class="m-btn" id="mDown">↓</div>
+                <div class="m-btn" id="mLeft">←</div>
+                <div class="m-btn" id="mRight">→</div>
+            </div>
+            <div class="control-group">
+                <div class="m-btn" id="mLob" style="background:rgba(255, 215, 0, 0.15); border-color:var(--accent-glow);">L</div>
+                <div class="m-btn" id="mThrow" style="background:rgba(0, 255, 204, 0.15); border-color:var(--primary-glow);">T</div>
+            </div>
+        </div>
+
+        <div class="hint">Yön Tuşları / WASD: Hareket // Boşluk (Space): Standart Fırlat // Shift / X: Aşırtma (Lob) Fırlat. <br>Fırlatırken yukarı/aşağı hareket etmek diske kavis kazandırır!</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLevel = document.getElementById('hudLevel');
+        const hudSpeed = document.getElementById('hudSpeed');
+        const hudPlayerScore = document.getElementById('hudPlayerScore');
+        const hudAiScore = document.getElementById('hudAiScore');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const BASE_DISC_SPEED = 7.5;
+        const COURT_TOP = 40;
+        const COURT_BOTTOM = 360;
+        const COURT_LEFT = 30;
+        const COURT_RIGHT = 690;
+        const CENTER_X = 360;
+
+        // Scoring boundaries Y values
+        const CORNER_TOP = 110;
+        const CORNER_BOTTOM = 290;
+
+        // Game State Variables
+        let level = 1;
+        let playerScore = 0;
+        let aiScore = 0;
+        let bestScore = Math.floor(localStorage.getItem('neonDiscBest')) || 0;
+        hudBest.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING, POINT_SCORED, GAMEOVER, VICTORY
+        let rallySpeedMultiplier = 1.0;
+        let serveWinner = 'player'; // 'player' or 'ai'
+
+        let loopId;
+        let resetTimer = null;
+        let scoreMessage = null; // {text, x, y, life, color}
+
+        // Entities
+        let player = {
+            x: 120,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            r: 16,
+            color: 'var(--primary-glow)',
+            glow: '#00ffcc',
+            state: 'FREE', // FREE, HOLDING
+            dashCooldown: 0
+        };
+
+        let ai = {
+            x: 600,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            r: 16,
+            color: 'var(--secondary-glow)',
+            glow: '#ff00ff',
+            state: 'FREE',
+            holdTimer: 0,
+            dashCooldown: 0
+        };
+
+        let disc = {
+            x: CENTER_X,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            r: 9,
+            state: 'FLYING', // FLYING, LOBBED, HELD
+            lobRatio: 0,
+            lobDuration: 55,
+            targetX: 0,
+            targetY: 0,
+            curveAmplitude: 0,
+            curveFreq: 0.15,
+            curveTimer: 0,
+            trail: []
+        };
+
+        // Aiming indicators
+        let aimAngle = 0;
+        let aimSweepDirection = 1;
+
+        // Keyboard Controls
+        let keys = {
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            Space: false,
+            Shift: false,
+            x: false
+        };
+
+        // Mobile touch controls states
+        let mobileLeft = false;
+        let mobileRight = false;
+        let mobileUp = false;
+        let mobileDown = false;
+
+        let particles = [];
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'throw':
+                    // whoosh noise sweep on throw
+                    const tOsc = audioCtx.createOscillator();
+                    const tGain = audioCtx.createGain();
+                    tOsc.type = 'triangle';
+                    tOsc.frequency.setValueAtTime(350, now);
+                    tOsc.frequency.exponentialRampToValueAtTime(700 * pitchModifier, now + 0.14);
+                    tGain.gain.setValueAtTime(0.12, now);
+                    tGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+                    tOsc.connect(tGain);
+                    tGain.connect(audioCtx.destination);
+                    tOsc.start();
+                    tOsc.stop(now + 0.14);
+                    break;
+                    
+                case 'catch':
+                    // snappy catching snap
+                    const cOsc = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc.type = 'sine';
+                    cOsc.frequency.setValueAtTime(280 * pitchModifier, now);
+                    cGain.gain.setValueAtTime(0.2, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc.start();
+                    cOsc.stop(now + 0.08);
+                    break;
+
+                case 'bounce':
+                    // Cushion metallic click bounce
+                    const bOsc = audioCtx.createOscillator();
+                    const bGain = audioCtx.createGain();
+                    bOsc.type = 'sine';
+                    bOsc.frequency.setValueAtTime(440, now);
+                    bGain.gain.setValueAtTime(0.15, now);
+                    bGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    bOsc.connect(bGain);
+                    bGain.connect(audioCtx.destination);
+                    bOsc.start();
+                    bOsc.stop(now + 0.1);
+                    break;
+
+                case 'siren':
+                    // Score alarm
+                    const sOsc = audioCtx.createOscillator();
+                    const sGain = audioCtx.createGain();
+                    sOsc.type = 'sawtooth';
+                    sOsc.frequency.setValueAtTime(600, now);
+                    sOsc.frequency.linearRampToValueAtTime(300, now + 0.4);
+                    sGain.gain.setValueAtTime(0.2, now);
+                    sGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    sOsc.connect(sGain);
+                    sGain.connect(audioCtx.destination);
+                    sOsc.start();
+                    sOsc.stop(now + 0.4);
+                    break;
+
+                case 'thud':
+                    // Turf falling drop thud
+                    const thOsc = audioCtx.createOscillator();
+                    const thGain = audioCtx.createGain();
+                    thOsc.type = 'sine';
+                    thOsc.frequency.setValueAtTime(90, now);
+                    thGain.gain.setValueAtTime(0.3, now);
+                    thGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    thOsc.connect(thGain);
+                    thGain.connect(audioCtx.destination);
+                    thOsc.start();
+                    thOsc.stop(now + 0.25);
+                    break;
+
+                case 'chime':
+                    // Point arpeggio chime chords
+                    const chords = [261.63, 329.63, 392.00, 523.25]; // C, E, G, C5
+                    chords.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                        gain.gain.setValueAtTime(0.08, now + idx * 0.06);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.06 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.06);
+                        osc.stop(now + idx * 0.06 + 0.3);
+                    });
+                    break;
+
+                case 'victory':
+                    const vNotes = [293.66, 349.23, 440.00, 523.25, 698.46]; // D-Minor arpeggio
+                    vNotes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.06);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.06 + 0.45);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.06);
+                        osc.stop(now + idx * 0.06 + 0.45);
+                    });
+                    break;
+
+                case 'defeat':
+                    const goOsc = audioCtx.createOscillator();
+                    const goGain = audioCtx.createGain();
+                    goOsc.type = 'sawtooth';
+                    goOsc.frequency.setValueAtTime(220, now);
+                    goOsc.frequency.linearRampToValueAtTime(50, now + 0.6);
+                    goGain.gain.setValueAtTime(0.2, now);
+                    goGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    goOsc.connect(goGain);
+                    goGain.connect(audioCtx.destination);
+                    goOsc.start();
+                    goOsc.stop(now + 0.6);
+                    break;
+            }
+        }
+
+        // Particle Generators
+        function createSparks(x, y, color, count = 10, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.5,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        // Match setup managers
+        function setupMatch(targetLevel) {
+            level = targetLevel;
+            hudLevel.textContent = level;
+
+            playerScore = 0;
+            aiScore = 0;
+            serveWinner = 'player';
+
+            hudPlayerScore.textContent = playerScore;
+            hudAiScore.textContent = aiScore;
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            victoryScreen.classList.remove('active');
+
+            setupServe();
+        }
+
+        function setupServe() {
+            gameState = 'PLAYING';
+            rallySpeedMultiplier = 1.0;
+            hudSpeed.textContent = "1.0x";
+
+            player.x = 120;
+            player.y = 200;
+            player.vx = 0;
+            player.vy = 0;
+            player.state = 'FREE';
+
+            ai.x = 600;
+            ai.y = 200;
+            ai.vx = 0;
+            ai.vy = 0;
+            ai.state = 'FREE';
+
+            disc.trail = [];
+            disc.curveAmplitude = 0;
+            disc.curveTimer = 0;
+
+            if (serveWinner === 'player') {
+                player.state = 'HOLDING';
+                disc.state = 'HELD';
+                disc.x = player.x + 15;
+                disc.y = player.y;
+            } else {
+                ai.state = 'HOLDING';
+                ai.holdTimer = 25; // wait a bit before serving
+                disc.state = 'HELD';
+                disc.x = ai.x - 15;
+                disc.y = ai.y;
+            }
+        }
+
+        function registerPoint(winner, pts, label) {
+            gameState = 'POINT_SCORED';
+
+            if (winner === 'player') {
+                playerScore += pts;
+                serveWinner = 'player';
+                scoreMessage = {
+                    text: `${label}! +${pts}`,
+                    x: 180,
+                    y: 160,
+                    color: 'var(--primary-glow)',
+                    life: 1.0
+                };
+                createSparks(disc.x, disc.y, 'var(--primary-glow)', 20, 5);
+            } else {
+                aiScore += pts;
+                serveWinner = 'ai';
+                scoreMessage = {
+                    text: `${label}! +${pts}`,
+                    x: 540,
+                    y: 160,
+                    color: 'var(--secondary-glow)',
+                    life: 1.0
+                };
+                createSparks(disc.x, disc.y, 'var(--secondary-glow)', 20, 5);
+            }
+
+            hudPlayerScore.textContent = playerScore;
+            hudAiScore.textContent = aiScore;
+            playSound('chime');
+
+            // check win condition (15 points, win by 2)
+            if (playerScore >= 15 && playerScore - aiScore >= 2) {
+                setTimeout(concludeMatchVictory, 1000);
+            } else if (aiScore >= 15 && aiScore - playerScore >= 2) {
+                setTimeout(concludeMatchDefeat, 1000);
+            } else {
+                clearTimeout(resetTimer);
+                resetTimer = setTimeout(setupServe, 1500);
+            }
+        }
+
+        function concludeMatchVictory() {
+            gameState = 'VICTORY';
+            playSound('victory');
+            
+            if (playerScore > bestScore) {
+                bestScore = playerScore;
+                localStorage.setItem('neonDiscBest', bestScore);
+                hudBest.textContent = bestScore;
+            }
+
+            victoryScreen.classList.add('active');
+        }
+
+        function concludeMatchDefeat() {
+            gameState = 'GAMEOVER';
+            playSound('defeat');
+            finalScore.textContent = `${playerScore} - ${aiScore}`;
+            gameOverScreen.classList.add('active');
+        }
+
+        // execute release triggers curve parameters calculations
+        function performThrow(character, angle, isLob = false) {
+            initAudio();
+            character.state = 'FREE';
+            
+            disc.state = isLob ? 'LOBBED' : 'FLYING';
+            disc.trail = [];
+            disc.curveTimer = 0;
+
+            const isPlayer = character === player;
+            const dirX = isPlayer ? 1 : -1;
+
+            // Base launch speeds
+            const speed = BASE_DISC_SPEED * rallySpeedMultiplier;
+
+            if (isLob) {
+                // Lob setup
+                disc.x = character.x;
+                disc.y = character.y;
+                disc.lobRatio = 0;
+                disc.targetX = isPlayer ? 580 + (Math.random()-0.5)*100 : 140 + (Math.random()-0.5)*100;
+                disc.targetY = 100 + Math.random()*200;
+                
+                playSound('throw', 0.85);
+            } else {
+                // Straight / Curve setup
+                disc.x = character.x + (isPlayer ? 18 : -18);
+                disc.y = charCenterY(character);
+                disc.vx = Math.cos(angle) * speed * dirX;
+                disc.vy = Math.sin(angle) * speed;
+
+                // Curve bending offset checks
+                // If moving vertically during release, apply curve amplitude
+                let moveY = 0;
+                if (isPlayer) {
+                    if (keys.w || keys.ArrowUp || mobileUp) moveY = -1;
+                    if (keys.s || keys.ArrowDown || mobileDown) moveY = 1;
+                } else {
+                    // AI curve decisions
+                    if (Math.random() < 0.45) moveY = Math.random() > 0.5 ? 1 : -1;
+                }
+
+                if (moveY !== 0) {
+                    disc.curveAmplitude = moveY * (4.2 + level * 0.5); // curve amount scales
+                } else {
+                    disc.curveAmplitude = 0;
+                }
+
+                playSound('throw', 1.0 + (rallySpeedMultiplier - 1.0)*0.1);
+            }
+        }
+
+        function charCenterY(char) {
+            return char.y;
+        }
+
+        // AI logical intercept and slides
+        function updateAi() {
+            if (gameState !== 'PLAYING') return;
+
+            const aiSpeed = 4.0 + level * 0.5; // AI speed scales 4.5 to 6.5
+
+            if (ai.state === 'HOLDING') {
+                ai.holdTimer--;
+                if (ai.holdTimer <= 0) {
+                    // AI releases throw towards player's corners
+                    const aimForCorner = Math.random() > 0.5;
+                    // angle relative to leftward horizontal vector
+                    const angle = aimForCorner ? -Math.PI / 6 : Math.PI / 6;
+
+                    // Decides if lobbing randomly
+                    const isLob = Math.random() < 0.15 + (level * 0.03);
+                    performThrow(ai, angle, isLob);
+                }
+            } else {
+                // Intercept logic: target coordinates
+                let targetX = 600;
+                let targetY = 200;
+
+                if (disc.state === 'FLYING' && disc.vx > 0) {
+                    targetX = disc.x;
+                    targetY = disc.y;
+                } else if (disc.state === 'LOBBED') {
+                    // run directly to the landing shadow target
+                    targetX = disc.targetX;
+                    targetY = disc.targetY;
+                }
+
+                // AI runs horizontally and vertically
+                const diffX = targetX - ai.x;
+                const diffY = targetY - ai.y;
+
+                if (Math.abs(diffX) > 10) {
+                    ai.vx = diffX > 0 ? aiSpeed : -aiSpeed;
+                } else {
+                    ai.vx = 0;
+                }
+
+                if (Math.abs(diffY) > 10) {
+                    ai.vy = diffY > 0 ? aiSpeed : -aiSpeed;
+                } else {
+                    ai.vy = 0;
+                }
+            }
+        }
+
+        // Kinematics and coordinate limits bounds updates
+        function updatePhysics() {
+            if (gameState !== 'PLAYING') return;
+
+            // 1. Move Player
+            const pSpeed = 5.2;
+            player.vx = 0;
+            player.vy = 0;
+
+            if (player.state === 'FREE') {
+                if (keys.a || keys.ArrowLeft || mobileLeft) player.vx = -pSpeed;
+                if (keys.d || keys.ArrowRight || mobileRight) player.vx = pSpeed;
+                if (keys.w || keys.ArrowUp || mobileUp) player.vy = -pSpeed;
+                if (keys.s || keys.ArrowDown || mobileDown) player.vy = pSpeed;
+            }
+
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Bounds check Player left half court
+            if (player.x < COURT_LEFT + player.r) player.x = COURT_LEFT + player.r;
+            if (player.x > CENTER_X - 25) player.x = CENTER_X - 25; // Net clearance
+            if (player.y < COURT_TOP + player.r) player.y = COURT_TOP + player.r;
+            if (player.y > COURT_BOTTOM - player.r) player.y = COURT_BOTTOM - player.r;
+
+            // 2. Move AI
+            updateAi();
+            ai.x += ai.vx;
+            ai.y += ai.vy;
+
+            // Bounds check AI right half court
+            if (ai.x > COURT_RIGHT - ai.r) ai.x = COURT_RIGHT - ai.r;
+            if (ai.x < CENTER_X + 25) ai.x = CENTER_X + 25;
+            if (ai.y < COURT_TOP + ai.r) ai.y = COURT_TOP + ai.r;
+            if (ai.y > COURT_BOTTOM - ai.r) ai.y = COURT_BOTTOM - ai.r;
+
+            // 3. Aiming line sweep update
+            aimAngle += aimSweepDirection * 0.045;
+            if (aimAngle > Math.PI / 4.5) {
+                aimAngle = Math.PI / 4.5;
+                aimSweepDirection = -1;
+            } else if (aimAngle < -Math.PI / 4.5) {
+                aimAngle = -Math.PI / 4.5;
+                aimSweepDirection = 1;
+            }
+
+            // 4. Update Disc Physics
+            if (disc.state === 'HELD') {
+                if (player.state === 'HOLDING') {
+                    disc.x = player.x + 15;
+                    disc.y = player.y;
+                } else {
+                    disc.x = ai.x - 15;
+                    disc.y = ai.y;
+                }
+            }
+
+            else if (disc.state === 'FLYING') {
+                // Apply curve formula updates
+                if (disc.curveAmplitude !== 0) {
+                    disc.curveTimer += disc.curveFreq;
+                    // add sinusoidal force perpendicular to movement Y
+                    disc.vy += Math.cos(disc.curveTimer) * disc.curveAmplitude * 0.08;
+                }
+
+                disc.x += disc.vx;
+                disc.y += disc.vy;
+
+                // Save trail
+                disc.trail.push({ x: disc.x, y: disc.y });
+                if (disc.trail.length > 10) disc.trail.shift();
+
+                // Top/Bottom cushions bounce checks
+                if (disc.y <= COURT_TOP + disc.r) {
+                    disc.y = COURT_TOP + disc.r;
+                    disc.vy = -disc.vy;
+                    playSound('bounce');
+                }
+                if (disc.y >= COURT_BOTTOM - disc.r) {
+                    disc.y = COURT_BOTTOM - disc.r;
+                    disc.vy = -disc.vy;
+                    playSound('bounce');
+                }
+
+                // Opponent catching collision overlaps verification
+                if (disc.vx < 0 && player.state === 'FREE') {
+                    const dist = Math.hypot(disc.x - player.x, disc.y - player.y);
+                    if (dist < player.r + disc.r + 5) {
+                        player.state = 'HOLDING';
+                        disc.state = 'HELD';
+                        rallySpeedMultiplier += 0.12; // accelerate next shot
+                        hudSpeed.textContent = rallySpeedMultiplier.toFixed(1) + "x";
+                        playSound('catch');
+                        createSparks(disc.x, disc.y, 'var(--primary-glow)', 8, 2.5);
+                    }
+                } else if (disc.vx > 0 && ai.state === 'FREE') {
+                    const dist = Math.hypot(disc.x - ai.x, disc.y - ai.y);
+                    if (dist < ai.r + disc.r + 5) {
+                        ai.state = 'HOLDING';
+                        ai.holdTimer = 25 - level * 2; // AI holds less at higher levels
+                        disc.state = 'HELD';
+                        rallySpeedMultiplier += 0.12;
+                        hudSpeed.textContent = rallySpeedMultiplier.toFixed(1) + "x";
+                        playSound('catch');
+                        createSparks(disc.x, disc.y, 'var(--secondary-glow)', 8, 2.5);
+                    }
+                }
+
+                // Goal hits validations
+                if (disc.x <= COURT_LEFT) {
+                    // Left Goal (AI scores)
+                    playSound('siren');
+                    const corner = (disc.y < CORNER_TOP || disc.y > CORNER_BOTTOM);
+                    registerPoint('ai', corner ? 5 : 3, corner ? "KÖŞE GOL" : "ORTA GOL");
+                }
+                else if (disc.x >= COURT_RIGHT) {
+                    // Right Goal (Player scores)
+                    playSound('siren');
+                    const corner = (disc.y < CORNER_TOP || disc.y > CORNER_BOTTOM);
+                    registerPoint('player', corner ? 5 : 3, corner ? "KÖŞE GOL" : "ORTA GOL");
+                }
+            }
+
+            else if (disc.state === 'LOBBED') {
+                disc.lobRatio += 1 / disc.lobDuration;
+
+                // lerp coordinates
+                disc.x = disc.x + (disc.targetX - disc.x) * 0.08;
+                disc.y = disc.y + (disc.targetY - disc.y) * 0.08;
+
+                // Save trail
+                disc.trail.push({ x: disc.x, y: disc.y });
+                if (disc.trail.length > 8) disc.trail.shift();
+
+                // Opponent catches overlapping target checks when landing
+                if (disc.lobRatio >= 0.85) {
+                    if (disc.vx < 0 || disc.targetX < CENTER_X) {
+                        // heading to player side
+                        const dist = Math.hypot(disc.x - player.x, disc.y - player.y);
+                        if (dist < player.r + 15) {
+                            player.state = 'HOLDING';
+                            disc.state = 'HELD';
+                            rallySpeedMultiplier += 0.12;
+                            hudSpeed.textContent = rallySpeedMultiplier.toFixed(1) + "x";
+                            playSound('catch');
+                            return;
+                        }
+                    } else {
+                        // heading to AI side
+                        const dist = Math.hypot(disc.x - ai.x, disc.y - ai.y);
+                        if (dist < ai.r + 15) {
+                            ai.state = 'HOLDING';
+                            ai.holdTimer = 25 - level * 2;
+                            disc.state = 'HELD';
+                            rallySpeedMultiplier += 0.12;
+                            hudSpeed.textContent = rallySpeedMultiplier.toFixed(1) + "x";
+                            playSound('catch');
+                            return;
+                        }
+                    }
+                }
+
+                // If ratio reaches 1.0 and uncaught -> turf drop point
+                if (disc.lobRatio >= 1.0) {
+                    playSound('thud');
+                    createSparks(disc.x, disc.y, 'var(--accent-glow)', 15, 3);
+                    
+                    if (disc.x < CENTER_X) {
+                        registerPoint('ai', 2, "AŞIRTMA SAYI");
+                    } else {
+                        registerPoint('player', 2, "AŞIRTMA SAYI");
+                    }
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.08;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Render main Canvas layers
+        function drawBackground() {
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Court cyber grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw Court border cushions lines
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.lineWidth = 4;
+            
+            // Top cushion
+            ctx.beginPath();
+            ctx.moveTo(COURT_LEFT, COURT_TOP);
+            ctx.lineTo(COURT_RIGHT, COURT_TOP);
+            ctx.stroke();
+
+            // Bottom cushion
+            ctx.beginPath();
+            ctx.moveTo(COURT_LEFT, COURT_BOTTOM);
+            ctx.lineTo(COURT_RIGHT, COURT_BOTTOM);
+            ctx.stroke();
+
+            // Center Net line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.moveTo(CENTER_X, COURT_TOP);
+            ctx.lineTo(CENTER_X, COURT_BOTTOM);
+            ctx.stroke();
+
+            // Goal Net graphics scoring zones boxes
+            const goalWidth = 10;
+            // Left Goals
+            drawGoalGraphic(COURT_LEFT - goalWidth, COURT_TOP, goalWidth, COURT_BOTTOM - COURT_TOP);
+            // Right Goals
+            drawGoalGraphic(COURT_RIGHT, COURT_TOP, goalWidth, COURT_BOTTOM - COURT_TOP);
+        }
+
+        function drawGoalGraphic(x, y, w, h) {
+            // Draw center 3-point net box
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 23, 68, 0.15)'; // Red for 3-pt
+            ctx.fillRect(x, y + (CORNER_TOP - COURT_TOP), w, CORNER_BOTTOM - CORNER_TOP);
+            ctx.strokeStyle = 'var(--danger-glow)';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x, y + (CORNER_TOP - COURT_TOP), w, CORNER_BOTTOM - CORNER_TOP);
+
+            // Draw top 5-point net box
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.15)'; // Gold for 5-pt
+            ctx.fillRect(x, y, w, CORNER_TOP - y);
+            ctx.strokeStyle = 'var(--accent-glow)';
+            ctx.strokeRect(x, y, w, CORNER_TOP - y);
+
+            // Draw bottom 5-point net box
+            ctx.fillRect(x, CORNER_BOTTOM, w, COURT_BOTTOM - CORNER_BOTTOM);
+            ctx.strokeRect(x, CORNER_BOTTOM, w, COURT_BOTTOM - CORNER_BOTTOM);
+            ctx.restore();
+        }
+
+        function drawCharacters() {
+            const chars = [player, ai];
+            for (let char of chars) {
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = char.glow;
+                ctx.fillStyle = char.color;
+
+                // Character core circle
+                ctx.beginPath();
+                ctx.arc(char.x, char.y, char.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyes details
+                const facingRight = char === player;
+                const eyeX = char.x + (facingRight ? 5 : -5);
+                const eyeY = char.y - 4;
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(eyeX, eyeY, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(eyeX + (facingRight ? 1 : -1), eyeY, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Aiming Dotted Line indicator when HOLDING disc
+                if (char.state === 'HOLDING' && char === player) {
+                    ctx.save();
+                    ctx.strokeStyle = 'var(--accent-glow)';
+                    ctx.lineWidth = 2.5;
+                    ctx.setLineDash([5, 5]);
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = 'var(--accent-glow)';
+                    ctx.beginPath();
+                    ctx.moveTo(char.x, char.y);
+                    ctx.lineTo(char.x + Math.cos(aimAngle) * 90, char.y + Math.sin(aimAngle) * 90);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function drawDisc() {
+            if (disc.state === 'HELD') return;
+
+            // Draw shadow indicator for LOBBED states
+            if (disc.state === 'LOBBED') {
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.12)';
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.arc(disc.targetX, disc.targetY, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Draw flying trails
+            ctx.save();
+            for (let i = 0; i < disc.trail.length; i++) {
+                const ratio = i / disc.trail.length;
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                ctx.globalAlpha = ratio * 0.4;
+                ctx.beginPath();
+                ctx.arc(disc.trail[i].x, disc.trail[i].y, disc.r * ratio, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Draw Disc core body
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'var(--accent-glow)';
+            ctx.strokeStyle = 'var(--accent-glow)';
+            ctx.lineWidth = 4;
+            ctx.fillStyle = '#ffffff';
+
+            let drawR = disc.r;
+            if (disc.state === 'LOBBED') {
+                // scale size by parabola height
+                const zHeight = Math.sin(disc.lobRatio * Math.PI) * 22;
+                drawR = disc.r + zHeight * 0.45;
+            }
+
+            ctx.beginPath();
+            ctx.arc(disc.x, disc.y, drawR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner styling circle
+            ctx.strokeStyle = '#02010c';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(disc.x, disc.y, drawR * 0.5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawScoreMessage() {
+            if (!scoreMessage) return;
+
+            ctx.save();
+            ctx.globalAlpha = scoreMessage.life;
+            ctx.font = "800 1.45rem 'Outfit'";
+            ctx.fillStyle = scoreMessage.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = scoreMessage.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(scoreMessage.text, scoreMessage.x, scoreMessage.y);
+            ctx.restore();
+
+            scoreMessage.y -= 0.8;
+            scoreMessage.life -= 0.025;
+            if (scoreMessage.life <= 0) {
+                scoreMessage = null;
+            }
+        }
+
+        // Render main Loop cycle
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawBackground();
+            drawCharacters();
+            drawDisc();
+            drawParticles();
+            drawScoreMessage();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Event button handlers
+        function startGame() {
+            initAudio();
+            setupMatch(1);
+        }
+
+        function playNextLevel() {
+            setupMatch(level + 1);
+        }
+
+        // Controls Bindings
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || e.key === 'ArrowUp') keys.w = true;
+            if (k === 's' || e.key === 'ArrowDown') keys.s = true;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.a = true;
+            if (k === 'd' || e.key === 'ArrowRight') keys.d = true;
+            
+            // Throw actions
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                if (player.state === 'HOLDING') {
+                    performThrow(player, aimAngle, false);
+                }
+            }
+
+            // Lob actions (Shift or X)
+            if (e.key === 'Shift' || k === 'x') {
+                e.preventDefault();
+                if (player.state === 'HOLDING') {
+                    performThrow(player, aimAngle, true);
+                }
+            }
+
+            initAudio();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || e.key === 'ArrowUp') keys.w = false;
+            if (k === 's' || e.key === 'ArrowDown') keys.s = false;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.a = false;
+            if (k === 'd' || e.key === 'ArrowRight') keys.d = false;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (player.state === 'HOLDING') {
+                performThrow(player, aimAngle, false);
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (player.state === 'HOLDING') {
+                performThrow(player, aimAngle, false);
+            }
+        }, {passive: false});
+
+        // Mobile panel buttons triggers
+        const mUp = document.getElementById('mUp');
+        const mDown = document.getElementById('mDown');
+        const mLeft = document.getElementById('mLeft');
+        const mRight = document.getElementById('mRight');
+        const mLob = document.getElementById('mLob');
+        const mThrow = document.getElementById('mThrow');
+
+        mUp.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileUp = true; });
+        mUp.addEventListener('touchend', () => mobileUp = false);
+        mDown.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileDown = true; });
+        mDown.addEventListener('touchend', () => mobileDown = false);
+        mLeft.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileLeft = true; });
+        mLeft.addEventListener('touchend', () => mobileLeft = false);
+        mRight.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileRight = true; });
+        mRight.addEventListener('touchend', () => mobileRight = false);
+
+        mThrow.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (player.state === 'HOLDING') {
+                performThrow(player, aimAngle, false);
+            }
+        });
+        mLob.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (player.state === 'HOLDING') {
+                performThrow(player, aimAngle, true);
+            }
+        });
+
+        // HUD overlay button actions
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', () => setupMatch(level));
+        nextBtn.addEventListener('click', playNextLevel);
+
+        // Run Init loop
+        drawBackground();
+        drawCharacters();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
