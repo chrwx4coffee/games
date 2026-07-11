@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Sumo // Cyber Sumo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #00ffcc; /* Player Cyan */
+            --secondary-glow: #ff00ff; /* AI Magenta */
+            --accent-glow: #ffd700; /* Neon Gold Platform */
+            --danger-glow: #ff1744; /* Shrinking Alarm Red */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .mobile-controls {
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+            gap: 20px;
+            padding: 5px 10px;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .m-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        .m-btn:active {
+            background: rgba(0, 255, 204, 0.25);
+            border-color: var(--primary-glow);
+            transform: scale(0.95);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 700px) {
+            .mobile-controls { display: flex; }
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.5rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Sumo</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Seviye</span>
+                <span class="hud-val accent" id="hudLevel">1</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Süre / Platform</span>
+                <span class="hud-val" id="hudTimer" style="color:#fff; font-size:1.15rem; font-weight:800; letter-spacing:0.5px;">12.0s (STABİL)</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Dash Gücü</span>
+                <span class="hud-val primary" id="hudDash">HAZIR</span>
+            </div>
+            <div class="hud-item" style="min-width: 90px;">
+                <span class="hud-label">Skor (Hedef: 5)</span>
+                <span class="hud-val" style="color: #fff;"><span class="player" id="hudPlayerScore">0</span> - <span class="ai" id="hudAiScore">0</span></span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Yüksek</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Sumo</h2>
+                <p>WASD veya Yön Tuşlarını kullanarak bumper kürenizi yönlendirin. Boşluk (Space) tuşuna basarak veya ekrana tıklayarak hızlıca ileri atılın (Dash). <br>Rakibi dairesel platformun kenarından aşağı iterek sayı kazanın! 8 saniyeden sonra platform küçülmeye başlar.</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Mağlubiyet!</h2>
+                <p>Maçı Yapay Zekaya karşı kaybettiniz. Toplam Skor: <span id="finalScore" style="color:var(--secondary-glow); font-weight:800;">0 - 0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+
+            <!-- Victory Screen Overlay -->
+            <div class="overlay" id="victoryScreen">
+                <h2 class="win">Zafer Senin!</h2>
+                <p>Tebrikler! Bir sonraki seviyede Yapay Zeka daha agresif manevralar yapacak ve vuruş savuşturma refleksleri artacak.</p>
+                <button class="btn" id="nextBtn">Sonraki Seviye</button>
+            </div>
+        </div>
+
+        <!-- Mobile Controls Panel -->
+        <div class="mobile-controls">
+            <div class="control-group">
+                <div class="m-btn" id="mUp">↑</div>
+                <div class="m-btn" id="mDown">↓</div>
+                <div class="m-btn" id="mLeft">←</div>
+                <div class="m-btn" id="mRight">→</div>
+            </div>
+            <div class="m-btn" id="mDash" style="background:rgba(0, 255, 204, 0.15); border-color:var(--primary-glow);">💥</div>
+        </div>
+
+        <div class="hint">Yönlendirme: WASD / Yön Tuşları // Dash Hız Atılımı: Boşluk (Space) / Shift / Tıklama.<br>Dash atılımı çarpışma anındaki itme gücünüzü iki katına çıkarır!</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLevel = document.getElementById('hudLevel');
+        const hudTimer = document.getElementById('hudTimer');
+        const hudDash = document.getElementById('hudDash');
+        const hudPlayerScore = document.getElementById('hudPlayerScore');
+        const hudAiScore = document.getElementById('hudAiScore');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const ARENA_CENTER_X = 360;
+        const ARENA_CENTER_Y = 200;
+        const INITIAL_RADIUS = 175;
+        const MIN_RADIUS = 60;
+        const SPHERE_RADIUS = 18;
+        const FRICTION = 0.94; // Inertia damping factor
+
+        // Game State Variables
+        let level = 1;
+        let playerScore = 0;
+        let aiScore = 0;
+        let bestScore = Math.floor(localStorage.getItem('neonSumoBest')) || 0;
+        hudBest.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING, POINT_SCORED, GAMEOVER, VICTORY
+        let currentRadius = INITIAL_RADIUS;
+        let roundTimeFrames = 0; // tracking time inside a round
+        let resetTimer = null;
+        let scoreMessage = null; // {text, x, y, life, color}
+
+        // Entities
+        let player = {
+            x: 260,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            r: SPHERE_RADIUS,
+            color: 'var(--primary-glow)',
+            glow: '#00ffcc',
+            state: 'FREE', // FREE, FALLING
+            fallScale: 1.0,
+            dashCooldown: 0,
+            dashTimer: 0,
+            trail: []
+        };
+
+        let ai = {
+            x: 460,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            r: SPHERE_RADIUS,
+            color: 'var(--secondary-glow)',
+            glow: '#ff00ff',
+            state: 'FREE',
+            fallScale: 1.0,
+            dashCooldown: 0,
+            dashTimer: 0,
+            trail: []
+        };
+
+        // Keyboard Controls
+        let keys = {
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            Space: false,
+            Shift: false
+        };
+
+        // Mobile Controls states
+        let mobileLeft = false;
+        let mobileRight = false;
+        let mobileUp = false;
+        let mobileDown = false;
+
+        let particles = [];
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        let engineHumNode = null;
+        let engineGainNode = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                startEngineHum();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startEngineHum() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                engineHumNode = audioCtx.createOscillator();
+                engineGainNode = audioCtx.createGain();
+                
+                engineHumNode.type = 'triangle';
+                engineHumNode.frequency.setValueAtTime(60, now);
+                engineGainNode.gain.setValueAtTime(0.015, now);
+
+                engineHumNode.connect(engineGainNode);
+                engineGainNode.connect(audioCtx.destination);
+                engineHumNode.start();
+            } catch (e) {
+                console.error("Engine hum error:", e);
+            }
+        }
+
+        function updateEngineHum() {
+            if (!engineHumNode || !engineGainNode || gameState !== 'PLAYING') return;
+            const pSpeed = Math.hypot(player.vx, player.vy);
+            const targetFreq = 55 + pSpeed * 10.5;
+            const targetVolume = 0.012 + pSpeed * 0.008;
+
+            const now = audioCtx.currentTime;
+            engineHumNode.frequency.setTargetAtTime(targetFreq, now, 0.05);
+            engineGainNode.gain.setTargetAtTime(targetVolume, now, 0.05);
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'clash':
+                    // Heavy metal chime strike (combining high chime sine and noise sweep)
+                    const cOsc = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc.type = 'sine';
+                    cOsc.frequency.setValueAtTime(260 * pitchModifier, now);
+                    cOsc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+                    cGain.gain.setValueAtTime(0.35, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc.start();
+                    cOsc.stop(now + 0.25);
+
+                    // noise clang
+                    const bufSize = audioCtx.sampleRate * 0.08;
+                    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < bufSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buf;
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 850;
+                    const nGain = audioCtx.createGain();
+                    nGain.gain.setValueAtTime(0.25, now);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+                    noise.connect(filter);
+                    filter.connect(nGain);
+                    nGain.connect(audioCtx.destination);
+                    noise.start();
+                    noise.stop(now + 0.08);
+                    break;
+                    
+                case 'dash':
+                    // Whoosh high sweep
+                    const dOsc = audioCtx.createOscillator();
+                    const dGain = audioCtx.createGain();
+                    dOsc.type = 'triangle';
+                    dOsc.frequency.setValueAtTime(220, now);
+                    dOsc.frequency.exponentialRampToValueAtTime(800 * pitchModifier, now + 0.15);
+                    dGain.gain.setValueAtTime(0.16, now);
+                    dGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    dOsc.connect(dGain);
+                    dGain.connect(audioCtx.destination);
+                    dOsc.start();
+                    dOsc.stop(now + 0.15);
+                    break;
+
+                case 'fall':
+                    // Siren falling pitch
+                    const fOsc = audioCtx.createOscillator();
+                    const fGain = audioCtx.createGain();
+                    fOsc.type = 'sawtooth';
+                    fOsc.frequency.setValueAtTime(400, now);
+                    fOsc.frequency.linearRampToValueAtTime(60, now + 0.8);
+                    fGain.gain.setValueAtTime(0.22, now);
+                    fGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                    fOsc.connect(fGain);
+                    fGain.connect(audioCtx.destination);
+                    fOsc.start();
+                    fOsc.stop(now + 0.8);
+                    break;
+
+                case 'chime':
+                    // Scoring chime arpeggio chord
+                    const notes = [329.63, 392.00, 523.25, 659.25]; // E4, G4, C5, E5
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                        gain.gain.setValueAtTime(0.1, now + idx * 0.07);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.07 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.07);
+                        osc.stop(now + idx * 0.07 + 0.35);
+                    });
+                    break;
+
+                case 'victory':
+                    const vNotes = [261.63, 329.63, 392.00, 523.25, 783.99]; // C-Major arpeggio
+                    vNotes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                        gain.gain.setValueAtTime(0.16, now + idx * 0.06);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.06 + 0.45);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.06);
+                        osc.stop(now + idx * 0.06 + 0.45);
+                    });
+                    break;
+
+                case 'defeat':
+                    const goOsc = audioCtx.createOscillator();
+                    const goGain = audioCtx.createGain();
+                    goOsc.type = 'sawtooth';
+                    goOsc.frequency.setValueAtTime(180, now);
+                    goOsc.frequency.linearRampToValueAtTime(50, now + 0.7);
+                    goGain.gain.setValueAtTime(0.25, now);
+                    goGain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                    goOsc.connect(goGain);
+                    goGain.connect(audioCtx.destination);
+                    goOsc.start();
+                    goOsc.stop(now + 0.7);
+                    break;
+            }
+        }
+
+        // Particle Generators
+        function createSparks(x, y, color, count = 10, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        // Match setup managers
+        function setupMatch(targetLevel) {
+            level = targetLevel;
+            hudLevel.textContent = level;
+
+            playerScore = 0;
+            aiScore = 0;
+
+            hudPlayerScore.textContent = playerScore;
+            hudAiScore.textContent = aiScore;
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            victoryScreen.classList.remove('active');
+
+            setupRound();
+        }
+
+        function setupRound() {
+            gameState = 'PLAYING';
+            currentRadius = INITIAL_RADIUS;
+            roundTimeFrames = 0;
+            hudTimer.textContent = "12.0s (STABİL)";
+            hudTimer.style.color = '#fff';
+
+            // Reset entities
+            player.x = 260;
+            player.y = 200;
+            player.vx = 0;
+            player.vy = 0;
+            player.state = 'FREE';
+            player.fallScale = 1.0;
+            player.dashCooldown = 0;
+            player.dashTimer = 0;
+            player.trail = [];
+
+            ai.x = 460;
+            ai.y = 200;
+            ai.vx = 0;
+            ai.vy = 0;
+            ai.state = 'FREE';
+            ai.fallScale = 1.0;
+            ai.dashCooldown = 0;
+            ai.dashTimer = 0;
+            ai.trail = [];
+        }
+
+        function registerPoint(winner) {
+            gameState = 'POINT_SCORED';
+            playSound('fall');
+
+            if (winner === 'player') {
+                playerScore++;
+                scoreMessage = {
+                    text: 'PUAN OYUNCUYA! +1',
+                    x: ARENA_CENTER_X,
+                    y: ARENA_CENTER_Y,
+                    color: 'var(--primary-glow)',
+                    life: 1.0
+                };
+                createSparks(ai.x, ai.y, 'var(--primary-glow)', 20, 5);
+            } else {
+                aiScore++;
+                scoreMessage = {
+                    text: 'PUAN YAPAY ZEKAYA! +1',
+                    x: ARENA_CENTER_X,
+                    y: ARENA_CENTER_Y,
+                    color: 'var(--secondary-glow)',
+                    life: 1.0
+                };
+                createSparks(player.x, player.y, 'var(--secondary-glow)', 20, 5);
+            }
+
+            hudPlayerScore.textContent = playerScore;
+            hudAiScore.textContent = aiScore;
+            playSound('chime');
+
+            // check win condition (5 points)
+            if (playerScore >= 5) {
+                setTimeout(concludeMatchVictory, 1200);
+            } else if (aiScore >= 5) {
+                setTimeout(concludeMatchDefeat, 1200);
+            } else {
+                clearTimeout(resetTimer);
+                resetTimer = setTimeout(setupRound, 1800);
+            }
+        }
+
+        function concludeMatchVictory() {
+            gameState = 'VICTORY';
+            playSound('victory');
+            
+            if (playerScore > bestScore) {
+                bestScore = playerScore;
+                localStorage.setItem('neonSumoBest', bestScore);
+                hudBest.textContent = bestScore;
+            }
+
+            victoryScreen.classList.add('active');
+        }
+
+        function concludeMatchDefeat() {
+            gameState = 'GAMEOVER';
+            playSound('defeat');
+            finalScore.textContent = `${playerScore} - ${aiScore}`;
+            gameOverScreen.classList.add('active');
+        }
+
+        // dash triggers
+        function triggerDash(char) {
+            if (char.dashCooldown > 0 || char.state !== 'FREE') return;
+            
+            // direction calculation
+            let dx = 0;
+            let dy = 0;
+
+            if (char === player) {
+                if (keys.a || keys.ArrowLeft || mobileLeft) dx = -1;
+                if (keys.d || keys.ArrowRight || mobileRight) dx = 1;
+                if (keys.w || keys.ArrowUp || mobileUp) dy = -1;
+                if (keys.s || keys.ArrowDown || mobileDown) dy = 1;
+                
+                // If not moving, dash in facing center relative direction
+                if (dx === 0 && dy === 0) {
+                    dx = Math.sign(ARENA_CENTER_X - player.x);
+                    dy = Math.sign(ARENA_CENTER_Y - player.y);
+                }
+            } else {
+                // AI dashes towards player
+                const diffX = player.x - ai.x;
+                const diffY = player.y - ai.y;
+                const dist = Math.hypot(diffX, diffY);
+                dx = diffX / dist;
+                dy = diffY / dist;
+            }
+
+            char.vx += dx * 9.5;
+            char.vy += dy * 9.5;
+            char.dashTimer = 11;
+            char.dashCooldown = 90; // 1.5 seconds
+
+            playSound('dash');
+            createSparks(char.x, char.y, char.color, 12, 4);
+        }
+
+        // AI logical updates
+        function updateAi() {
+            if (gameState !== 'PLAYING' || ai.state !== 'FREE') return;
+
+            const aiAccel = 0.16 + level * 0.02; // AI acceleration scales: 0.18 to 0.26
+            const distToCenter = Math.hypot(ai.x - ARENA_CENTER_X, ai.y - ARENA_CENTER_Y);
+
+            // Defensive Center-Fleeing: prioritizes staying inside ring over chasing player
+            if (distToCenter > currentRadius - 38) {
+                // run back to center
+                const cx = ARENA_CENTER_X - ai.x;
+                const cy = ARENA_CENTER_Y - ai.y;
+                const cDist = Math.hypot(cx, cy);
+                ai.vx += (cx / cDist) * aiAccel * 1.35;
+                ai.vy += (cy / cDist) * aiAccel * 1.35;
+
+                // desperate defense slide/dash back to center
+                if (distToCenter > currentRadius - 22 && ai.dashCooldown <= 0) {
+                    triggerDash(ai);
+                }
+            } else {
+                // normal chase target player
+                const px = player.x - ai.x;
+                const py = player.y - ai.y;
+                const dist = Math.hypot(px, py);
+
+                ai.vx += (px / dist) * aiAccel;
+                ai.vy += (py / dist) * aiAccel;
+
+                // Dash strike checks when player is close and AI alignment is clear
+                if (dist < 80 && ai.dashCooldown <= 0 && Math.random() < 0.08) {
+                    triggerDash(ai);
+                }
+            }
+        }
+
+        // Kinematics and circle elastic collisions updates
+        function updatePhysics() {
+            if (gameState !== 'PLAYING') return;
+
+            roundTimeFrames++;
+            const totalSec = 12.0 - (roundTimeFrames / 60);
+
+            // 1. Arena shrinking logic
+            if (roundTimeFrames > 480) { // 8 seconds have passed
+                currentRadius -= 0.16;
+                if (currentRadius < MIN_RADIUS) currentRadius = MIN_RADIUS;
+
+                hudTimer.textContent = `${Math.max(0, totalSec).toFixed(1)}s (DARALIYOR!)`;
+                hudTimer.style.color = 'var(--danger-glow)';
+            } else {
+                hudTimer.textContent = `${totalSec.toFixed(1)}s (STABİL)`;
+                hudTimer.style.color = '#fff';
+            }
+
+            // 2. Move Player
+            if (player.state === 'FREE') {
+                const accel = 0.20;
+                if (keys.a || keys.ArrowLeft || mobileLeft) player.vx -= accel;
+                if (keys.d || keys.ArrowRight || mobileRight) player.vx += accel;
+                if (keys.w || keys.ArrowUp || mobileUp) player.vy -= accel;
+                if (keys.s || keys.ArrowDown || mobileDown) player.vy += accel;
+
+                // space/shift triggers dash
+                if (keys.Space || keys.Shift) {
+                    triggerDash(player);
+                }
+            }
+
+            // Apply friction damping
+            player.vx *= FRICTION;
+            player.vy *= FRICTION;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Cooldowns and trail updates
+            if (player.dashCooldown > 0) {
+                player.dashCooldown--;
+                if (player.dashCooldown === 0) {
+                    hudDash.textContent = "HAZIR";
+                    hudDash.style.color = "var(--primary-glow)";
+                } else {
+                    hudDash.textContent = "BEKLE";
+                    hudDash.style.color = "var(--danger-glow)";
+                }
+            }
+
+            if (player.dashTimer > 0) {
+                player.dashTimer--;
+                player.trail.push({ x: player.x, y: player.y });
+                if (player.trail.length > 5) player.trail.shift();
+            } else {
+                player.trail = [];
+            }
+
+            // 3. Move AI
+            updateAi();
+            ai.vx *= FRICTION;
+            ai.vy *= FRICTION;
+            ai.x += ai.vx;
+            ai.y += ai.vy;
+
+            if (ai.dashCooldown > 0) ai.dashCooldown--;
+            if (ai.dashTimer > 0) {
+                ai.dashTimer--;
+                ai.trail.push({ x: ai.x, y: ai.y });
+                if (ai.trail.length > 5) ai.trail.shift();
+            } else {
+                ai.trail = [];
+            }
+
+            // 4. Circle-Circle elastic collision between players
+            if (player.state === 'FREE' && ai.state === 'FREE') {
+                const dx = ai.x - player.x;
+                const dy = ai.y - player.y;
+                const dist = Math.hypot(dx, dy);
+                const sumRadius = player.r + ai.r;
+
+                if (dist < sumRadius) {
+                    // Push out to resolve overlap
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    const overlap = sumRadius - dist;
+
+                    player.x -= nx * overlap * 0.5;
+                    player.y -= ny * overlap * 0.5;
+                    ai.x += nx * overlap * 0.5;
+                    ai.y += ny * overlap * 0.5;
+
+                    // Elastic impulse velocity vector calculations
+                    const kx = player.vx - ai.vx;
+                    const ky = player.vy - ai.vy;
+                    const vn = kx * nx + ky * ny;
+
+                    if (vn > 0) {
+                        // Impact force calculations
+                        let multiplier = 1.35;
+                        if (player.dashTimer > 0) multiplier += 0.8;
+                        if (ai.dashTimer > 0) multiplier += 0.8;
+
+                        const impulse = vn * multiplier;
+                        player.vx -= impulse * nx * 0.5;
+                        player.vy -= impulse * ny * 0.5;
+                        ai.vx += impulse * nx * 0.5;
+                        ai.vy += impulse * ny * 0.5;
+
+                        playSound('clash', 0.95 + Math.min(0.5, impulse * 0.05));
+                        createSparks((player.x + ai.x)/2, (player.y + ai.y)/2, '#ffffff', 14, 4.0);
+                    }
+                }
+            }
+
+            // 5. Check platform boundary falls
+            const pCenterDist = Math.hypot(player.x - ARENA_CENTER_X, player.y - ARENA_CENTER_Y);
+            const aCenterDist = Math.hypot(ai.x - ARENA_CENTER_X, ai.y - ARENA_CENTER_Y);
+
+            // Player fall check
+            if (player.state === 'FREE' && pCenterDist > currentRadius) {
+                player.state = 'FALLING';
+                player.fallScale = 1.0;
+            }
+            if (player.state === 'FALLING') {
+                player.fallScale -= 0.032;
+                player.vx *= 0.85;
+                player.vy *= 0.85;
+                if (player.fallScale <= 0) {
+                    registerPoint('ai');
+                    return;
+                }
+            }
+
+            // AI fall check
+            if (ai.state === 'FREE' && aCenterDist > currentRadius) {
+                ai.state = 'FALLING';
+                ai.fallScale = 1.0;
+            }
+            if (ai.state === 'FALLING') {
+                ai.fallScale -= 0.032;
+                ai.vx *= 0.85;
+                ai.vy *= 0.85;
+                if (ai.fallScale <= 0) {
+                    registerPoint('player');
+                    return;
+                }
+            }
+
+            // Update Engine hum frequencies
+            updateEngineHum();
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Render Canvas layers
+        function drawBackground() {
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Court cyber grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Circular platform base
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(ARENA_CENTER_X, ARENA_CENTER_Y, currentRadius, 0, Math.PI * 2);
+            
+            // Radial glowing background inside platform
+            const gradient = ctx.createRadialGradient(
+                ARENA_CENTER_X, ARENA_CENTER_Y, 10,
+                ARENA_CENTER_X, ARENA_CENTER_Y, currentRadius
+            );
+            gradient.addColorStop(0, '#0c072c');
+            gradient.addColorStop(0.8, '#040217');
+            gradient.addColorStop(1, '#000002');
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Circular grid texture inside platform
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+            ctx.lineWidth = 1.5;
+            for(let r = 30; r < currentRadius; r += 30) {
+                ctx.beginPath();
+                ctx.arc(ARENA_CENTER_X, ARENA_CENTER_Y, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Circular neon border lines
+            const isShrinking = roundTimeFrames > 480;
+            ctx.strokeStyle = isShrinking ? 'var(--danger-glow)' : 'var(--accent-glow)';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = isShrinking ? 'var(--danger-glow)' : 'var(--accent-glow)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(ARENA_CENTER_X, ARENA_CENTER_Y, currentRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawCharacters() {
+            const chars = [player, ai];
+            for (let char of chars) {
+                ctx.save();
+                
+                // Slide active trails
+                if (char.trail.length > 0) {
+                    for(let i=0; i < char.trail.length; i++) {
+                        const ratio = i / char.trail.length;
+                        ctx.fillStyle = char.color;
+                        ctx.globalAlpha = ratio * 0.22;
+                        ctx.beginPath();
+                        ctx.arc(char.trail[i].x, char.trail[i].y, char.r * char.fallScale, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                ctx.restore();
+
+                // Core circular body rendering
+                ctx.save();
+                ctx.globalAlpha = char.fallScale;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = char.glow;
+                ctx.fillStyle = char.color;
+
+                ctx.beginPath();
+                ctx.arc(char.x, char.y, char.r * char.fallScale, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyes facing center or opponent
+                const facingRight = char === player;
+                const eyeX = char.x + (facingRight ? 5 : -5) * char.fallScale;
+                const eyeY = char.y - 4 * char.fallScale;
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(eyeX, eyeY, 4.2 * char.fallScale, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(eyeX + (facingRight ? 1 : -1) * char.fallScale, eyeY, 1.8 * char.fallScale, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Outer glowing active shield ring overlay
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(char.x, char.y, (char.r + 2.5) * char.fallScale, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        function drawParticles() {
+            ctx.save();
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawScoreMessage() {
+            if (!scoreMessage) return;
+
+            ctx.save();
+            ctx.globalAlpha = scoreMessage.life;
+            ctx.font = "800 1.35rem 'Outfit'";
+            ctx.fillStyle = scoreMessage.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = scoreMessage.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(scoreMessage.text, scoreMessage.x, scoreMessage.y);
+            ctx.restore();
+
+            scoreMessage.y -= 0.8;
+            scoreMessage.life -= 0.02;
+            if (scoreMessage.life <= 0) {
+                scoreMessage = null;
+            }
+        }
+
+        // Render main Loop cycle
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawBackground();
+            drawCharacters();
+            drawParticles();
+            drawScoreMessage();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Event button handlers
+        function startGame() {
+            initAudio();
+            setupMatch(1);
+        }
+
+        function playNextLevel() {
+            setupMatch(level + 1);
+        }
+
+        // Input controls triggers bindings
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || e.key === 'ArrowUp') keys.w = true;
+            if (k === 's' || e.key === 'ArrowDown') keys.s = true;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.a = true;
+            if (k === 'd' || e.key === 'ArrowRight') keys.d = true;
+            
+            if (e.key === ' ' || e.key === 'Shift') {
+                e.preventDefault();
+                triggerDash(player);
+            }
+            initAudio();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || e.key === 'ArrowUp') keys.w = false;
+            if (k === 's' || e.key === 'ArrowDown') keys.s = false;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.a = false;
+            if (k === 'd' || e.key === 'ArrowRight') keys.d = false;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            triggerDash(player);
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            triggerDash(player);
+        }, {passive: false});
+
+        // Mobile panel buttons triggers
+        const mUp = document.getElementById('mUp');
+        const mDown = document.getElementById('mDown');
+        const mLeft = document.getElementById('mLeft');
+        const mRight = document.getElementById('mRight');
+        const mDash = document.getElementById('mDash');
+
+        mUp.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileUp = true; });
+        mUp.addEventListener('touchend', () => mobileUp = false);
+        mDown.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileDown = true; });
+        mDown.addEventListener('touchend', () => mobileDown = false);
+        mLeft.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileLeft = true; });
+        mLeft.addEventListener('touchend', () => mobileLeft = false);
+        mRight.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileRight = true; });
+        mRight.addEventListener('touchend', () => mobileRight = false);
+        
+        mDash.addEventListener('touchstart', (e) => { e.preventDefault(); triggerDash(player); });
+
+        // HUD overlay button actions
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', () => setupMatch(level));
+        nextBtn.addEventListener('click', playNextLevel);
+
+        // Run Init loop
+        drawBackground();
+        drawCharacters();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
