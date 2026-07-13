@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Trambolin // Cyber Trampoline</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #00ffcc; /* Player Cyan */
+            --secondary-glow: #ff00ff; /* Trampoline Magenta */
+            --accent-glow: #ffd700; /* Gold Perfects */
+            --danger-glow: #ff1744; /* Crash Red */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .mobile-controls {
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+            gap: 20px;
+            padding: 5px 10px;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .m-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        .m-btn:active {
+            background: rgba(0, 255, 204, 0.25);
+            border-color: var(--primary-glow);
+            transform: scale(0.95);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 700px) {
+            .mobile-controls { display: flex; }
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.5rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Trambolin</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Haklar</span>
+                <span class="hud-val" id="hudLives" style="color:var(--danger-glow); text-shadow: 0 0 12px rgba(255,23,68,0.4);">❤❤❤</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Yükseklik (Maks)</span>
+                <span class="hud-val player"><span id="hudHeight">0m</span> (<span id="hudMaxHeight" style="color:var(--accent-glow);">0m</span>)</span>
+            </div>
+            <div class="hud-item" style="min-width: 80px;">
+                <span class="hud-label">Skor (Biriken)</span>
+                <span class="hud-val accent"><span id="hudScore">0</span> (<span id="hudUnbanked" style="color:#fff;">0</span>)</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Yüksek</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Trambolin</h2>
+                <p>Klavye Sol/Sağ Yön tuşlarıyla havada dönün (akrobasi). <br>Dönerken **Aşağı Yön (veya W/S/Shift)** tuşuna basılı tutarak büzüşün (Tuck) ve dönüş hızınızı artırın! <br>İnerken ayaklarınızın üzerinde dik bastığınızdan emin olun, aksi halde düşersiniz. <br>Zıplama anında Boşluk (Space) tuşuna basarak mükemmel itme gücü yakalayın!</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Yarışma Bitti!</h2>
+                <p>Canlarınız tükendi. Ulaştığınız Maksimum Yükseklik: <span id="finalHeight" style="color:var(--primary-glow); font-weight:800;">0m</span>. Toplam Stunt Skorunuz: <span id="finalScore" style="color:var(--accent-glow); font-weight:800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+        </div>
+
+        <!-- Mobile Controls Panel -->
+        <div class="mobile-controls">
+            <div class="control-group">
+                <div class="m-btn" id="mLeft">←</div>
+                <div class="m-btn" id="mRight">→</div>
+            </div>
+            <div class="control-group">
+                <div class="m-btn" id="mTuck" style="background:rgba(255, 0, 255, 0.15); border-color:var(--secondary-glow);">T</div>
+                <div class="m-btn" id="mBoost" style="background:rgba(0, 255, 204, 0.15); border-color:var(--primary-glow);">🚀</div>
+            </div>
+        </div>
+
+        <div class="hint">Sol/Sağ: Havada Dönüş // Aşağı / W / S / Shift: Büzüş (Hızlı Dön) // İnişte Boşluk (Space): Ekstra Zıpla.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLives = document.getElementById('hudLives');
+        const hudHeight = document.getElementById('hudHeight');
+        const hudMaxHeight = document.getElementById('hudMaxHeight');
+        const hudScore = document.getElementById('hudScore');
+        const hudUnbanked = document.getElementById('hudUnbanked');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const finalHeight = document.getElementById('finalHeight');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const GRAVITY = 0.15;
+        const TRAMPOLINE_Y = 320;
+        const TRAMPOLINE_LEFT = 210;
+        const TRAMPOLINE_RIGHT = 510;
+        const BASE_PLAYER_RADIUS = 18;
+        const TUCK_RADIUS = 10;
+
+        // Game State Variables
+        let score = 0;
+        let unbankedScore = 0;
+        let lives = 3;
+        let currentHeight = 0;
+        let maxHeight = 0;
+        let bestScore = Math.floor(localStorage.getItem('neonTrampolineBest')) || 0;
+        hudBest.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING, CONTACT, CRASHED, GAMEOVER
+        let timeCount = 0;
+        let resetTimer = null;
+        let floatText = null;
+
+        // Camera heights
+        let cameraY = 0;
+        let targetCameraY = 0;
+
+        // Trampoline spring bend offsets
+        let springBend = 0;
+        let hasTriggeredBoost = false;
+
+        // Entities
+        let player = {
+            x: 360,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            r: BASE_PLAYER_RADIUS,
+            theta: 0,
+            omega: 0,
+            color: 'var(--primary-glow)',
+            glow: '#00ffcc',
+            state: 'AIRBORNE', // AIRBORNE, CONTACT, CRASHED
+            fallScale: 1.0,
+            trail: []
+        };
+
+        // Keyboard Controls
+        let keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            a: false,
+            d: false,
+            w: false,
+            s: false,
+            Space: false,
+            Shift: false
+        };
+
+        // Mobile Controls states
+        let mobileLeft = false;
+        let mobileRight = false;
+        let mobileTuck = false;
+
+        // Accumulators for flips
+        let angleRotated = 0;
+        let lastTheta = 0;
+        let flipsThisJump = 0;
+
+        let particles = [];
+        let stars = [];
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'spring':
+                    // Spring squeak boing pitch sweeps based on bend
+                    const sOsc = audioCtx.createOscillator();
+                    const sGain = audioCtx.createGain();
+                    sOsc.type = 'triangle';
+                    sOsc.frequency.setValueAtTime(140 * pitchModifier, now);
+                    sOsc.frequency.exponentialRampToValueAtTime(320 * pitchModifier, now + 0.22);
+                    sGain.gain.setValueAtTime(0.2, now);
+                    sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                    sOsc.connect(sGain);
+                    sGain.connect(audioCtx.destination);
+                    sOsc.start();
+                    sOsc.stop(now + 0.22);
+                    break;
+                    
+                case 'perfect':
+                    // High chord chords
+                    const chords = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    chords.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                        gain.gain.setValueAtTime(0.12, now + idx * 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.05);
+                        osc.stop(now + idx * 0.05 + 0.3);
+                    });
+                    break;
+
+                case 'flip':
+                    // whoosh rotation noise
+                    const fOsc = audioCtx.createOscillator();
+                    const fGain = audioCtx.createGain();
+                    fOsc.type = 'sine';
+                    fOsc.frequency.setValueAtTime(300 * pitchModifier, now);
+                    fOsc.frequency.exponentialRampToValueAtTime(180, now + 0.12);
+                    fGain.gain.setValueAtTime(0.08, now);
+                    fGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    fOsc.connect(fGain);
+                    fGain.connect(audioCtx.destination);
+                    fOsc.start();
+                    fOsc.stop(now + 0.12);
+                    break;
+
+                case 'crash':
+                    const cOsc = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc.type = 'sawtooth';
+                    cOsc.frequency.setValueAtTime(150, now);
+                    cOsc.frequency.linearRampToValueAtTime(40, now + 0.55);
+                    cGain.gain.setValueAtTime(0.3, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc.start();
+                    cOsc.stop(now + 0.6);
+                    break;
+
+                case 'defeat':
+                    const goOsc = audioCtx.createOscillator();
+                    const goGain = audioCtx.createGain();
+                    goOsc.type = 'sawtooth';
+                    goOsc.frequency.setValueAtTime(200, now);
+                    goOsc.frequency.linearRampToValueAtTime(50, now + 0.65);
+                    goGain.gain.setValueAtTime(0.25, now);
+                    goGain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
+                    goOsc.connect(goGain);
+                    goGain.connect(audioCtx.destination);
+                    goOsc.start();
+                    goOsc.stop(now + 0.65);
+                    break;
+            }
+        }
+
+        // Particle Generators
+        function createSparks(x, y, color, count = 10, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.5,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < 40; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * 1500, // extend high up
+                    r: 1 + Math.random() * 1.5,
+                    alpha: 0.2 + Math.random() * 0.8
+                });
+            }
+        }
+
+        // Match setup managers
+        function setupMatch() {
+            score = 0;
+            unbankedScore = 0;
+            lives = 3;
+            currentHeight = 0;
+            maxHeight = 0;
+            cameraY = 0;
+            targetCameraY = 0;
+
+            hudScore.textContent = score;
+            hudUnbanked.textContent = unbankedScore;
+            hudHeight.textContent = "0m";
+            hudMaxHeight.textContent = "0m";
+            updateHUDLives();
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+
+            createStars();
+            resetPlayer();
+        }
+
+        function resetPlayer() {
+            player.x = 360;
+            player.y = 120;
+            player.vx = 0;
+            player.vy = 0;
+            player.theta = 0;
+            player.omega = 0;
+            player.r = BASE_PLAYER_RADIUS;
+            player.state = 'AIRBORNE';
+            player.fallScale = 1.0;
+            player.trail = [];
+
+            angleRotated = 0;
+            lastTheta = 0;
+            flipsThisJump = 0;
+            springBend = 0;
+            hasTriggeredBoost = false;
+        }
+
+        function updateHUDLives() {
+            let heartStr = "";
+            for (let i = 0; i < 3; i++) {
+                heartStr += (i < lives) ? "❤" : "🖤";
+            }
+            hudLives.textContent = heartStr;
+        }
+
+        function showFloatText(x, y, text, color) {
+            floatText = {
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1.0
+            };
+        }
+
+        function handleGameOver() {
+            gameState = 'GAMEOVER';
+            playSound('defeat');
+            finalHeight.textContent = `${maxHeight}m`;
+            finalScore.textContent = score;
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonTrampolineBest', bestScore);
+                hudBest.textContent = bestScore;
+            }
+
+            gameOverScreen.classList.add('active');
+        }
+
+        // Kinematics and angular dynamics updates
+        function updatePhysics() {
+            if (gameState === 'GAMEOVER') return;
+
+            timeCount++;
+
+            // 1. Move Player under gravity
+            if (player.state === 'AIRBORNE') {
+                player.vy += GRAVITY;
+                player.x += player.vx;
+                player.y += player.vy;
+
+                // Rotational torque input
+                let torque = 0;
+                if (keys.ArrowLeft || keys.a || mobileLeft) torque = -0.007;
+                if (keys.ArrowRight || keys.d || mobileRight) torque = 0.007;
+
+                player.omega += torque;
+                player.omega *= 0.985; // drag damping rotation
+
+                // Tuck compression check
+                // holding W/S or Shift or Mobile Tuck
+                const isTucked = keys.ArrowDown || keys.s || keys.ArrowUp || keys.w || keys.Shift || mobileTuck;
+                if (isTucked) {
+                    player.r = TUCK_RADIUS;
+                    // spin speed increases by 1.6x (conservation of angular momentum simulation)
+                    player.theta += player.omega * 1.65;
+                } else {
+                    player.r = BASE_PLAYER_RADIUS;
+                    player.theta += player.omega;
+                }
+
+                // Normalizing rotation angle
+                player.theta = player.theta % (Math.PI * 2);
+
+                // Tracking flips completed: cumulative angle changes
+                let thetaDiff = player.theta - lastTheta;
+                // handle wrap arounds
+                if (thetaDiff > Math.PI) thetaDiff -= Math.PI * 2;
+                if (thetaDiff < -Math.PI) thetaDiff += Math.PI * 2;
+                
+                angleRotated += thetaDiff;
+                lastTheta = player.theta;
+
+                if (Math.abs(angleRotated) >= Math.PI * 2) {
+                    // One full flip completed!
+                    flipsThisJump++;
+                    const flipPoints = 150 * flipsThisJump;
+                    unbankedScore += flipPoints;
+                    hudUnbanked.textContent = unbankedScore;
+
+                    const clockwise = angleRotated > 0;
+                    playSound('flip', 1.0 + flipsThisJump*0.1);
+                    showFloatText(player.x, player.y - 25, clockwise ? "DÜZ TAKLA! (Frontflip) +" + flipPoints : "TERS TAKLA! (Backflip) +" + flipPoints, "var(--primary-glow)");
+                    
+                    angleRotated = 0; // reset
+                }
+
+                // Vertical altitude calculations (relative to base)
+                currentHeight = Math.max(0, Math.floor((320 - player.y) * 0.12));
+                hudHeight.textContent = `${currentHeight}m`;
+                if (currentHeight > maxHeight) {
+                    maxHeight = currentHeight;
+                    hudMaxHeight.textContent = `${maxHeight}m`;
+                }
+
+                // Save trail particles
+                if (Math.abs(player.omega) > 0.05 || isTucked) {
+                    player.trail.push({ x: player.x, y: player.y, r: player.r });
+                    if (player.trail.length > 6) player.trail.shift();
+                } else {
+                    player.trail = [];
+                }
+
+                // Check landing contact overlapping
+                if (player.vy > 0 && player.y + player.r >= TRAMPOLINE_Y) {
+                    if (player.x >= TRAMPOLINE_LEFT && player.x <= TRAMPOLINE_RIGHT) {
+                        // Landing Occurs!
+                        player.y = TRAMPOLINE_Y - player.r;
+                        
+                        // Balance check: must be upright (theta close to 0 or 2PI)
+                        const normAngle = Math.abs(player.theta);
+                        // within +/- 0.45 radians (approx 25 degrees)
+                        const isUpright = normAngle < 0.45 || normAngle > (Math.PI * 2 - 0.45);
+
+                        if (isUpright) {
+                            player.state = 'CONTACT';
+                            springBend = 0;
+                            hasTriggeredBoost = false;
+                            
+                            // Bank unbanked stunt points
+                            if (unbankedScore > 0) {
+                                score += unbankedScore;
+                                hudScore.textContent = score;
+                                unbankedScore = 0;
+                                hudUnbanked.textContent = 0;
+                            }
+                            flipsThisJump = 0;
+                            angleRotated = 0;
+                            player.omega = 0;
+                            player.theta = 0;
+                        } else {
+                            // CRASHED!
+                            player.state = 'CRASHED';
+                            playSound('crash');
+                            lives--;
+                            updateHUDLives();
+
+                            player.fallScale = 1.0;
+                            unbankedScore = 0;
+                            hudUnbanked.textContent = 0;
+                            flipsThisJump = 0;
+                            
+                            createSparks(player.x, player.y, 'var(--danger-glow)', 15, 3.5);
+
+                            clearTimeout(resetTimer);
+                            resetTimer = setTimeout(() => {
+                                if (lives > 0) {
+                                    resetPlayer();
+                                } else {
+                                    handleGameOver();
+                                }
+                            }, 1500);
+                        }
+                    }
+                }
+            }
+
+            // 2. Trampoline Contact springs dynamics
+            else if (player.state === 'CONTACT') {
+                // Gymnast Y is glued to spring deformation
+                springBend += player.vy;
+                player.vy += GRAVITY;
+                
+                // Spring pull feedback force
+                const k = 0.16;
+                const springForce = -springBend * k;
+                player.vy += springForce;
+
+                // Apply contact coordinates
+                player.y = TRAMPOLINE_Y + springBend - player.r;
+
+                // Space triggers timing launch boost at bottom of bend
+                if (keys.Space && !hasTriggeredBoost && springBend > 8 && player.vy < 0) {
+                    hasTriggeredBoost = true;
+                    // PERFECT LAUNCH!
+                    playSound('perfect');
+                    showFloatText(player.x, player.y - 25, "KUSURSUZ ZAMANLAMA! (Perfect Sync)", "var(--accent-glow)");
+                    createSparks(player.x, TRAMPOLINE_Y + springBend, 'var(--accent-glow)', 14, 4);
+
+                    player.vy = -7.5 - springBend * 0.18;
+                    player.state = 'AIRBORNE';
+                }
+
+                // If spring pushes gymnast back above stable line, normal release
+                if (springBend < 0) {
+                    player.state = 'AIRBORNE';
+                    // normal launch velocity if not boosted
+                    if (!hasTriggeredBoost) {
+                        player.vy = -5.8 - Math.max(0, -player.vy)*0.1;
+                        playSound('spring', 0.95);
+                    }
+                    springBend = 0;
+                }
+            }
+
+            else if (player.state === 'CRASHED') {
+                player.fallScale -= 0.025;
+                player.y += 0.5;
+            }
+
+            // Camera LERP offset update
+            // tracks player height relative to screen height
+            if (player.state !== 'CRASHED') {
+                targetCameraY = player.y - 200;
+                if (targetCameraY > 0) targetCameraY = 0;
+                if (targetCameraY < -1200) targetCameraY = -1200;
+            }
+
+            cameraY += (targetCameraY - cameraY) * 0.08;
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Render Canvas layers
+        function drawBackground() {
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Parallax stars
+            ctx.save();
+            ctx.fillStyle = '#ffffff';
+            for (let star of stars) {
+                // Parallax shift
+                const sy = (star.y - cameraY * 0.15) % canvas.height;
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(star.x, sy < 0 ? sy + canvas.height : sy, star.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Parallax cityscape towers
+            ctx.save();
+            ctx.fillStyle = '#0a0525';
+            ctx.globalAlpha = 0.45;
+            for(let i=0; i<10; i++) {
+                const w = 80 + i * 20;
+                const h = 180 + i * 40;
+                const tx = (i * 120 - cameraY * 0.05) % (canvas.width + 200) - 100;
+                ctx.fillRect(tx, canvas.height - h, w, h);
+                // Draw neon building window lights
+                ctx.fillStyle = 'rgba(0, 255, 204, 0.2)';
+                for(let r=10; r<h-20; r+=25) {
+                    ctx.fillRect(tx + 10, canvas.height - h + r, 4, 4);
+                    ctx.fillRect(tx + w - 14, canvas.height - h + r, 4, 4);
+                }
+                ctx.fillStyle = '#0a0525';
+            }
+            ctx.restore();
+
+            // Draw Altitude yard lines in sky
+            ctx.save();
+            ctx.translate(0, -cameraY);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.font = "bold 0.85rem 'Outfit'";
+            ctx.textAlign = 'right';
+            
+            const yardLines = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140];
+            for (let y of yardLines) {
+                const screenLineY = 320 - (y / 0.12);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(30, screenLineY);
+                ctx.lineTo(canvas.width - 30, screenLineY);
+                ctx.stroke();
+
+                ctx.fillText(`${y}m`, canvas.width - 45, screenLineY - 6);
+            }
+
+            ctx.restore();
+        }
+
+        function drawTrampoline() {
+            ctx.save();
+            ctx.translate(0, -cameraY);
+
+            // Trampoline stable frame pillars
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            ctx.lineWidth = 4;
+            // Left pillar
+            ctx.beginPath();
+            ctx.moveTo(TRAMPOLINE_LEFT, TRAMPOLINE_Y);
+            ctx.lineTo(TRAMPOLINE_LEFT - 12, canvas.height);
+            ctx.stroke();
+            // Right pillar
+            ctx.beginPath();
+            ctx.moveTo(TRAMPOLINE_RIGHT, TRAMPOLINE_Y);
+            ctx.lineTo(TRAMPOLINE_RIGHT + 12, canvas.height);
+            ctx.stroke();
+
+            // Elastic mat drawing
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.lineWidth = 4.5;
+            
+            ctx.beginPath();
+            ctx.moveTo(TRAMPOLINE_LEFT, TRAMPOLINE_Y);
+            if (player.state === 'CONTACT') {
+                // bend lines
+                ctx.quadraticCurveTo(player.x, TRAMPOLINE_Y + springBend * 1.5, TRAMPOLINE_RIGHT, TRAMPOLINE_Y);
+            } else {
+                ctx.lineTo(TRAMPOLINE_RIGHT, TRAMPOLINE_Y);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            // Draw trails
+            ctx.save();
+            ctx.translate(0, -cameraY);
+            for(let i=0; i < player.trail.length; i++) {
+                const ratio = i / player.trail.length;
+                ctx.fillStyle = player.color;
+                ctx.globalAlpha = ratio * 0.22;
+                ctx.beginPath();
+                ctx.arc(player.trail[i].x, player.trail[i].y, player.trail[i].r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Core Gymnasts body
+            ctx.save();
+            ctx.translate(player.x, player.y - cameraY);
+            ctx.rotate(player.theta);
+            ctx.globalAlpha = player.fallScale;
+
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = player.glow;
+            ctx.fillStyle = player.color;
+
+            // Character body circle
+            ctx.beginPath();
+            ctx.arc(0, 0, player.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Stylized head indicator
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, -player.r * 0.7, player.r * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Stylized limbs/lines (changing postures depending on Tuck)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            if (player.r === TUCK_RADIUS) {
+                // tucked compact limbs
+                ctx.arc(0, 0, player.r * 1.25, 0, Math.PI, true);
+            } else {
+                // straight gymnasts extensions
+                // arm left
+                ctx.moveTo(-player.r * 0.8, 0);
+                ctx.lineTo(-player.r * 1.5, -player.r * 0.5);
+                // arm right
+                ctx.moveTo(player.r * 0.8, 0);
+                ctx.lineTo(player.r * 1.5, -player.r * 0.5);
+                // leg left
+                ctx.moveTo(-player.r * 0.4, player.r * 0.8);
+                ctx.lineTo(-player.r * 0.6, player.r * 1.6);
+                // leg right
+                ctx.moveTo(player.r * 0.4, player.r * 0.8);
+                ctx.lineTo(player.r * 0.6, player.r * 1.6);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            ctx.translate(0, -cameraY);
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawFloatText() {
+            if (!floatText) return;
+
+            ctx.save();
+            ctx.globalAlpha = floatText.life;
+            ctx.font = "800 1.25rem 'Outfit'";
+            ctx.fillStyle = floatText.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = floatText.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(floatText.text, floatText.x, floatText.y);
+            ctx.restore();
+
+            floatText.y -= 0.8;
+            floatText.life -= 0.02;
+            if (floatText.life <= 0) {
+                floatText = null;
+            }
+        }
+
+        // Render main Loop cycle
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawBackground();
+            drawTrampoline();
+            drawPlayer();
+            drawParticles();
+            drawFloatText();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Event button handlers
+        function startGame() {
+            initAudio();
+            setupMatch();
+        }
+
+        // Controls Bindings
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.ArrowLeft = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.ArrowRight = true;
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.ArrowUp = true;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.ArrowDown = true;
+            if (e.key === 'Shift') keys.Shift = true;
+            
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                keys.Space = true;
+            }
+            initAudio();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.ArrowLeft = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.ArrowRight = false;
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.ArrowUp = false;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.ArrowDown = false;
+            if (e.key === 'Shift') keys.Shift = false;
+            if (e.key === ' ' || e.key === 'Enter') keys.Space = false;
+        });
+
+        // Mobile touch controls panel bindings
+        const mLeft = document.getElementById('mLeft');
+        const mRight = document.getElementById('mRight');
+        const mTuck = document.getElementById('mTuck');
+        const mBoost = document.getElementById('mBoost');
+
+        mLeft.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileLeft = true; });
+        mLeft.addEventListener('touchend', () => mobileLeft = false);
+        mRight.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileRight = true; });
+        mRight.addEventListener('touchend', () => mobileRight = false);
+        
+        mTuck.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileTuck = true; });
+        mTuck.addEventListener('touchend', () => mobileTuck = false);
+
+        mBoost.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudio();
+            keys.Space = true;
+        });
+        mBoost.addEventListener('touchend', () => {
+            keys.Space = false;
+        });
+
+        // HUD overlay button actions
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // Run Init loop
+        drawBackground();
+        drawTrampoline();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
