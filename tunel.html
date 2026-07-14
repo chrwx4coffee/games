@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Tünel // Cyber Tunnel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #00ffcc; /* Player Cyan */
+            --secondary-glow: #ff00ff; /* Tunnel Neon Magenta */
+            --accent-glow: #ffd700; /* Gold Clears */
+            --danger-glow: #ff1744; /* Laser Barrier Red */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .mobile-controls {
+            display: none;
+            justify-content: center;
+            width: 100%;
+            gap: 20px;
+            padding: 5px 10px;
+        }
+
+        .m-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        .m-btn:active {
+            background: rgba(0, 255, 204, 0.25);
+            border-color: var(--primary-glow);
+            transform: scale(0.95);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 700px) {
+            .mobile-controls { display: flex; }
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.5rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Tünel</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Kalkanlar</span>
+                <span class="hud-val" id="hudShields" style="color:var(--danger-glow); text-shadow:0 0 10px rgba(255,23,68,0.45);">🛡🛡🛡</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Warp Hızı</span>
+                <span class="hud-val accent" id="hudWarp">1.0x</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Mesafe</span>
+                <span class="hud-val player" id="hudDistance">0m</span>
+            </div>
+            <div class="hud-item" style="min-width: 90px;">
+                <span class="hud-label">Skor</span>
+                <span class="hud-val player" id="hudScore">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Uzun</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Tünel</h2>
+                <p>Klavye Sol/Sağ Yön tuşları veya A/D tuşlarını kullanarak tünel çeperinde dönün. <br>Karşınızdan gelen siber laser engellerin boşluklarına kendinizi hizalayarak tünelde ilerleyin! <br>Engelleri geçtikçe Warp hızınız artar.</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Kalkanlar İflas Etti!</h2>
+                <p>Tünelde lazer engellere çarparak kalkanlarınızı kaybettiniz. <br>Kat Edilen Mesafe: <span id="finalDistance" style="color:var(--primary-glow); font-weight:800;">0m</span>. Toplam Skorunuz: <span id="finalScore" style="color:var(--accent-glow); font-weight:800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+        </div>
+
+        <!-- Mobile Controls Panel -->
+        <div class="mobile-controls">
+            <div class="m-btn" id="mLeft">←</div>
+            <div class="m-btn" id="mRight">→</div>
+        </div>
+
+        <div class="hint">Yönlendirme: Sol / Sağ Ok Tuşları veya A / D. <br>Lazer engellerin boşluklarını tünel çeperinde dönerek geçmeye çalışın!</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudShields = document.getElementById('hudShields');
+        const hudWarp = document.getElementById('hudWarp');
+        const hudDistance = document.getElementById('hudDistance');
+        const hudScore = document.getElementById('hudScore');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        
+        const finalDistance = document.getElementById('finalDistance');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const FOCAL_LENGTH = 180;
+        const SCREEN_CENTER_X = 360;
+        const SCREEN_CENTER_Y = 200;
+        const BASE_TUNNEL_RADIUS = 135;
+        const BASE_FORWARD_SPEED = 4.2;
+
+        // Game State Variables
+        let score = 0;
+        let distanceMeters = 0;
+        let shields = 3;
+        let warpSpeed = 1.0;
+        let bestDistance = Math.floor(localStorage.getItem('neonTunnelBest')) || 0;
+        hudBest.textContent = `${bestDistance}m`;
+
+        let gameState = 'START'; // START, PLAYING, POINT_SCORED, GAMEOVER
+        let timeFrames = 0;
+        
+        let loopId;
+        let resetTimer = null;
+        let floatText = null;
+
+        // Screen shake
+        let shakeAmount = 0;
+
+        // Infinite Tunnel render variables
+        let tunnelZOffset = 0;
+
+        // Player Ship (orbital position)
+        let ship = {
+            angle: 0, // orbit angle in radians
+            targetAngle: 0,
+            r: BASE_TUNNEL_RADIUS,
+            size: 14,
+            engineFlare: 0
+        };
+
+        // Obstacles array: { z, angle, gapSize, rotSpeed, type, color }
+        let obstacles = [];
+        let nextObstacleSpawnFrames = 0;
+
+        // Particles arrays
+        let particles = [];
+        let warpLines = [];
+
+        // Keyboard Controls
+        let keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            a: false,
+            d: false
+        };
+
+        // Mobile Controls states
+        let mobileLeft = false;
+        let mobileRight = false;
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        let engineNode = null;
+        let engineGain = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                startEngineSynth();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startEngineSynth() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                engineNode = audioCtx.createOscillator();
+                engineGain = audioCtx.createGain();
+
+                engineNode.type = 'sawtooth';
+                engineNode.frequency.setValueAtTime(50, now);
+                
+                // Add a lowpass filter to make it rumble
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(100, now);
+
+                engineGain.gain.setValueAtTime(0.015, now);
+
+                engineNode.connect(filter);
+                filter.connect(engineGain);
+                engineGain.connect(audioCtx.destination);
+                engineNode.start();
+            } catch (e) {
+                console.error("Engine sound synthesis error:", e);
+            }
+        }
+
+        function updateEngineSynth() {
+            if (!engineNode || !engineGain || gameState !== 'PLAYING') return;
+            const targetFreq = 48 + warpSpeed * 12;
+            const targetVol = 0.012 + warpSpeed * 0.008;
+
+            const now = audioCtx.currentTime;
+            engineNode.frequency.setTargetAtTime(targetFreq, now, 0.08);
+            engineGain.gain.setTargetAtTime(targetVol, now, 0.08);
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'laser_hum':
+                    const lOsc = audioCtx.createOscillator();
+                    const lGain = audioCtx.createGain();
+                    lOsc.type = 'sine';
+                    lOsc.frequency.setValueAtTime(260 * pitchModifier, now);
+                    lOsc.frequency.linearRampToValueAtTime(100, now + 0.15);
+                    lGain.gain.setValueAtTime(0.06, now);
+                    lGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    lOsc.connect(lGain);
+                    lGain.connect(audioCtx.destination);
+                    lOsc.start();
+                    lOsc.stop(now + 0.15);
+                    break;
+                    
+                case 'chime':
+                    // Portal pass chime chords
+                    const chords = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    chords.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq * pitchModifier, now + idx * 0.04);
+                        gain.gain.setValueAtTime(0.08, now + idx * 0.04);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.04);
+                        osc.stop(now + idx * 0.04 + 0.3);
+                    });
+                    break;
+
+                case 'crash':
+                    // White noise blast + sub thud
+                    const cOsc = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc.type = 'sawtooth';
+                    cOsc.frequency.setValueAtTime(160, now);
+                    cOsc.frequency.linearRampToValueAtTime(30, now + 0.5);
+                    cGain.gain.setValueAtTime(0.35, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc.start();
+                    cOsc.stop(now + 0.5);
+
+                    // noise burst
+                    const bufSize = audioCtx.sampleRate * 0.12;
+                    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < bufSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buf;
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 600;
+                    const nGain = audioCtx.createGain();
+                    nGain.gain.setValueAtTime(0.3, now);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+                    noise.connect(filter);
+                    filter.connect(nGain);
+                    nGain.connect(audioCtx.destination);
+                    noise.start();
+                    noise.stop(now + 0.12);
+                    break;
+
+                case 'defeat':
+                    const goOsc = audioCtx.createOscillator();
+                    const goGain = audioCtx.createGain();
+                    goOsc.type = 'sawtooth';
+                    goOsc.frequency.setValueAtTime(180, now);
+                    goOsc.frequency.linearRampToValueAtTime(50, now + 0.7);
+                    goGain.gain.setValueAtTime(0.25, now);
+                    goGain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                    goOsc.connect(goGain);
+                    goGain.connect(audioCtx.destination);
+                    goOsc.start();
+                    goOsc.stop(now + 0.7);
+                    break;
+            }
+        }
+
+        // Particle Generators
+        function createSparks(x, y, color, count = 10, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        function createWarpLines() {
+            warpLines = [];
+            for (let i = 0; i < 45; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                warpLines.push({
+                    angle: angle,
+                    dist: 50 + Math.random() * 200,
+                    z: Math.random() * 600,
+                    len: 40 + Math.random() * 60
+                });
+            }
+        }
+
+        // Match setup managers
+        function setupMatch() {
+            score = 0;
+            distanceMeters = 0;
+            shields = 3;
+            warpSpeed = 1.0;
+            shakeAmount = 0;
+            obstacles = [];
+            nextObstacleSpawnFrames = 60;
+
+            hudScore.textContent = score;
+            hudWarp.textContent = "1.0x";
+            hudDistance.textContent = "0m";
+            updateHUDShields();
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+
+            createWarpLines();
+            gameState = 'PLAYING';
+        }
+
+        function updateHUDShields() {
+            let sStr = "";
+            for (let i = 0; i < 3; i++) {
+                sStr += (i < shields) ? "🛡" : "🖤";
+            }
+            hudShields.textContent = sStr;
+        }
+
+        function showFloatText(x, y, text, color) {
+            floatText = {
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1.0
+            };
+        }
+
+        function handleGameOver() {
+            gameState = 'GAMEOVER';
+            playSound('defeat');
+            
+            finalDistance.textContent = `${distanceMeters}m`;
+            finalScore.textContent = score;
+
+            if (distanceMeters > bestDistance) {
+                bestDistance = distanceMeters;
+                localStorage.setItem('neonTunnelBest', bestDistance);
+                hudBest.textContent = `${bestDistance}m`;
+            }
+
+            gameOverScreen.classList.add('active');
+        }
+
+        // Concentric depth transformations and collisions
+        function updatePhysics() {
+            if (gameState === 'GAMEOVER') return;
+
+            timeFrames++;
+
+            const currentForwardSpeed = BASE_FORWARD_SPEED * warpSpeed;
+
+            // 1. Progress Distance meters
+            distanceMeters += Math.floor(currentForwardSpeed * 0.15);
+            hudDistance.textContent = `${distanceMeters}m`;
+
+            // 2. Infinite tunnel depth scrolling offsets
+            tunnelZOffset += currentForwardSpeed;
+            if (tunnelZOffset >= 80) {
+                tunnelZOffset -= 80;
+            }
+
+            // 3. Move player ship rotation steering
+            let rotation = 0;
+            if (keys.ArrowLeft || keys.a || mobileLeft) rotation = -0.045;
+            if (keys.ArrowRight || keys.d || mobileRight) rotation = 0.045;
+            
+            ship.angle += rotation;
+            // Normalizing rotation
+            ship.angle = (ship.angle + Math.PI * 2) % (Math.PI * 2);
+
+            // Engine flare oscillations
+            ship.engineFlare = Math.sin(timeFrames * 0.25) * 4;
+
+            // 4. Update Speed Warp Lines (stars streaming from screen center)
+            for (let wl of warpLines) {
+                wl.z -= currentForwardSpeed;
+                if (wl.z <= 0) {
+                    wl.z = 600;
+                    wl.angle = Math.random() * Math.PI * 2;
+                    wl.dist = 40 + Math.random() * 200;
+                }
+            }
+
+            // 5. Spawn new Obstacles approaching from Z = 500
+            nextObstacleSpawnFrames -= warpSpeed;
+            if (nextObstacleSpawnFrames <= 0) {
+                nextObstacleSpawnFrames = 75 + Math.random() * 30; // approx every 1.5 seconds
+
+                const randType = Math.random();
+                let type = 'gate';
+                let color = 'var(--danger-glow)';
+                let gapSize = Math.PI / 2.8; // 64 degrees gap opening
+                
+                if (randType < 0.35) {
+                    type = 'gate'; // standard hexagon missing one side
+                    gapSize = Math.PI / 3.0; // 60 degrees
+                    color = 'var(--danger-glow)';
+                } else if (randType < 0.7) {
+                    type = 'laser_beam'; // rotating double lasers
+                    gapSize = Math.PI / 2.6; // wider gap
+                    color = '#ff9900';
+                } else if (randType < 0.85) {
+                    type = 'shield_canister'; // green shield pickups
+                    color = 'var(--primary-glow)';
+                } else {
+                    type = 'warp_ring'; // gold warp speeds multiplier
+                    color = 'var(--accent-glow)';
+                }
+
+                // Random target angle segment gap
+                const oAngle = Math.random() * Math.PI * 2;
+                const oRotSpeed = type === 'laser_beam' ? (Math.random() > 0.5 ? 0.015 : -0.015) : 0;
+
+                obstacles.push({
+                    z: 500,
+                    angle: oAngle,
+                    gapSize: gapSize,
+                    rotSpeed: oRotSpeed,
+                    type: type,
+                    color: color
+                });
+            }
+
+            // 6. Update and Collide Obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.z -= currentForwardSpeed;
+
+                // Rotations
+                if (obs.rotSpeed !== 0) {
+                    obs.angle += obs.rotSpeed;
+                    obs.angle = (obs.angle + Math.PI * 2) % (Math.PI * 2);
+                }
+
+                // If Z hits 0 -> plane collision check!
+                if (obs.z <= 0) {
+                    // Check intersections
+                    if (obs.type === 'gate' || obs.type === 'laser_beam') {
+                        // verify ship angle falls inside gap sector
+                        // Obstacle gap center is obs.angle
+                        let diff = Math.abs(ship.angle - obs.angle) % (Math.PI * 2);
+                        if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+                        if (diff > obs.gapSize / 2) {
+                            // COLLISION HIT! Shield damage
+                            shields--;
+                            updateHUDShields();
+                            shakeAmount = 14;
+                            warpSpeed = 1.0;
+                            hudWarp.textContent = "1.0x";
+
+                            playSound('crash');
+                            
+                            // Visual sparks
+                            const sX = SCREEN_CENTER_X + Math.cos(ship.angle) * 125;
+                            const sY = SCREEN_CENTER_Y + Math.sin(ship.angle) * 125;
+                            createSparks(sX, sY, 'var(--danger-glow)', 15, 4.0);
+                            showFloatText(360, 160, "HASAR! -1 KALKAN", "var(--danger-glow)");
+
+                            if (shields <= 0) {
+                                handleGameOver();
+                                return;
+                            }
+                        } else {
+                            // CLEAN PASS!
+                            score += 100;
+                            hudScore.textContent = score;
+                            warpSpeed = Math.min(3.0, warpSpeed + 0.1);
+                            hudWarp.textContent = warpSpeed.toFixed(1) + "x";
+
+                            playSound('chime', 0.9 + warpSpeed * 0.05);
+                            showFloatText(360, 160, "GEÇİŞ TEMİZ! +100", "var(--accent-glow)");
+                            createSparks(360 + Math.cos(ship.angle)*125, 200 + Math.sin(ship.angle)*125, 'var(--accent-glow)', 8, 2.5);
+                        }
+                    }
+
+                    else if (obs.type === 'shield_canister') {
+                        // Check if ship coordinates overlaps pickup angular segment
+                        let diff = Math.abs(ship.angle - obs.angle) % (Math.PI * 2);
+                        if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+                        if (diff < 0.45) { // pickup overlap size
+                            shields = Math.min(3, shields + 1);
+                            updateHUDShields();
+                            playSound('chime', 1.3);
+                            showFloatText(360, 160, "KALKAN YENİLENDİ! +1", "var(--primary-glow)");
+                            createSparks(360 + Math.cos(ship.angle)*125, 200 + Math.sin(ship.angle)*125, 'var(--primary-glow)', 10, 3);
+                        }
+                    }
+
+                    else if (obs.type === 'warp_ring') {
+                        // Clears warp ring grants huge speed boost
+                        let diff = Math.abs(ship.angle - obs.angle) % (Math.PI * 2);
+                        if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+                        if (diff < 0.45) {
+                            warpSpeed = Math.min(3.0, warpSpeed + 0.35);
+                            hudWarp.textContent = warpSpeed.toFixed(1) + "x";
+                            score += 250;
+                            hudScore.textContent = score;
+
+                            playSound('chime', 1.45);
+                            showFloatText(360, 160, "WARP BOOST! +250", "var(--accent-glow)");
+                            createSparks(360 + Math.cos(ship.angle)*125, 200 + Math.sin(ship.angle)*125, 'var(--accent-glow)', 12, 3);
+                        }
+                    }
+
+                    // Remove item
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Update continuous engine pitches
+            updateEngineSynth();
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Render Canvas layers
+        function drawTunnel() {
+            // concentric polygon rendering depth lines
+            // Draws 7 concentric hexagons
+            ctx.save();
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--secondary-glow)';
+
+            const sides = 6;
+            const maxConcentric = 7;
+
+            for (let i = maxConcentric; i >= 0; i--) {
+                const z = i * 80 - tunnelZOffset;
+                if (z < 0) continue;
+
+                // Perspective projection scale
+                const scale = FOCAL_LENGTH / (z + FOCAL_LENGTH);
+                const r = BASE_TUNNEL_RADIUS * scale;
+
+                // opacity decreases in depth
+                const alpha = Math.max(0, 1.0 - (z / 550));
+                ctx.strokeStyle = `rgba(255, 0, 255, ${alpha * 0.4})`;
+                ctx.lineWidth = 1.5 * scale + 0.5;
+
+                ctx.beginPath();
+                for (let s = 0; s <= sides; s++) {
+                    const angle = s * Math.PI / 3;
+                    const vx = SCREEN_CENTER_X + Math.cos(angle) * r;
+                    const vy = SCREEN_CENTER_Y + Math.sin(angle) * r;
+                    if (s === 0) ctx.moveTo(vx, vy);
+                    else ctx.lineTo(vx, vy);
+                }
+                ctx.stroke();
+
+                // Draw longitudinal tunnel segment grid lines connecting hexagons vertices
+                if (i === maxConcentric) {
+                    ctx.save();
+                    ctx.strokeStyle = `rgba(255, 0, 255, 0.15)`;
+                    ctx.lineWidth = 1.0;
+                    for (let s = 0; s < sides; s++) {
+                        const angle = s * Math.PI / 3;
+                        ctx.beginPath();
+                        ctx.moveTo(SCREEN_CENTER_X, SCREEN_CENTER_Y);
+                        ctx.lineTo(SCREEN_CENTER_X + Math.cos(angle) * BASE_TUNNEL_RADIUS * 1.5, SCREEN_CENTER_Y + Math.sin(angle) * BASE_TUNNEL_RADIUS * 1.5);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawWarpLines() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'var(--primary-glow)';
+
+            for (let wl of warpLines) {
+                const scale = FOCAL_LENGTH / (wl.z + FOCAL_LENGTH);
+                const startR = wl.dist * scale;
+                const endR = startR + wl.len * scale;
+
+                const startX = SCREEN_CENTER_X + Math.cos(wl.angle) * startR;
+                const startY = SCREEN_CENTER_Y + Math.sin(wl.angle) * startR;
+
+                const endX = SCREEN_CENTER_X + Math.cos(wl.angle) * endR;
+                const endY = SCREEN_CENTER_Y + Math.sin(wl.angle) * endR;
+
+                // opacity fades as lines fly close
+                const alpha = Math.max(0, Math.sin((wl.z / 600) * Math.PI) * 0.6);
+                ctx.strokeStyle = `rgba(0, 255, 204, ${alpha})`;
+                ctx.lineWidth = 1.2 * scale + 0.2;
+
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawPlayerShip() {
+            const shipX = SCREEN_CENTER_X + Math.cos(ship.angle) * 125;
+            const shipY = SCREEN_CENTER_Y + Math.sin(ship.angle) * 125;
+
+            ctx.save();
+            ctx.translate(shipX, shipY);
+            // rotate ship pointing inwards to center
+            ctx.rotate(ship.angle + Math.PI);
+
+            // Draw engine flare trail oscillations
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.75)';
+            ctx.beginPath();
+            ctx.moveTo(-6, -8);
+            ctx.lineTo(0, -18 - ship.engineFlare);
+            ctx.lineTo(6, -8);
+            ctx.fill();
+
+            // Ship Body Cyan Glowing Fighter shape
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.fillStyle = 'var(--primary-glow)';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+
+            ctx.beginPath();
+            ctx.moveTo(0, 10);  // Cockpit tip
+            ctx.lineTo(-ship.size, -8); // Left wing
+            ctx.lineTo(-4, -4);  // Left thruster
+            ctx.lineTo(4, -4);   // Right thruster
+            ctx.lineTo(ship.size, -8);  // Right wing
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner cockpit cabin details
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 3, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawObstacles() {
+            // Renders approaching obstacles with scaling proportions
+            for (let obs of obstacles) {
+                const scale = FOCAL_LENGTH / (obs.z + FOCAL_LENGTH);
+                const r = BASE_TUNNEL_RADIUS * scale;
+
+                // Fades opacity in distance
+                const alpha = Math.max(0, 1.0 - (obs.z / 550));
+                
+                ctx.save();
+                ctx.shadowBlur = 15 * scale;
+                ctx.shadowColor = obs.color;
+
+                if (obs.type === 'gate') {
+                    // Draw hexagon with one side missing (the gap)
+                    // Obstacle gap center is at obs.angle. Missing side: index s match angle
+                    ctx.strokeStyle = obs.color;
+                    ctx.lineWidth = 4 * scale + 0.5;
+
+                    ctx.beginPath();
+                    // Draw 5 sides, skipping gap side segment
+                    for (let s = 0; s <= 6; s++) {
+                        const sAngle = s * Math.PI / 3;
+                        // verify segment center matches target angle
+                        let diff = Math.abs(sAngle - obs.angle) % (Math.PI * 2);
+                        if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+                        // Skip drawing the missing gap segment
+                        if (diff < obs.gapSize / 1.5) {
+                            ctx.moveTo(SCREEN_CENTER_X + Math.cos(sAngle)*r, SCREEN_CENTER_Y + Math.sin(sAngle)*r);
+                            continue;
+                        }
+
+                        const vx = SCREEN_CENTER_X + Math.cos(sAngle) * r;
+                        const vy = SCREEN_CENTER_Y + Math.sin(sAngle) * r;
+                        if (s === 0) ctx.moveTo(vx, vy);
+                        else ctx.lineTo(vx, vy);
+                    }
+                    ctx.stroke();
+                }
+
+                else if (obs.type === 'laser_beam') {
+                    // Draw rotating laser bars across the perimeter with a small pass opening gap
+                    ctx.strokeStyle = obs.color;
+                    ctx.lineWidth = 5 * scale;
+
+                    ctx.beginPath();
+                    // Outer border
+                    ctx.arc(SCREEN_CENTER_X, SCREEN_CENTER_Y, r, obs.angle + obs.gapSize/2, obs.angle + Math.PI * 2 - obs.gapSize/2);
+                    ctx.stroke();
+
+                    // Laser radial bar rays
+                    ctx.lineWidth = 3.5 * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(SCREEN_CENTER_X + Math.cos(obs.angle + obs.gapSize/2)*r * 0.2, SCREEN_CENTER_Y + Math.sin(obs.angle + obs.gapSize/2)*r * 0.2);
+                    ctx.lineTo(SCREEN_CENTER_X + Math.cos(obs.angle + obs.gapSize/2)*r, SCREEN_CENTER_Y + Math.sin(obs.angle + obs.gapSize/2)*r);
+                    ctx.moveTo(SCREEN_CENTER_X + Math.cos(obs.angle - obs.gapSize/2)*r * 0.2, SCREEN_CENTER_Y + Math.sin(obs.angle - obs.gapSize/2)*r * 0.2);
+                    ctx.lineTo(SCREEN_CENTER_X + Math.cos(obs.angle - obs.gapSize/2)*r, SCREEN_CENTER_Y + Math.sin(obs.angle - obs.gapSize/2)*r);
+                    ctx.stroke();
+                }
+
+                else if (obs.type === 'shield_canister' || obs.type === 'warp_ring') {
+                    // Draw floating items along perimeter angle obs.angle
+                    const itemX = SCREEN_CENTER_X + Math.cos(obs.angle) * r;
+                    const itemY = SCREEN_CENTER_Y + Math.sin(obs.angle) * r;
+
+                    ctx.fillStyle = obs.color;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1.5 * scale;
+
+                    ctx.beginPath();
+                    ctx.arc(itemX, itemY, 8 * scale, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Inner core details symbol
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${Math.floor(10 * scale)}px 'Outfit'`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(obs.type === 'shield_canister' ? '+' : 'W', itemX, itemY);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function drawParticles() {
+            ctx.save();
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawFloatText() {
+            if (!floatText) return;
+
+            ctx.save();
+            ctx.globalAlpha = floatText.life;
+            ctx.font = "800 1.25rem 'Outfit'";
+            ctx.fillStyle = floatText.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = floatText.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(floatText.text, floatText.x, floatText.y);
+            ctx.restore();
+
+            floatText.y -= 0.8;
+            floatText.life -= 0.02;
+            if (floatText.life <= 0) {
+                floatText = null;
+            }
+        }
+
+        // Render main Loop cycle
+        function mainLoop(timestamp) {
+            // Apply screenshakes
+            ctx.save();
+            if (shakeAmount > 0) {
+                const dx = (Math.random() - 0.5) * shakeAmount;
+                const dy = (Math.random() - 0.5) * shakeAmount;
+                ctx.translate(dx, dy);
+                shakeAmount *= 0.9;
+                if (shakeAmount < 0.2) shakeAmount = 0;
+            }
+
+            updatePhysics();
+            
+            drawBackground();
+            drawWarpLines();
+            drawTunnel();
+            drawObstacles();
+            drawPlayerShip();
+            drawParticles();
+            drawFloatText();
+
+            // restore screenshakes offsets
+            ctx.restore();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Event button handlers
+        function startGame() {
+            initAudio();
+            setupMatch();
+        }
+
+        // Controls Bindings
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.ArrowLeft = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.ArrowRight = true;
+            initAudio();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.ArrowLeft = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.ArrowRight = false;
+        });
+
+        // Mobile panel buttons triggers
+        const mLeft = document.getElementById('mLeft');
+        const mRight = document.getElementById('mRight');
+
+        mLeft.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileLeft = true; });
+        mLeft.addEventListener('touchend', () => mobileLeft = false);
+        mRight.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileRight = true; });
+        mRight.addEventListener('touchend', () => mobileRight = false);
+
+        // HUD overlay button actions
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // Run Init loop
+        drawBackground();
+        drawTunnel();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
