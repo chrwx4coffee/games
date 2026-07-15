@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Bisiklet // Cyber Trial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #ff00ff; /* Bike Magenta */
+            --secondary-glow: #00ffcc; /* Terrain Cyan */
+            --accent-glow: #ffd700; /* Gold Clears */
+            --danger-glow: #ff1744; /* Explode Red */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--secondary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--primary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--secondary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.win {
+            color: var(--accent-glow);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--secondary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .mobile-controls {
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+            gap: 20px;
+            padding: 5px 10px;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .m-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        .m-btn:active {
+            background: rgba(0, 255, 204, 0.25);
+            border-color: var(--secondary-glow);
+            transform: scale(0.95);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 700px) {
+            .mobile-controls { display: flex; }
+            .wrapper { padding: 10px; border-radius: 15px; gap: 8px; width: 95vw; }
+            h1 { font-size: 1.5rem; }
+            .hud-val { font-size: 1.1rem; }
+            .hud { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Bisiklet</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Haklar</span>
+                <span class="hud-val" id="hudLives" style="color:var(--danger-glow); text-shadow: 0 0 10px rgba(255,23,68,0.4);">❤❤❤</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">İlerleme</span>
+                <span class="hud-val player" id="hudProgress">0%</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Hız</span>
+                <span class="hud-val ai" id="hudSpeed">0 km/s</span>
+            </div>
+            <div class="hud-item" style="min-width: 80px;">
+                <span class="hud-label">Skor</span>
+                <span class="hud-val accent" id="hudScore">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Yüksek</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Bisiklet</h2>
+                <p>Klavye D / Sağ Ok tuşu ile gaz verin, A / Sol Ok ile fren yapın. <br>Havada dengede kalmak ve taklalar (flips) atmak için Sol/Sağ yön tuşlarını veya A/D tuşlarını kullanın. <br>İnerken motorun eğimini tepenin eğimine paralel yapmalısınız, yoksa can kaybedersiniz! Ralli 5000 metrede bitiyor.</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Canlar Tükendi!</h2>
+                <p>Tüm haklarınızı kaybettiniz. Toplam Skor: <span id="finalScore" style="color:var(--accent-glow); font-weight:800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+
+            <!-- Victory Screen Overlay -->
+            <div class="overlay" id="victoryScreen">
+                <h2 class="win">Yarış Tamamlandı!</h2>
+                <p>Tebrikler! Müthiş denge ve akrobasi refleksleriyle bitiş çizgisine ulaştınız!</p>
+                <button class="btn" id="nextBtn">Tekrar Başla</button>
+            </div>
+        </div>
+
+        <!-- Mobile Controls Panel -->
+        <div class="mobile-controls">
+            <div class="control-group">
+                <div class="m-btn" id="mBack">←</div>
+                <div class="m-btn" id="mGas">→</div>
+            </div>
+            <div class="control-group">
+                <div class="m-btn" id="mLeanLeft">↺</div>
+                <div class="m-btn" id="mLeanRight">↻</div>
+            </div>
+        </div>
+
+        <div class="hint">Gaz: D / Yön Sağ // Fren: A / Yön Sol // Mid-Air Dönüş: Yön Tuşları / A-D.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLives = document.getElementById('hudLives');
+        const hudProgress = document.getElementById('hudProgress');
+        const hudSpeed = document.getElementById('hudSpeed');
+        const hudScore = document.getElementById('hudScore');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const GRAVITY = 0.20;
+        const COURSE_LENGTH = 5000;
+        const BIKE_RADIUS = 15;
+        const WHEEL_OFFSET = 20;
+
+        // Checkpoints array X values
+        const CHECKPOINTS = [1200, 2400, 3600];
+
+        // Game State Variables
+        let score = 0;
+        let unbankedScore = 0;
+        let lives = 3;
+        let lastCheckpointX = 100;
+        let bestScore = Math.floor(localStorage.getItem('neonTrialBest')) || 0;
+        hudBest.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING, CRASHED, GAMEOVER, VICTORY
+        let timeFrames = 0;
+        let resetTimer = null;
+        let floatText = null;
+
+        // Camera positioning coordinates
+        let cameraX = 0;
+        let cameraY = 0;
+
+        // Entities
+        let bike = {
+            x: 100,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            theta: 0, // Tilt angle relative to horizontal
+            omega: 0, // Rotational speed
+            state: 'AIRBORNE', // AIRBORNE, CONTACT
+            wheelRotation: 0,
+            color: 'var(--primary-glow)',
+            glow: '#ff00ff'
+        };
+
+        // Keyboard Controls
+        let keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            a: false,
+            d: false,
+            w: false,
+            s: false
+        };
+
+        // Mobile Controls states
+        let mobileGas = false;
+        let mobileBack = false;
+        let mobileLeanLeft = false;
+        let mobileRight = false;
+
+        // Trick triggers
+        let lastTheta = 0;
+        let angleAccumulated = 0;
+        let flipsThisAir = 0;
+        let wheelieFrames = 0;
+
+        let particles = [];
+        let stars = [];
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        let engineOscNode = null;
+        let engineGainNode = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                startEngineHum();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startEngineHum() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                engineOscNode = audioCtx.createOscillator();
+                engineGainNode = audioCtx.createGain();
+
+                engineOscNode.type = 'sawtooth';
+                engineOscNode.frequency.setValueAtTime(50, now);
+                engineGainNode.gain.setValueAtTime(0.012, now);
+
+                engineOscNode.connect(engineGainNode);
+                engineGainNode.connect(audioCtx.destination);
+                engineOscNode.start();
+            } catch (e) {
+                console.error("Engine synthesis error:", e);
+            }
+        }
+
+        function updateEngineHum() {
+            if (!engineOscNode || !engineGainNode || gameState !== 'PLAYING') return;
+            // frequency changes with forward velocity vx
+            const absoluteSpeed = Math.abs(bike.vx);
+            const isAccelerating = keys.d || keys.ArrowRight || mobileGas;
+            
+            const targetFreq = 50 + absoluteSpeed * 11.5 + (isAccelerating ? 30 : 0);
+            const targetVolume = 0.01 + absoluteSpeed * 0.005 + (isAccelerating ? 0.01 : 0);
+
+            const now = audioCtx.currentTime;
+            engineOscNode.frequency.setTargetAtTime(targetFreq, now, 0.08);
+            engineGainNode.gain.setTargetAtTime(targetVolume, now, 0.08);
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'land':
+                    // Solid low thud
+                    const lOsc = audioCtx.createOscillator();
+                    const lGain = audioCtx.createGain();
+                    lOsc.type = 'sine';
+                    lOsc.frequency.setValueAtTime(120 * pitchModifier, now);
+                    lGain.gain.setValueAtTime(0.2, now);
+                    lGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                    lOsc.connect(lGain);
+                    lGain.connect(audioCtx.destination);
+                    lOsc.start();
+                    lOsc.stop(now + 0.22);
+                    break;
+                    
+                case 'flip':
+                    // whoosh chime sweep on flip
+                    const fOsc = audioCtx.createOscillator();
+                    const fGain = audioCtx.createGain();
+                    fOsc.type = 'sine';
+                    fOsc.frequency.setValueAtTime(400 * pitchModifier, now);
+                    fOsc.frequency.exponentialRampToValueAtTime(800 * pitchModifier, now + 0.15);
+                    fGain.gain.setValueAtTime(0.12, now);
+                    fGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    fOsc.connect(fGain);
+                    fGain.connect(audioCtx.destination);
+                    fOsc.start();
+                    fOsc.stop(now + 0.15);
+                    break;
+
+                case 'crash':
+                    // White noise explosion blast
+                    const cOsc = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc.type = 'sawtooth';
+                    cOsc.frequency.setValueAtTime(140, now);
+                    cOsc.frequency.linearRampToValueAtTime(30, now + 0.6);
+                    cGain.gain.setValueAtTime(0.35, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc.start();
+                    cOsc.stop(now + 0.6);
+
+                    // noise burst
+                    const bufSize = audioCtx.sampleRate * 0.15;
+                    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < bufSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buf;
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 600;
+                    const nGain = audioCtx.createGain();
+                    nGain.gain.setValueAtTime(0.3, now);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                    noise.connect(filter);
+                    filter.connect(nGain);
+                    nGain.connect(audioCtx.destination);
+                    noise.start();
+                    noise.stop(now + 0.15);
+                    break;
+
+                case 'chime':
+                    // Checkpoint or victory chords arpeggio
+                    const chords = [261.63, 329.63, 392.00, 523.25]; // C, E, G, C5
+                    chords.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq * pitchModifier, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.1, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.35);
+                    });
+                    break;
+            }
+        }
+
+        // Particle Generators
+        function createSparks(x, y, color, count = 10, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.5,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < 40; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * 200,
+                    r: 1 + Math.random() * 1.5,
+                    alpha: 0.2 + Math.random() * 0.8
+                });
+            }
+        }
+
+        // Slopes mathematical model height generator
+        function getTerrainHeight(x) {
+            if (x < 300) return 290; // Flat start platform
+
+            // Hill 1: gentle sine waves
+            if (x < 1100) {
+                return 290 - Math.sin((x - 300) / 800 * Math.PI) * 70;
+            }
+
+            // Jump Ramp 1: upward lip with a valley gap drop!
+            if (x < 1900) {
+                const rX = x - 1100;
+                if (rX < 350) {
+                    return 290 - (rX * 0.25); // ramp up
+                }
+                return 370; // gap drop depth Y
+            }
+
+            // Valley flat lander
+            if (x < 2400) return 310;
+
+            // Hill 2: steep double bumps
+            if (x < 3300) {
+                return 310 - Math.sin((x - 2400) / 450 * Math.PI) * 55;
+            }
+
+            // Roller Coaster steep half loops
+            if (x < 4200) {
+                const lX = x - 3300;
+                return 310 - Math.sin(lX / 900 * Math.PI) * 115;
+            }
+
+            // Final Descent and Finish platform
+            if (x < 4800) {
+                const fX = x - 4200;
+                if (fX < 350) return 195 + (fX * 0.32); // steep down
+                return 307 - ((fX - 350) * 0.18); // final jumps lip
+            }
+
+            return 280; // Flat finish flag zone
+        }
+
+        // slope tangents angles
+        function getTerrainSlope(x) {
+            const h1 = getTerrainHeight(x - 3);
+            const h2 = getTerrainHeight(x + 3);
+            return Math.atan2(h2 - h1, 6);
+        }
+
+        // Setup Match managers
+        function setupMatch() {
+            score = 0;
+            unbankedScore = 0;
+            lives = 3;
+            lastCheckpointX = 100;
+
+            hudScore.textContent = score;
+            hudLives.textContent = "❤❤❤";
+            hudProgress.textContent = "0%";
+            hudSpeed.textContent = "0 km/s";
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+            victoryScreen.classList.remove('active');
+
+            createStars();
+            resetBike();
+            gameState = 'PLAYING';
+        }
+
+        function resetBike() {
+            bike.x = lastCheckpointX;
+            bike.y = getTerrainHeight(lastCheckpointX) - 20;
+            bike.vx = 0;
+            bike.vy = 0;
+            bike.theta = getTerrainSlope(lastCheckpointX);
+            bike.omega = 0;
+            bike.state = 'CONTACT';
+            
+            angleAccumulated = 0;
+            lastTheta = bike.theta;
+            flipsThisAir = 0;
+            wheelieFrames = 0;
+        }
+
+        function triggerCrash() {
+            gameState = 'CRASHED';
+            playSound('crash');
+            createSparks(bike.x, bike.y, 'var(--danger-glow)', 20, 5);
+
+            lives--;
+            updateHUDLives();
+
+            unbankedScore = 0;
+
+            clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => {
+                if (lives > 0) {
+                    resetBike();
+                    gameState = 'PLAYING';
+                } else {
+                    handleGameOver();
+                }
+            }, 1500);
+        }
+
+        function updateHUDLives() {
+            let heartStr = "";
+            for (let i = 0; i < 3; i++) {
+                heartStr += (i < lives) ? "❤" : "🖤";
+            }
+            hudLives.textContent = heartStr;
+        }
+
+        function showFloatText(x, y, text, color) {
+            floatText = {
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1.0
+            };
+        }
+
+        function checkCheckpointTriggers() {
+            // Check checkpoints passing
+            for (let cpX of CHECKPOINTS) {
+                if (bike.x >= cpX && lastCheckpointX < cpX) {
+                    lastCheckpointX = cpX;
+                    playSound('chime', 1.0);
+                    showFloatText(bike.x, bike.y - 30, "KONTROL NOKTASI SAVED!", "var(--secondary-glow)");
+                    createSparks(bike.x, bike.y, 'var(--secondary-glow)', 15, 3.5);
+                }
+            }
+        }
+
+        // Kinematics and slope intersections updates
+        function updatePhysics() {
+            if (gameState !== 'PLAYING') return;
+
+            timeFrames++;
+
+            // Check distance progress percentage
+            const progress = Math.min(100, Math.floor((bike.x / COURSE_LENGTH) * 100));
+            hudProgress.textContent = `${progress}%`;
+
+            // Finish line flag crossing trigger
+            if (bike.x >= COURSE_LENGTH) {
+                gameState = 'VICTORY';
+                playSound('chime', 1.25);
+                victoryScreen.classList.add('active');
+                return;
+            }
+
+            checkCheckpointTriggers();
+
+            const terrainY = getTerrainHeight(bike.x);
+            const slopeAngle = getTerrainSlope(bike.x);
+
+            // 1. FREE AIRBORNE state physics
+            if (bike.state === 'AIRBORNE') {
+                bike.vy += GRAVITY;
+                bike.x += bike.vx;
+                bike.y += bike.vy;
+
+                // Air rotational torque inputs
+                let torque = 0;
+                if (keys.ArrowLeft || keys.a || mobileLeanLeft) torque = -0.0075;
+                if (keys.ArrowRight || keys.d || mobileRight) torque = 0.0075;
+
+                bike.omega += torque;
+                bike.omega *= 0.98; // spin drag
+                bike.theta += bike.omega;
+
+                // Wheels rotations
+                bike.wheelRotation += bike.vx * 0.15;
+
+                // Track stunt flips Completed
+                let diffTheta = bike.theta - lastTheta;
+                // wrap normalized angles
+                if (diffTheta > Math.PI) diffTheta -= Math.PI * 2;
+                if (diffTheta < -Math.PI) diffTheta += Math.PI * 2;
+
+                angleAccumulated += diffTheta;
+                lastTheta = bike.theta;
+
+                if (Math.abs(angleAccumulated) >= Math.PI * 2) {
+                    flipsThisAir++;
+                    const flipPoints = 200 * flipsThisAir;
+                    unbankedScore += flipPoints;
+                    
+                    const clockwise = angleAccumulated > 0;
+                    playSound('flip', 1.0 + flipsThisAir * 0.12);
+                    showFloatText(bike.x, bike.y - 30, clockwise ? "DÜZ TAKLA! (Frontflip) +" + flipPoints : "TERS TAKLA! (Backflip) +" + flipPoints, "var(--accent-glow)");
+                    
+                    angleAccumulated = 0;
+                }
+
+                // Check landing Y threshold collision
+                if (bike.y >= terrainY - BIKE_RADIUS) {
+                    // Intersection occurred! Check landing angle alignment
+                    // normalize theta and slope differences
+                    let diffAngle = Math.abs(bike.theta - slopeAngle) % (Math.PI * 2);
+                    if (diffAngle > Math.PI) diffAngle = Math.PI * 2 - diffAngle;
+
+                    if (diffAngle < 0.65) { // 37 degrees tolerances
+                        // SAFE LANDING!
+                        bike.state = 'CONTACT';
+                        bike.y = terrainY - BIKE_RADIUS;
+                        
+                        // Convert downward vertical speed into forward kinetic speed along slope
+                        // vy * sin(slope) determines speed changes
+                        bike.vx += bike.vy * Math.sin(slopeAngle) * 0.45;
+                        bike.vy = 0;
+                        bike.theta = slopeAngle;
+
+                        playSound('land', 0.95);
+                        createSparks(bike.x, bike.y + BIKE_RADIUS, 'var(--secondary-glow)', 8, 2.5);
+
+                        // Bank unbanked stunt flips score
+                        if (unbankedScore > 0) {
+                            score += unbankedScore;
+                            hudScore.textContent = score;
+                            unbankedScore = 0;
+                        }
+                        flipsThisAir = 0;
+                        angleAccumulated = 0;
+                    } else {
+                        // CRASH EXPLODE!
+                        triggerCrash();
+                        return;
+                    }
+                }
+            }
+
+            // 2. CONTACT GROUND state physics
+            else if (bike.state === 'CONTACT') {
+                // Keep locked Y coordinates to terrain
+                bike.y = terrainY - BIKE_RADIUS;
+                
+                // Roll tangent vectors
+                const tx = Math.cos(slopeAngle);
+                const ty = Math.sin(slopeAngle);
+
+                // apply terrain frictions
+                bike.vx *= 0.972;
+
+                // Inputs forces (Gas / Brake)
+                let gasForce = 0;
+                if (keys.d || keys.ArrowRight || mobileGas) {
+                    gasForce = 0.22;
+                } else if (keys.a || keys.ArrowLeft || mobileBack) {
+                    gasForce = -0.16; // brake/reverses
+                }
+
+                // apply forces
+                bike.vx += gasForce;
+
+                // gravity pull along slopes vector
+                bike.vx -= ty * 0.09;
+
+                // update world positioning
+                bike.x += bike.vx * tx;
+                bike.y = getTerrainHeight(bike.x) - BIKE_RADIUS;
+
+                // wheels rotations
+                bike.wheelRotation += bike.vx * 0.15;
+
+                // Ground Lean angles balancing (Up/Down or A/D keys torque)
+                let leanForce = 0;
+                if (keys.ArrowLeft || keys.a || mobileLeanLeft) leanForce = -0.018;
+                if (keys.ArrowRight || keys.d || mobileRight) leanForce = 0.018;
+
+                bike.theta += leanForce;
+                // keep theta aligned near slope angle
+                bike.theta = bike.theta * 0.9 + slopeAngle * 0.1;
+
+                // Wheelie checks: high offset tilt angle while rolling
+                const tileOffset = bike.theta - slopeAngle;
+                if (tileOffset < -0.22 && bike.vx > 0.5) { // wheelie!
+                    wheelieFrames++;
+                    if (wheelieFrames % 10 === 0) {
+                        score += 15;
+                        hudScore.textContent = score;
+                        showFloatText(bike.x, bike.y - 25, "TEK TEKER! (Wheelie) +15", "var(--accent-glow)");
+                    }
+                } else {
+                    wheelieFrames = 0;
+                }
+
+                // Crash checks on ground (over-lean tipping)
+                if (Math.abs(tileOffset) > 1.25) {
+                    triggerCrash();
+                    return;
+                }
+
+                // Check if launching into air (off a lip or steep drop)
+                // If terrain Y drops much faster than bike Y would
+                const nextTerrainY = getTerrainHeight(bike.x + bike.vx * tx);
+                if (nextTerrainY > bike.y + BIKE_RADIUS + 8) {
+                    // launches in air!
+                    bike.state = 'AIRBORNE';
+                    bike.vy = bike.vx * ty; // inherit vertical speed slope components
+                    bike.vx = bike.vx * tx; // inherit horizontal speed components
+                    
+                    lastTheta = bike.theta;
+                    angleAccumulated = 0;
+                }
+            }
+
+            // Update HUD Speeds
+            const kph = Math.max(0, Math.floor(Math.abs(bike.vx) * 8.5));
+            hudSpeed.textContent = `${kph} km/s`;
+
+            // Engine saw waves hum updates
+            updateEngineHum();
+
+            // Camera follow horizontal/vertical panning LERP
+            cameraX += (bike.x - 220 - cameraX) * 0.10;
+            cameraY += (bike.y - 250 - cameraY) * 0.10;
+
+            // clamp camera values
+            if (cameraX < 0) cameraX = 0;
+            if (cameraX > COURSE_LENGTH - canvas.width) cameraX = COURSE_LENGTH - canvas.width;
+            if (cameraY > 200) cameraY = 200;
+            if (cameraY < -300) cameraY = -300;
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Render Canvas layers
+        function drawBackground() {
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Parallax stars
+            ctx.save();
+            ctx.fillStyle = '#ffffff';
+            for (let star of stars) {
+                // Parallax horizontal shifts
+                const sx = (star.x - cameraX * 0.12) % canvas.width;
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(sx < 0 ? sx + canvas.width : sx, star.y, star.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Parallax cityscape towers
+            ctx.save();
+            ctx.fillStyle = '#0a0525';
+            ctx.globalAlpha = 0.45;
+            for(let i=0; i<10; i++) {
+                const w = 90 + i * 20;
+                const h = 160 + i * 35;
+                const tx = (i * 150 - cameraX * 0.25) % (canvas.width + 200) - 100;
+                ctx.fillRect(tx, canvas.height - h - (cameraY * 0.2), w, h);
+                
+                // Draw neon buildings window lights dots
+                ctx.fillStyle = 'rgba(0, 255, 204, 0.2)';
+                for(let r=10; r<h-20; r+=25) {
+                    ctx.fillRect(tx + 10, canvas.height - h - (cameraY * 0.2) + r, 4, 4);
+                    ctx.fillRect(tx + w - 14, canvas.height - h - (cameraY * 0.2) + r, 4, 4);
+                }
+                ctx.fillStyle = '#0a0525';
+            }
+            ctx.restore();
+        }
+
+        function drawTerrain() {
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            // Draw glowing Cyan terrain line
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.lineWidth = 4;
+
+            ctx.beginPath();
+            // Loop through screen boundaries to render terrain segments
+            const startRenderX = Math.max(0, Math.floor(cameraX - 50));
+            const endRenderX = Math.min(COURSE_LENGTH, Math.floor(cameraX + canvas.width + 50));
+
+            for (let x = startRenderX; x <= endRenderX; x += 8) {
+                const ty = getTerrainHeight(x);
+                if (x === startRenderX) ctx.moveTo(x, ty);
+                else ctx.lineTo(x, ty);
+            }
+            ctx.stroke();
+
+            // Draw fill polygon under slopes to floor
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(0, 255, 204, 0.05)';
+            ctx.lineTo(endRenderX, canvas.height + 150);
+            ctx.lineTo(startRenderX, canvas.height + 150);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw Checkpoint gates
+            ctx.save();
+            ctx.fillStyle = 'var(--secondary-glow)';
+            ctx.font = "bold 0.8rem 'Outfit'";
+            ctx.textAlign = 'center';
+            for (let cpX of CHECKPOINTS) {
+                if (cpX >= startRenderX && cpX <= endRenderX) {
+                    const cpy = getTerrainHeight(cpX);
+                    // Pole line
+                    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(cpX, cpy);
+                    ctx.lineTo(cpX, cpy - 45);
+                    ctx.stroke();
+                    // Flag triangle banner
+                    ctx.fillStyle = lastCheckpointX >= cpX ? 'var(--secondary-glow)' : '#444';
+                    ctx.beginPath();
+                    ctx.moveTo(cpX, cpy - 45);
+                    ctx.lineTo(cpX + 22, cpy - 35);
+                    ctx.lineTo(cpX, cpy - 25);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillText("SAVE", cpX, cpy - 52);
+                }
+            }
+            ctx.restore();
+
+            // Draw Finish Flag at COURSE_LENGTH
+            if (COURSE_LENGTH >= startRenderX && COURSE_LENGTH <= endRenderX) {
+                const fpy = getTerrainHeight(COURSE_LENGTH);
+                ctx.strokeStyle = 'var(--accent-glow)';
+                ctx.lineWidth = 3.5;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'var(--accent-glow)';
+                // flag pole
+                ctx.beginPath();
+                ctx.moveTo(COURSE_LENGTH, fpy);
+                ctx.lineTo(COURSE_LENGTH, fpy - 60);
+                ctx.stroke();
+                // Flag banner
+                ctx.fillStyle = 'var(--accent-glow)';
+                ctx.beginPath();
+                ctx.moveTo(COURSE_LENGTH, fpy - 60);
+                ctx.lineTo(COURSE_LENGTH + 30, fpy - 45);
+                ctx.lineTo(COURSE_LENGTH, fpy - 30);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        function drawBike() {
+            if (gameState === 'CRASHED') return;
+
+            ctx.save();
+            ctx.translate(bike.x - cameraX, bike.y - cameraY);
+            ctx.rotate(bike.theta);
+
+            // Draw wheels (rotating circles)
+            // Left Wheel (Back wheel)
+            drawWheel(-WHEEL_OFFSET, 8, bike.wheelRotation);
+            // Right Wheel (Front wheel)
+            drawWheel(WHEEL_OFFSET, 8, bike.wheelRotation);
+
+            // Draw Chassis neon frame segments
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.lineWidth = 3.5;
+
+            // Bike frame triangles
+            ctx.beginPath();
+            ctx.moveTo(-WHEEL_OFFSET, 8); // Back center
+            ctx.lineTo(0, -6);            // Seat pivot
+            ctx.lineTo(WHEEL_OFFSET, 8);  // Front center
+            ctx.lineTo(6, -14);           // Handlebar pivot
+            ctx.lineTo(0, -6);            // Seat pivot
+            ctx.moveTo(-WHEEL_OFFSET, 8);
+            ctx.lineTo(-4, 2);            // center bracket
+            ctx.lineTo(WHEEL_OFFSET, 8);
+            ctx.stroke();
+
+            // Draw handlebars
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(6, -14);
+            ctx.lineTo(12, -18); // handle grip
+            ctx.stroke();
+
+            // Draw stylized neon Rider core cockpit
+            ctx.fillStyle = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.arc(-2, -12, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Rider head helmet
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(3, -20, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawWheel(offsetX, offsetY, rot) {
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.rotate(rot);
+
+            // Tires outer ring
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, 11, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner styling spokes lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.2;
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            for(let i=0; i<3; i++) {
+                const angle = i * Math.PI / 1.5;
+                ctx.moveTo(-Math.cos(angle)*10, -Math.sin(angle)*10);
+                ctx.lineTo(Math.cos(angle)*10, Math.sin(angle)*10);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawFloatText() {
+            if (!floatText) return;
+
+            ctx.save();
+            ctx.globalAlpha = floatText.life;
+            ctx.font = "800 1.25rem 'Outfit'";
+            ctx.fillStyle = floatText.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = floatText.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(floatText.text, floatText.x, floatText.y);
+            ctx.restore();
+
+            floatText.y -= 0.8;
+            floatText.life -= 0.02;
+            if (floatText.life <= 0) {
+                floatText = null;
+            }
+        }
+
+        // Render main Loop cycle
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawBackground();
+            drawTerrain();
+            drawBike();
+            drawParticles();
+            drawFloatText();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Event button handlers
+        function startGame() {
+            initAudio();
+            setupMatch();
+        }
+
+        // Input controls triggers bindings
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'd' || e.key === 'ArrowRight') keys.d = true;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.a = true;
+            if (k === 'w' || e.key === 'ArrowUp') keys.w = true;
+            if (k === 's' || e.key === 'ArrowDown') keys.s = true;
+            
+            initAudio();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'd' || e.key === 'ArrowRight') keys.d = false;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.a = false;
+            if (k === 'w' || e.key === 'ArrowUp') keys.w = false;
+            if (k === 's' || e.key === 'ArrowDown') keys.s = false;
+        });
+
+        // Mobile panel buttons triggers
+        const mGas = document.getElementById('mGas');
+        const mBack = document.getElementById('mBack');
+        const mLeanLeft = document.getElementById('mLeanLeft');
+        const mLeanRight = document.getElementById('mLeanRight');
+
+        mGas.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileGas = true; });
+        mGas.addEventListener('touchend', () => mobileGas = false);
+        mBack.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileBack = true; });
+        mBack.addEventListener('touchend', () => mobileBack = false);
+        
+        mLeanLeft.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileLeanLeft = true; });
+        mLeanLeft.addEventListener('touchend', () => mobileLeanLeft = false);
+        mLeanRight.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); mobileRight = true; });
+        mLeanRight.addEventListener('touchend', () => mobileRight = false);
+
+        // HUD overlay button actions
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+        nextBtn.addEventListener('click', startGame);
+
+        // Run Init loop
+        drawBackground();
+        drawTerrain();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
