@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Helikopter // Cyber Copter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #00ffcc; /* Helicopter Cyan */
+            --secondary-glow: #ff00ff; /* Cave Walls Magenta */
+            --accent-glow: #ffd700; /* Gold Records */
+            --danger-glow: #ff1744; /* Low Fuel / Crash Red */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--primary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--primary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .fuel-container {
+            width: 110px;
+            height: 14px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            overflow: hidden;
+            position: relative;
+            margin-top: 4px;
+        }
+
+        .fuel-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00ffcc, #00ff66);
+            box-shadow: 0 0 10px #00ffcc;
+            transition: width 0.1s linear, background 0.3s;
+        }
+
+        .fuel-bar.low {
+            background: linear-gradient(90deg, #ff1744, #ff5252);
+            box-shadow: 0 0 10px #ff1744;
+        }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Helikopter</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Haklar</span>
+                <span class="hud-val" id="hudLives" style="color:var(--danger-glow); text-shadow:0 0 10px rgba(255,23,68,0.45);">❤❤❤</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Siber Yakıt</span>
+                <div class="fuel-container">
+                    <div class="fuel-bar" id="fuelBar"></div>
+                </div>
+            </div>
+            <div class="hud-item" style="min-width: 90px;">
+                <span class="hud-label">Mesafe (Puan)</span>
+                <span class="hud-val player" id="hudDistance">0m</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Uzun</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Helikopter</h2>
+                <p>Boşluk (Space) tuşuna basılı tutarak veya Canvas üzerine Tıklayarak helikoptere dikey itiş gücü (thrust) verin. <br>Neon mağara duvarlarına ve engellere çarpmaktan kaçının! <br>Yakıtınız tükenmeden yeşil bataryaları toplamayı unutmayın.</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Helikopter Düştü!</h2>
+                <p>Haklarınız tükendi ve siber uçuş sona erdi. <br>Kat Edilen Mesafe: <span id="finalDistance" style="color:var(--primary-glow); font-weight:800;">0m</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+        </div>
+
+        <div class="hint">Uçmak için: Boşluk (Space) tuşuna basılı tutun veya sol tıkla basılı tutun. <br>Bataryalar yakıt deposunu %25 doldurur!</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLives = document.getElementById('hudLives');
+        const fuelBar = document.getElementById('fuelBar');
+        const hudDistance = document.getElementById('hudDistance');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const finalDistance = document.getElementById('finalDistance');
+
+        // Physics Constants
+        const GRAVITY = 0.16;
+        const THRUST = 0.35;
+        const DRAG = 0.985;
+        const BASE_CANYON_SPEED = 2.8;
+
+        // Game State Variables
+        let scoreDistance = 0;
+        let lives = 3;
+        let fuel = 100; // max 100
+        let bestDistance = Math.floor(localStorage.getItem('neonCopterBest')) || 0;
+        hudBest.textContent = `${bestDistance}m`;
+
+        let gameState = 'START'; // START, PLAYING, CRASHED, GAMEOVER
+        let timeCount = 0;
+        let lastBatterySpawnX = 0;
+        let nextObstacleSpawnX = 0;
+
+        let loopId;
+        let resetTimer = null;
+        let floatText = null;
+
+        // Player Helicopter
+        let player = {
+            x: 150,
+            y: 200,
+            vy: 0,
+            r: 15,
+            bladeAngle: 0,
+            bladeSpeed: 0.18,
+            color: 'var(--primary-glow)',
+            glow: '#00ffcc',
+            exhaustTrail: []
+        };
+
+        // Scroll offset
+        let scrollX = 0;
+
+        // Obstacles array: { x, y, r, type, color, collected }
+        let pickups = []; // fuel batteries
+        let barriers = []; // neon pillars/gates
+
+        // Particles
+        let particles = [];
+        let stars = [];
+
+        // Input state
+        let isThrusting = false;
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        let rotorOsc = null;
+        let rotorGain = null;
+        let lfoOsc = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                startRotorSynth();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startRotorSynth() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                rotorOsc = audioCtx.createOscillator();
+                rotorGain = audioCtx.createGain();
+
+                // LFO to simulate spinning blade modulation effect
+                lfoOsc = audioCtx.createOscillator();
+                const lfoGain = audioCtx.createGain();
+
+                lfoOsc.frequency.setValueAtTime(14, now); // 14 Hz blade cuts
+                lfoGain.gain.setValueAtTime(0.015, now);
+
+                rotorOsc.type = 'triangle';
+                rotorOsc.frequency.setValueAtTime(62, now); // Low pitch rumble
+
+                rotorGain.gain.setValueAtTime(0.012, now);
+
+                lfoOsc.connect(lfoGain);
+                lfoGain.connect(rotorGain.gain);
+
+                rotorOsc.connect(rotorGain);
+                rotorGain.connect(audioCtx.destination);
+
+                rotorOsc.start();
+                lfoOsc.start();
+            } catch (e) {
+                console.error("Blade noise synthesis error:", e);
+            }
+        }
+
+        function updateRotorSynth() {
+            if (!rotorOsc || !rotorGain || !lfoOsc || gameState !== 'PLAYING') return;
+
+            const now = audioCtx.currentTime;
+            // Higher engine pitch and LFO speed when thrusting
+            const targetFreq = isThrusting ? 95 : 62;
+            const targetModSpeed = isThrusting ? 25 : 14;
+            const targetVol = isThrusting ? 0.02 : 0.012;
+
+            rotorOsc.frequency.setTargetAtTime(targetFreq, now, 0.1);
+            lfoOsc.frequency.setTargetAtTime(targetModSpeed, now, 0.1);
+            rotorGain.gain.setTargetAtTime(targetVol, now, 0.1);
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'battery':
+                    // Chime arpeggio for fuel battery
+                    const scale = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    scale.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq * pitchModifier, now + idx * 0.04);
+                        gain.gain.setValueAtTime(0.08, now + idx * 0.04);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.04);
+                        osc.stop(now + idx * 0.04 + 0.25);
+                    });
+                    break;
+
+                case 'crash':
+                    // Heavy sawtooth rumble explosion
+                    const cOsc = audioCtx.createOscillator();
+                    const cGain = audioCtx.createGain();
+                    cOsc.type = 'sawtooth';
+                    cOsc.frequency.setValueAtTime(140, now);
+                    cOsc.frequency.linearRampToValueAtTime(30, now + 0.55);
+                    cGain.gain.setValueAtTime(0.35, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    cOsc.connect(cGain);
+                    cGain.connect(audioCtx.destination);
+                    cOsc.start();
+                    cOsc.stop(now + 0.6);
+                    break;
+
+                case 'alarm':
+                    // Warning beep
+                    const bOsc = audioCtx.createOscillator();
+                    const bGain = audioCtx.createGain();
+                    bOsc.type = 'sine';
+                    bOsc.frequency.setValueAtTime(880, now); // High pitched beep
+                    bGain.gain.setValueAtTime(0.08, now);
+                    bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    bOsc.connect(bGain);
+                    bGain.connect(audioCtx.destination);
+                    bOsc.start();
+                    bOsc.stop(now + 0.12);
+                    break;
+
+                case 'defeat':
+                    const goOsc = audioCtx.createOscillator();
+                    const goGain = audioCtx.createGain();
+                    goOsc.type = 'sawtooth';
+                    goOsc.frequency.setValueAtTime(180, now);
+                    goOsc.frequency.linearRampToValueAtTime(45, now + 0.7);
+                    goGain.gain.setValueAtTime(0.25, now);
+                    goGain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                    goOsc.connect(goGain);
+                    goGain.connect(audioCtx.destination);
+                    goOsc.start();
+                    goOsc.stop(now + 0.7);
+                    break;
+            }
+        }
+
+        // Procedural Cave Calculations
+        function getCeilingHeight(worldX) {
+            // Difficulty narrows the tunnel width
+            const diffRatio = Math.min(1.0, worldX / 12000);
+            const baseCeil = 50 + diffRatio * 35;
+            
+            // Layered sine wave noises
+            const wave1 = Math.sin(worldX * 0.004) * 35;
+            const wave2 = Math.cos(worldX * 0.011) * 15;
+            const wave3 = Math.sin(worldX * 0.024) * 8;
+
+            return baseCeil + wave1 + wave2 + wave3;
+        }
+
+        function getFloorHeight(worldX) {
+            const diffRatio = Math.min(1.0, worldX / 12000);
+            const baseFloor = 350 - diffRatio * 35;
+            
+            const wave1 = Math.sin(worldX * 0.003) * 40;
+            const wave2 = Math.cos(worldX * 0.008) * 18;
+            const wave3 = Math.sin(worldX * 0.018) * 7;
+
+            return baseFloor + wave1 + wave2 + wave3;
+        }
+
+        // Particle Generators
+        function createSparks(x, y, color, count = 10, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < 35; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: 1 + Math.random() * 1.5,
+                    alpha: 0.2 + Math.random() * 0.8
+                });
+            }
+        }
+
+        // Setup Match managers
+        function setupMatch() {
+            scoreDistance = 0;
+            lives = 3;
+            fuel = 100;
+            scrollX = 0;
+            lastBatterySpawnX = 0;
+            nextObstacleSpawnX = 600;
+            isThrusting = false;
+
+            pickups = [];
+            barriers = [];
+            particles = [];
+
+            hudDistance.textContent = "0m";
+            updateHUDLives();
+            updateHUDFuel();
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+
+            createStars();
+            resetPlayer();
+            gameState = 'PLAYING';
+        }
+
+        function resetPlayer() {
+            player.y = 200;
+            player.vy = 0;
+            player.bladeAngle = 0;
+            player.exhaustTrail = [];
+            isThrusting = false;
+        }
+
+        function updateHUDLives() {
+            let heartStr = "";
+            for (let i = 0; i < 3; i++) {
+                heartStr += (i < lives) ? "❤" : "🖤";
+            }
+            hudLives.textContent = heartStr;
+        }
+
+        function updateHUDFuel() {
+            fuelBar.style.width = `${fuel}%`;
+            if (fuel < 30) {
+                fuelBar.classList.add('low');
+            } else {
+                fuelBar.classList.remove('low');
+            }
+        }
+
+        function showFloatText(x, y, text, color) {
+            floatText = {
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1.0
+            };
+        }
+
+        function triggerCrash() {
+            gameState = 'CRASHED';
+            playSound('crash');
+            createSparks(player.x, player.y, 'var(--danger-glow)', 22, 5.0);
+
+            lives--;
+            updateHUDLives();
+
+            clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => {
+                if (lives > 0) {
+                    resetPlayer();
+                    // push world coordinate back slightly for safety
+                    scrollX = Math.max(0, scrollX - 250);
+                    pickups = [];
+                    barriers = [];
+                    fuel = Math.max(40, fuel); // give minor fuel rescue
+                    updateHUDFuel();
+                    gameState = 'PLAYING';
+                } else {
+                    handleGameOver();
+                }
+            }, 1600);
+        }
+
+        function handleGameOver() {
+            gameState = 'GAMEOVER';
+            playSound('defeat');
+            finalDistance.textContent = `${scoreDistance}m`;
+
+            if (scoreDistance > bestDistance) {
+                bestDistance = scoreDistance;
+                localStorage.setItem('neonCopterBest', bestDistance);
+                hudBest.textContent = `${bestDistance}m`;
+            }
+
+            gameOverScreen.classList.add('active');
+        }
+
+        // Kinematics and canyon bounds collision updates
+        function updatePhysics() {
+            if (gameState !== 'PLAYING') return;
+
+            timeCount++;
+
+            // Speed scales slightly with distance
+            const currentSpeed = BASE_CANYON_SPEED + Math.min(3.5, (scrollX / 4000));
+            scrollX += currentSpeed;
+
+            // Score tracks distance covered
+            scoreDistance = Math.floor(scrollX * 0.15);
+            hudDistance.textContent = `${scoreDistance}m`;
+
+            // 1. Fuel depletion checks
+            fuel -= 0.09;
+            if (fuel <= 0) {
+                fuel = 0;
+                isThrusting = false; // engine cut out!
+            }
+            updateHUDFuel();
+
+            // Low Fuel alarms sound beeps
+            if (fuel < 25 && fuel > 1 && timeCount % 90 === 0) {
+                playSound('alarm');
+            }
+
+            // 2. Copter Flight Kinematics
+            player.vy += GRAVITY;
+
+            if (isThrusting && fuel > 0) {
+                player.vy -= THRUST;
+                // Add exhaust particles
+                if (timeCount % 2 === 0) {
+                    particles.push({
+                        x: player.x - 15,
+                        y: player.y + 4,
+                        vx: -currentSpeed * 0.5 - (Math.random() * 2),
+                        vy: (Math.random() - 0.5) * 1.5,
+                        r: 2.5 + Math.random() * 2,
+                        life: 1.0,
+                        decay: 0.05,
+                        color: 'var(--primary-glow)'
+                    });
+                }
+            }
+
+            // apply drag/terminal velocities limits
+            player.vy *= DRAG;
+            player.y += player.vy;
+
+            // spinning rotor blades animations
+            player.bladeSpeed = isThrusting ? 0.35 : 0.16;
+            player.bladeAngle += player.bladeSpeed;
+
+            // Save rotor exhaust trail traces
+            player.exhaustTrail.push({ x: player.x, y: player.y });
+            if (player.exhaustTrail.length > 8) player.exhaustTrail.shift();
+
+            // 3. Spawn floating Fuel Batteries
+            if (scrollX - lastBatterySpawnX > 450) {
+                lastBatterySpawnX = scrollX;
+                const spawnX = scrollX + canvas.width + 50;
+                // height centered in middle of safe corridor
+                const ceilY = getCeilingHeight(spawnX);
+                const floorY = getFloorHeight(spawnX);
+                const spawnY = ceilY + 30 + Math.random() * (floorY - ceilY - 60);
+
+                pickups.push({
+                    x: spawnX,
+                    y: spawnY,
+                    r: 9,
+                    color: '#00ff66',
+                    collected: false
+                });
+            }
+
+            // 4. Spawn Neon Pillars Obstacles
+            if (scrollX > nextObstacleSpawnX) {
+                nextObstacleSpawnX = scrollX + 380 + Math.random() * 260;
+                const spawnX = scrollX + canvas.width + 50;
+
+                const ceilY = getCeilingHeight(spawnX);
+                const floorY = getFloorHeight(spawnX);
+
+                const obstacleType = Math.random() > 0.5 ? 'stalactite' : 'stalagmite';
+
+                if (obstacleType === 'stalactite') {
+                    // hanging pillar from ceiling
+                    const pHeight = 45 + Math.random() * 65;
+                    barriers.push({
+                        x: spawnX,
+                        y: ceilY,
+                        w: 24,
+                        h: pHeight,
+                        type: 'stalactite',
+                        color: 'var(--secondary-glow)'
+                    });
+                } else {
+                    // sticking pillar from floor
+                    const pHeight = 45 + Math.random() * 65;
+                    barriers.push({
+                        x: spawnX,
+                        y: floorY - pHeight,
+                        w: 24,
+                        h: pHeight,
+                        type: 'stalagmite',
+                        color: 'var(--secondary-glow)'
+                    });
+                }
+            }
+
+            // 5. Collide Pickups
+            for (let i = pickups.length - 1; i >= 0; i--) {
+                const b = pickups[i];
+                const screenX = b.x - scrollX;
+
+                // circle overlap checks
+                const dx = player.x - screenX;
+                const dy = player.y - b.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < player.r + b.r) {
+                    fuel = Math.min(100, fuel + 25);
+                    updateHUDFuel();
+                    playSound('battery');
+                    showFloatText(screenX, b.y - 12, "YAKIT +25%", '#00ff66');
+                    createSparks(screenX, b.y, '#00ff66', 10, 3.0);
+                    pickups.splice(i, 1);
+                } else if (screenX < -50) {
+                    pickups.splice(i, 1); // remove offscreen
+                }
+            }
+
+            // 6. Collision with Cave Boundaries
+            const playerCeilY = getCeilingHeight(scrollX + player.x);
+            const playerFloorY = getFloorHeight(scrollX + player.x);
+
+            if (player.y - player.r <= playerCeilY || player.y + player.r >= playerFloorY) {
+                triggerCrash();
+                return;
+            }
+
+            // 7. Collide Neon Pillars Barriers
+            for (let i = barriers.length - 1; i >= 0; i--) {
+                const bar = barriers[i];
+                const screenX = bar.x - scrollX;
+
+                // Simple AABB box to circle player intersection checks
+                const closestX = Math.max(screenX, Math.min(player.x, screenX + bar.w));
+                const closestY = Math.max(bar.y, Math.min(player.y, bar.y + bar.h));
+
+                const dx = player.x - closestX;
+                const dy = player.y - closestY;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < player.r) {
+                    triggerCrash();
+                    return;
+                } else if (screenX < -100) {
+                    barriers.splice(i, 1); // remove offscreen
+                }
+            }
+
+            // Update continuous engine sounds pitches
+            updateRotorSynth();
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05; // minor gravity on particles
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Render Canvas layers
+        function drawBackground() {
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Parallax Stars
+            ctx.save();
+            ctx.fillStyle = '#ffffff';
+            for (let star of stars) {
+                // Parallax scroll horizontal
+                const sx = (star.x - scrollX * 0.1) % canvas.width;
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(sx < 0 ? sx + canvas.width : sx, star.y, star.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Parallax grid panels
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1.0;
+            const gridSize = 40;
+            const gridOffset = -Math.floor(scrollX * 0.22) % gridSize;
+            for (let x = gridOffset; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawCave() {
+            ctx.save();
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.lineWidth = 3.5;
+
+            // Draw top ceiling border
+            ctx.beginPath();
+            for (let screenX = 0; screenX < canvas.width; screenX += 10) {
+                const worldX = scrollX + screenX;
+                const cy = getCeilingHeight(worldX);
+                if (screenX === 0) ctx.moveTo(screenX, cy);
+                else ctx.lineTo(screenX, cy);
+            }
+            ctx.stroke();
+
+            // Fill ceiling polygon
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#0a0525';
+            ctx.lineTo(canvas.width, 0);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw bottom floor border
+            ctx.save();
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--secondary-glow)';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            for (let screenX = 0; screenX < canvas.width; screenX += 10) {
+                const worldX = scrollX + screenX;
+                const fy = getFloorHeight(worldX);
+                if (screenX === 0) ctx.moveTo(screenX, fy);
+                else ctx.lineTo(screenX, fy);
+            }
+            ctx.stroke();
+
+            // Fill floor polygon
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#0a0525';
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        function drawObstacles() {
+            ctx.save();
+
+            // 1. Draw fuel batteries pickups
+            for (let b of pickups) {
+                const screenX = b.x - scrollX;
+                ctx.fillStyle = b.color;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = b.color;
+
+                ctx.beginPath();
+                ctx.arc(screenX, b.y, b.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // glowing core spark
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(screenX, b.y, b.r * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 2. Draw neon pillar obstacles barriers
+            for (let bar of barriers) {
+                const screenX = bar.x - scrollX;
+                ctx.fillStyle = bar.color;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = bar.color;
+
+                ctx.fillRect(screenX, bar.y, bar.w, bar.h);
+                ctx.strokeRect(screenX, bar.y, bar.w, bar.h);
+
+                // diagonal neon warning stripes inside pillars
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                for (let sy = bar.y + 10; sy < bar.y + bar.h; sy += 15) {
+                    ctx.moveTo(screenX, sy);
+                    ctx.lineTo(screenX + bar.w, sy - 8);
+                }
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            if (gameState === 'CRASHED') return;
+
+            // Draw rotor blade trails
+            ctx.save();
+            for (let i = 0; i < player.exhaustTrail.length; i++) {
+                const ratio = i / player.exhaustTrail.length;
+                ctx.fillStyle = 'var(--primary-glow)';
+                ctx.globalAlpha = ratio * 0.25;
+                ctx.beginPath();
+                ctx.arc(player.exhaustTrail[i].x, player.exhaustTrail[i].y, player.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Draw cyan neon helicopter
+            ctx.save();
+            ctx.translate(player.x, player.y);
+
+            // engine exhaust flame indicators
+            if (isThrusting && fuel > 0) {
+                ctx.fillStyle = '#ff9900';
+                ctx.beginPath();
+                ctx.moveTo(-15, 3);
+                ctx.lineTo(-26 - Math.random() * 8, 4);
+                ctx.lineTo(-15, 7);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Helicopter main body
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.fillStyle = 'var(--primary-glow)';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.0;
+
+            // Cabin oval shape
+            ctx.beginPath();
+            ctx.ellipse(0, 3, 16, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Glass canopy cockpit window
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.arc(6, -1, 7, -Math.PI / 2, Math.PI / 4);
+            ctx.lineTo(6, -1);
+            ctx.closePath();
+            ctx.fill();
+
+            // Tail boom line
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.lineWidth = 3.5;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--primary-glow)';
+            ctx.beginPath();
+            ctx.moveTo(-14, 2);
+            ctx.lineTo(-30, -2); // boom
+            ctx.lineTo(-30, -8); // tail fin
+            ctx.stroke();
+
+            // Skids supports
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(-8, 14);
+            ctx.lineTo(-10, 19);
+            ctx.moveTo(8, 14);
+            ctx.lineTo(6, 19);
+            ctx.stroke();
+            // Skid bar
+            ctx.beginPath();
+            ctx.moveTo(-16, 19);
+            ctx.lineTo(14, 19);
+            ctx.stroke();
+
+            // Rotor shaft
+            ctx.beginPath();
+            ctx.moveTo(0, -9);
+            ctx.lineTo(0, -14);
+            ctx.stroke();
+
+            // Rotor blade spins line calculations
+            ctx.save();
+            ctx.translate(0, -14);
+            ctx.scale(Math.cos(player.bladeAngle), 1); // 3D spin projection along X
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.2;
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(-28, 0);
+            ctx.lineTo(28, 0);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawFloatText() {
+            if (!floatText) return;
+
+            ctx.save();
+            ctx.globalAlpha = floatText.life;
+            ctx.font = "800 1.15rem 'Outfit'";
+            ctx.fillStyle = floatText.color;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = floatText.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(floatText.text, floatText.x, floatText.y);
+            ctx.restore();
+
+            floatText.y -= 0.7;
+            floatText.life -= 0.02;
+            if (floatText.life <= 0) {
+                floatText = null;
+            }
+        }
+
+        // Render main Loop cycle
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawBackground();
+            drawCave();
+            drawObstacles();
+            drawPlayer();
+            drawParticles();
+            drawFloatText();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Event button handlers
+        function startGame() {
+            initAudio();
+            setupMatch();
+        }
+
+        // Controls Bindings
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') {
+                e.preventDefault();
+                isThrusting = true;
+            }
+            initAudio();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') {
+                isThrusting = false;
+            }
+        });
+
+        // Mouse/Touch triggers controls
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            initAudio();
+            isThrusting = true;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isThrusting = false;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudio();
+            isThrusting = true;
+        }, {passive: false});
+
+        canvas.addEventListener('touchend', () => {
+            isThrusting = false;
+        });
+
+        // HUD overlay button actions
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // Run Init loop
+        drawBackground();
+        drawCave();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
