@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Siber Sörfçü // Cyber Surfer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030114;
+            --container-bg: rgba(10, 5, 25, 0.85);
+            --primary-glow: #ff00ff; /* Surfer Magenta */
+            --secondary-glow: #00ffcc; /* Wave Cyan */
+            --accent-glow: #ffd700; /* Gold Multipliers */
+            --danger-glow: #ff1744; /* Splash Red */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #150937 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .wrapper {
+            background: var(--container-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            width: min(95vw, 760px);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--secondary-glow);
+        }
+
+        .header h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2.5px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hud-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .hud-val.player { color: var(--secondary-glow); text-shadow: 0 0 12px rgba(0, 255, 204, 0.4); }
+        .hud-val.ai { color: var(--primary-glow); text-shadow: 0 0 12px rgba(255, 0, 255, 0.4); }
+        .hud-val.accent { color: var(--accent-glow); text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        .canvas-container {
+            position: relative;
+            padding: 5px;
+            background: var(--glass);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+            width: 100%;
+            aspect-ratio: 720/400;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #01010a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background: rgba(4, 2, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            color: var(--secondary-glow);
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .overlay h2.lost {
+            color: var(--danger-glow);
+            text-shadow: 0 0 25px rgba(255, 23, 68, 0.6);
+        }
+
+        .overlay p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 25px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, rgba(0, 255, 204, 0.15), rgba(255, 0, 255, 0.15));
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            border-color: var(--secondary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <a href="todo.html" class="back-link">← Geri</a>
+        <div class="header">
+            <h1>Siber Sörfçü</h1>
+        </div>
+
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">Haklar</span>
+                <span class="hud-val" id="hudLives" style="color:var(--danger-glow); text-shadow: 0 0 10px rgba(255,23,68,0.45);">❤❤❤</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Sörf Hızı</span>
+                <span class="hud-val player" id="hudSpeed">0 km/s</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">Yükseklik</span>
+                <span class="hud-val player" id="hudHeight">0m</span>
+            </div>
+            <div class="hud-item" style="min-width: 80px;">
+                <span class="hud-label">Skor (Çarpan)</span>
+                <span class="hud-val accent"><span id="hudScore">0</span> (<span id="hudMultiplier" style="color:var(--primary-glow);">1x</span>)</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">En Yüksek</span>
+                <span class="hud-val" id="hudBest" style="color: var(--accent-glow);">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="720" height="400"></canvas>
+            
+            <!-- Start Screen Overlay -->
+            <div class="overlay active" id="startScreen">
+                <h2>Siber Sörfçü</h2>
+                <p>Boşluk (Space) tuşuna veya Canvas üzerine tıklayarak basılı tutun ve vadilerden aşağı **dalın (dive)**. <br>Bu sayede yerçekimi ivmesi ve momentum kazanırsınız. <br>Dalga tepelerinde tuşu bırakarak gökyüzüne fırlayın! <br>Havada Sol/Sağ yön tuşlarıyla takla atın. İnerken tahtayı dalgaya paralel hizalamayı unutmayın!</p>
+                <button class="btn" id="startBtn">Oyuna Başla</button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div class="overlay" id="gameOverScreen">
+                <h2 class="lost">Suya Çakıldınız!</h2>
+                <p>Kalkanlar tükendi ve sörf tahtası parçalandı. <br>Toplam Skor: <span id="finalScore" style="color:var(--accent-glow); font-weight:800;">0</span></p>
+                <button class="btn" id="restartBtn">Tekrar Dene</button>
+            </div>
+        </div>
+
+        <div class="hint">Dalmak için: Boşluk (Space) veya Mouse Sol tık basılı tutun. <br>Havada Dönüş: Sol / Sağ Yön Tuşları veya A / D.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hudLives = document.getElementById('hudLives');
+        const hudSpeed = document.getElementById('hudSpeed');
+        const hudHeight = document.getElementById('hudHeight');
+        const hudScore = document.getElementById('hudScore');
+        const hudMultiplier = document.getElementById('hudMultiplier');
+        const hudBest = document.getElementById('hudBest');
+
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const finalScore = document.getElementById('finalScore');
+
+        // Physics Constants
+        const GRAVITY = 0.15;
+        const DIVE_FORCE = 0.32;
+        const BASE_SURF_SPEED = 3.5;
+        const WAVE_BOTTOM = 280;
+
+        // Game State Variables
+        let score = 0;
+        let scoreMultiplier = 1;
+        let lives = 3;
+        let bestScore = Math.floor(localStorage.getItem('neonSurferBest')) || 0;
+        hudBest.textContent = bestScore;
+
+        let gameState = 'START'; // START, PLAYING, CRASHED, GAMEOVER
+        let timeFrames = 0;
+        
+        let loopId;
+        let resetTimer = null;
+        let floatText = null;
+
+        // Horizontal camera offsets
+        let cameraX = 0;
+        let cameraY = 0;
+
+        // Surfer state: { x, y, vx, vy, boardAngle, omega, state }
+        let surfer = {
+            x: 100,
+            y: 200,
+            vx: BASE_SURF_SPEED,
+            vy: 0,
+            boardAngle: 0,
+            omega: 0,
+            state: 'AIRBORNE', // AIRBORNE, SURFING, CRASHED
+            glow: '#ff00ff',
+            color: 'var(--primary-glow)',
+            trail: []
+        };
+
+        // Inputs states
+        let isDiving = false;
+        let keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            a: false,
+            d: false
+        };
+
+        // Flips metrics accumulators
+        let lastBoardAngle = 0;
+        let spinAccumulator = 0;
+        let flipsThisJump = 0;
+
+        let particles = [];
+        let stars = [];
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+        let sprayOscNode = null;
+        let sprayGainNode = null;
+        let diveOscNode = null;
+        let diveGainNode = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                startSurfSynth();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startSurfSynth() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+
+                // 1. Continuous ocean spray white noise
+                const bufferSize = audioCtx.sampleRate * 2;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noiseSource = audioCtx.createBufferSource();
+                noiseSource.buffer = buffer;
+                noiseSource.loop = true;
+
+                // Bandpass filter to make it sound like wind/waves spray
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(350, now);
+
+                sprayGainNode = audioCtx.createGain();
+                sprayGainNode.gain.setValueAtTime(0.015, now);
+
+                noiseSource.connect(filter);
+                filter.connect(sprayGainNode);
+                sprayGainNode.connect(audioCtx.destination);
+                noiseSource.start();
+
+                // 2. Gravitational dive hum sine wave
+                diveOscNode = audioCtx.createOscillator();
+                diveGainNode = audioCtx.createGain();
+                diveOscNode.type = 'sine';
+                diveOscNode.frequency.setValueAtTime(75, now); // deep bass hum
+                diveGainNode.gain.setValueAtTime(0, now);
+
+                diveOscNode.connect(diveGainNode);
+                diveGainNode.connect(audioCtx.destination);
+                diveOscNode.start();
+            } catch (e) {
+                console.error("Synthesizer startup error:", e);
+            }
+        }
+
+        function updateSurfSynth() {
+            if (!sprayGainNode || !diveGainNode || gameState !== 'PLAYING') return;
+
+            const now = audioCtx.currentTime;
+            // spray noise volume scales with forward speed
+            const targetSprayVol = Math.min(0.05, 0.005 + (surfer.vx * 0.003));
+            sprayGainNode.gain.setTargetAtTime(surfer.state === 'SURFING' ? targetSprayVol : 0.006, now, 0.15);
+
+            // dive hum volume swells when holding dive buttons
+            const targetDiveVol = isDiving ? 0.08 : 0;
+            diveGainNode.gain.setTargetAtTime(targetDiveVol, now, 0.12);
+        }
+
+        function playSound(type, pitchModifier = 1.0) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case 'launch':
+                    // whoosh launch sweeps
+                    const lOsc = audioCtx.createOscillator();
+                    const lGain = audioCtx.createGain();
+                    lOsc.type = 'sine';
+                    lOsc.frequency.setValueAtTime(250 * pitchModifier, now);
+                    lOsc.frequency.exponentialRampToValueAtTime(750, now + 0.18);
+                    lGain.gain.setValueAtTime(0.12, now);
+                    lGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                    lOsc.connect(lGain);
+                    lGain.connect(audioCtx.destination);
+                    lOsc.start();
+                    lOsc.stop(now + 0.18);
+                    break;
+                    
+                case 'flip':
+                    // Chime arpeggios for flips
+                    const scale = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    scale.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq * pitchModifier, now + idx * 0.04);
+                        gain.gain.setValueAtTime(0.08, now + idx * 0.04);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.04);
+                        osc.stop(now + idx * 0.04 + 0.25);
+                    });
+                    break;
+
+                case 'wipeout':
+                    // heavy noise splash + explosion
+                    const wOsc = audioCtx.createOscillator();
+                    const wGain = audioCtx.createGain();
+                    wOsc.type = 'sawtooth';
+                    wOsc.frequency.setValueAtTime(130, now);
+                    wOsc.frequency.linearRampToValueAtTime(30, now + 0.55);
+                    wGain.gain.setValueAtTime(0.35, now);
+                    wGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    wOsc.connect(wGain);
+                    wGain.connect(audioCtx.destination);
+                    wOsc.start();
+                    wOsc.stop(now + 0.6);
+                    break;
+
+                case 'defeat':
+                    const goOsc = audioCtx.createOscillator();
+                    const goGain = audioCtx.createGain();
+                    goOsc.type = 'sawtooth';
+                    goOsc.frequency.setValueAtTime(180, now);
+                    goOsc.frequency.linearRampToValueAtTime(50, now + 0.7);
+                    goGain.gain.setValueAtTime(0.25, now);
+                    goGain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                    goOsc.connect(goGain);
+                    goGain.connect(audioCtx.destination);
+                    goOsc.start();
+                    goOsc.stop(now + 0.7);
+                    break;
+            }
+        }
+
+        // Ocean Wave height procedurals
+        function getWaveHeight(worldX) {
+            // evolutions of curves over distance
+            const wave1 = Math.sin(worldX * 0.0042) * 55;
+            const wave2 = Math.cos(worldX * 0.0011) * 22;
+            const wave3 = Math.sin(worldX * 0.0085) * 12;
+
+            return WAVE_BOTTOM + wave1 + wave2 + wave3;
+        }
+
+        function getWaveSlope(worldX) {
+            const h1 = getWaveHeight(worldX - 3);
+            const h2 = getWaveHeight(worldX + 3);
+            return Math.atan2(h2 - h1, 6);
+        }
+
+        // Particle Generators
+        function createSparks(x, y, color, count = 10, force = 3.5) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * force + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.5,
+                    r: 2 + Math.random() * 2,
+                    life: 1.0,
+                    decay: 0.03 + Math.random() * 0.03,
+                    color: color
+                });
+            }
+        }
+
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < 40; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * 260,
+                    r: 1 + Math.random() * 1.5,
+                    alpha: 0.2 + Math.random() * 0.8
+                });
+            }
+        }
+
+        // Setup Match managers
+        function setupMatch() {
+            score = 0;
+            scoreMultiplier = 1;
+            lives = 3;
+            cameraX = 0;
+            cameraY = 0;
+
+            hudScore.textContent = score;
+            hudMultiplier.textContent = "1x";
+            hudLives.textContent = "❤❤❤";
+
+            startScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+
+            createStars();
+            resetSurfer();
+            gameState = 'PLAYING';
+        }
+
+        function resetSurfer() {
+            surfer.x = 100;
+            surfer.y = getWaveHeight(100) - 25;
+            surfer.vx = BASE_SURF_SPEED;
+            surfer.vy = 0;
+            surfer.boardAngle = getWaveSlope(100);
+            surfer.omega = 0;
+            surfer.state = 'SURFING';
+            surfer.trail = [];
+
+            flipsThisJump = 0;
+            spinAccumulator = 0;
+            lastBoardAngle = surfer.boardAngle;
+        }
+
+        function triggerWipeout() {
+            gameState = 'CRASHED';
+            playSound('wipeout');
+            createSparks(surfer.x - cameraX, surfer.y - cameraY, 'var(--danger-glow)', 20, 4.5);
+
+            lives--;
+            updateHUDLives();
+
+            scoreMultiplier = 1;
+            hudMultiplier.textContent = "1x";
+            flipsThisJump = 0;
+
+            clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => {
+                if (lives > 0) {
+                    resetSurfer();
+                    gameState = 'PLAYING';
+                } else {
+                    handleGameOver();
+                }
+            }, 1500);
+        }
+
+        function updateHUDLives() {
+            let heartStr = "";
+            for (let i = 0; i < 3; i++) {
+                heartStr += (i < lives) ? "❤" : "🖤";
+            }
+            hudLives.textContent = heartStr;
+        }
+
+        function showFloatText(x, y, text, color) {
+            floatText = {
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 1.0
+            };
+        }
+
+        function handleGameOver() {
+            gameState = 'GAMEOVER';
+            playSound('defeat');
+            finalScore.textContent = score;
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonSurferBest', bestScore);
+                hudBest.textContent = bestScore;
+            }
+
+            gameOverScreen.classList.add('active');
+        }
+
+        // Kinematics and wave slope alignments updates
+        function updatePhysics() {
+            if (gameState !== 'PLAYING') return;
+
+            timeFrames++;
+
+            const currentWaveY = getWaveHeight(surfer.x);
+            const currentWaveSlope = getWaveSlope(surfer.x);
+
+            // 1. SURFING GROUND state physics
+            if (surfer.state === 'SURFING') {
+                surfer.y = currentWaveY - 14;
+
+                const tx = Math.cos(currentWaveSlope);
+                const ty = Math.sin(currentWaveSlope);
+
+                // friction decays speed on water
+                surfer.vx *= 0.985;
+
+                // Dive gravity boosts mechanics
+                let speedGain = 0;
+                if (isDiving) {
+                    // Holding dive adds downward weight force
+                    // Multiplies kinetic energy conversion on downward slopes
+                    speedGain = ty * DIVE_FORCE * 1.6;
+                } else {
+                    // normal slope sliding
+                    speedGain = ty * 0.12;
+                }
+                
+                // if slope is downward (ty > 0), gain speed. If upward, slow down.
+                surfer.vx += speedGain;
+
+                // base minimal forward cruise speeds
+                if (surfer.vx < BASE_SURF_SPEED) surfer.vx = BASE_SURF_SPEED;
+
+                // update coordinate slides along tangent vector
+                surfer.x += surfer.vx * tx;
+                
+                // angle matches wave tangents
+                surfer.boardAngle = surfer.boardAngle * 0.8 + currentWaveSlope * 0.2;
+
+                // visual water spray particles
+                if (timeFrames % 3 === 0) {
+                    particles.push({
+                        x: surfer.x,
+                        y: surfer.y + 12,
+                        vx: -surfer.vx * 0.3 - (Math.random() * 2),
+                        vy: -1 - Math.random() * 2,
+                        r: 2 + Math.random() * 2,
+                        life: 1.0,
+                        decay: 0.05,
+                        color: 'var(--secondary-glow)'
+                    });
+                }
+
+                // Check launching off wave crests
+                // If the slope decreases sharply and forward velocity carries player above slope Y
+                const nextX = surfer.x + surfer.vx * tx;
+                const nextWaveY = getWaveHeight(nextX);
+                const projectedY = surfer.y + (surfer.vx * ty);
+
+                if (projectedY < nextWaveY - 18 && surfer.vx > 6.0) {
+                    surfer.state = 'AIRBORNE';
+                    // inherit airborne velocity vectors
+                    surfer.vy = surfer.vx * ty - 2.0; // pop launch slightly upwards
+                    surfer.vx = surfer.vx * tx;
+
+                    playSound('launch', 0.95 + surfer.vx * 0.035);
+                    
+                    lastBoardAngle = surfer.boardAngle;
+                    spinAccumulator = 0;
+                    flipsThisJump = 0;
+                }
+            }
+
+            // 2. AIRBORNE FLIGHT state physics
+            else if (surfer.state === 'AIRBORNE') {
+                surfer.vy += GRAVITY;
+                surfer.x += surfer.vx;
+                surfer.y += surfer.vy;
+
+                // Air spin torque steering inputs
+                let torque = 0;
+                if (keys.ArrowLeft || keys.a) torque = -0.058;
+                if (keys.ArrowRight || keys.d) torque = 0.058;
+
+                surfer.omega += torque;
+                surfer.omega *= 0.90; // high air rotation friction damping
+                surfer.boardAngle += surfer.omega;
+
+                // Normalize board angle to 2PI
+                surfer.boardAngle = (surfer.boardAngle + Math.PI * 2) % (Math.PI * 2);
+
+                // Stunt flips tracking
+                let diffAngle = surfer.boardAngle - lastBoardAngle;
+                if (diffAngle > Math.PI) diffAngle -= Math.PI * 2;
+                if (diffAngle < -Math.PI) diffAngle += Math.PI * 2;
+
+                spinAccumulator += diffAngle;
+                lastBoardAngle = surfer.boardAngle;
+
+                if (Math.abs(spinAccumulator) >= Math.PI * 2) {
+                    flipsThisJump++;
+                    scoreMultiplier += 1;
+                    hudMultiplier.textContent = `${scoreMultiplier}x`;
+
+                    playSound('flip', 1.0 + flipsThisJump * 0.12);
+                    showFloatText(surfer.x - cameraX, surfer.y - cameraY - 20, "TAKLA! (Stunt Flip) x" + scoreMultiplier, 'var(--accent-glow)');
+                    createSparks(surfer.x - cameraX, surfer.y - cameraY, 'var(--accent-glow)', 12, 3);
+                    
+                    spinAccumulator = 0; // reset accumulator
+                }
+
+                // Exhaust trail spark lines
+                surfer.trail.push({ x: surfer.x, y: surfer.y });
+                if (surfer.trail.length > 8) surfer.trail.shift();
+
+                // Check landing wave collision crossing
+                if (surfer.y >= currentWaveY - 14 && surfer.vy > 0) {
+                    // Landing checking! Compare surfboard angles
+                    let diff = Math.abs(surfer.boardAngle - currentWaveSlope) % (Math.PI * 2);
+                    if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+                    if (diff < 0.49) { // 28 degrees tolerance
+                        // SMOOTH CLEAN LANDING!
+                        surfer.state = 'SURFING';
+                        surfer.y = currentWaveY - 14;
+
+                        // carry momentum: convert Y speed component to X speed along slope tangent
+                        surfer.vx += surfer.vy * Math.sin(currentWaveSlope) * 0.5;
+                        surfer.vy = 0;
+                        surfer.boardAngle = currentWaveSlope;
+
+                        // award clean land scores
+                        const cleanScore = Math.floor(100 * scoreMultiplier);
+                        score += cleanScore;
+                        hudScore.textContent = score;
+
+                        playSound('chime', 0.9 + scoreMultiplier * 0.05);
+                        showFloatText(surfer.x - cameraX, surfer.y - cameraY - 20, "KUSURSUZ İNİŞ! +" + cleanScore, 'var(--secondary-glow)');
+                        createSparks(surfer.x - cameraX, surfer.y - cameraY + 12, 'var(--secondary-glow)', 10, 3.5);
+                    } else {
+                        // WIPE OUT!
+                        triggerWipeout();
+                        return;
+                    }
+                }
+            }
+
+            // Update continuous Ocean spray volume and pitch
+            updateSurfSynth();
+
+            // HUD Stats updates
+            const kph = Math.max(0, Math.floor(surfer.vx * 12));
+            hudSpeed.textContent = `${kph} km/s`;
+
+            const relativeHeight = Math.max(0, Math.floor((320 - surfer.y) * 0.2));
+            hudHeight.textContent = `${relativeHeight}m`;
+
+            // Camera scroll horizontal LERP
+            cameraX += (surfer.x - 240 - cameraX) * 0.09;
+            cameraY += (surfer.y - 250 - cameraY) * 0.09;
+
+            // boundaries clamps
+            if (cameraX < 0) cameraX = 0;
+            if (cameraY > 200) cameraY = 200;
+            if (cameraY < -300) cameraY = -300;
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Render Canvas layers
+        function drawBackground() {
+            ctx.fillStyle = '#02010c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Parallax Stars
+            ctx.save();
+            ctx.fillStyle = '#ffffff';
+            for (let star of stars) {
+                const sx = (star.x - cameraX * 0.12) % canvas.width;
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(sx < 0 ? sx + canvas.width : sx, star.y, star.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Draw Neon Giant Retro Sun (pulsing in background)
+            ctx.save();
+            const sunSize = 65 + Math.sin(timeFrames * 0.08) * 3;
+            const sunX = canvas.width / 2 - (cameraX * 0.05) % 200;
+            const sunY = 190 - (cameraY * 0.1);
+            
+            // gradient sunset fill
+            const grad = ctx.createLinearGradient(sunX, sunY - sunSize, sunX, sunY + sunSize);
+            grad.addColorStop(0, '#ff00ff');
+            grad.addColorStop(1, '#ff9900');
+            ctx.fillStyle = grad;
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#ff00ff';
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Retro horizontal slice lines cuts
+            ctx.fillStyle = '#02010c';
+            ctx.shadowBlur = 0;
+            for (let ly = sunY - sunSize + 10; ly < sunY + sunSize; ly += 16) {
+                const thickness = 2.5 + (ly - (sunY - sunSize)) * 0.06;
+                ctx.fillRect(sunX - sunSize - 10, ly, sunSize * 2 + 20, thickness);
+            }
+            ctx.restore();
+
+            // Parallax Grid Mountains lines
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 0, 255, 0.05)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=40) {
+                const mx = (i - cameraX * 0.22) % (canvas.width + 100);
+                ctx.moveTo(mx, 260 - (cameraY * 0.15));
+                ctx.lineTo(mx + 20, 220 - (cameraY * 0.15));
+                ctx.lineTo(mx + 40, 260 - (cameraY * 0.15));
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawWave() {
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            // Draw cyan neon wavy surface
+            ctx.strokeStyle = 'var(--secondary-glow)';
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--secondary-glow)';
+
+            ctx.beginPath();
+            const startRenderX = Math.max(0, Math.floor(cameraX - 50));
+            const endRenderX = Math.floor(cameraX + canvas.width + 50);
+
+            for (let x = startRenderX; x <= endRenderX; x += 10) {
+                const wy = getWaveHeight(x);
+                if (x === startRenderX) ctx.moveTo(x, wy);
+                else ctx.lineTo(x, wy);
+            }
+            ctx.stroke();
+
+            // Fill wavy water volume polygons
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(0, 255, 204, 0.06)';
+            ctx.lineTo(endRenderX, canvas.height + 400);
+            ctx.lineTo(startRenderX, canvas.height + 400);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            if (gameState === 'CRASHED') return;
+
+            // Draw airborne trails
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+            for(let i=0; i<surfer.trail.length; i++) {
+                const ratio = i / surfer.trail.length;
+                ctx.fillStyle = surfer.color;
+                ctx.globalAlpha = ratio * 0.22;
+                ctx.beginPath();
+                ctx.arc(surfer.trail[i].x, surfer.trail[i].y, 6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Draw glowing surfer on surfboard
+            ctx.save();
+            ctx.translate(surfer.x - cameraX, surfer.y - cameraY);
+            ctx.rotate(surfer.boardAngle);
+
+            ctx.strokeStyle = 'var(--primary-glow)';
+            ctx.lineWidth = 3.2;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'var(--primary-glow)';
+
+            // Surfboard cyan/magenta flat board line
+            ctx.beginPath();
+            ctx.moveTo(-16, 4);
+            ctx.lineTo(16, 4);
+            ctx.stroke();
+
+            // board nose curvature styling
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(16, 4);
+            ctx.quadraticCurveTo(20, 2, 22, -2);
+            ctx.stroke();
+
+            // Surfer stick rider figure standing
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = 0;
+
+            // Legs bending posture
+            ctx.beginPath();
+            ctx.moveTo(-6, 4);
+            ctx.lineTo(-4, -4); // back leg
+            ctx.moveTo(6, 4);
+            ctx.lineTo(4, -4);  // front leg
+            // torso
+            ctx.lineTo(-2, -14); // hip to shoulder
+            ctx.lineTo(2, -14);
+            ctx.stroke();
+
+            // Arms extended balancing
+            ctx.beginPath();
+            ctx.moveTo(-2, -14);
+            ctx.lineTo(-12, -18); // left arm
+            ctx.moveTo(2, -14);
+            ctx.lineTo(12, -18);  // right arm
+            ctx.stroke();
+
+            // Helmet/head
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, -21, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawFloatText() {
+            if (!floatText) return;
+
+            ctx.save();
+            ctx.globalAlpha = floatText.life;
+            ctx.font = "800 1.25rem 'Outfit'";
+            ctx.fillStyle = floatText.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = floatText.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(floatText.text, floatText.x, floatText.y);
+            ctx.restore();
+
+            floatText.y -= 0.8;
+            floatText.life -= 0.02;
+            if (floatText.life <= 0) {
+                floatText = null;
+            }
+        }
+
+        // Render main Loop cycle
+        function mainLoop(timestamp) {
+            updatePhysics();
+            
+            drawBackground();
+            drawWave();
+            drawPlayer();
+            drawParticles();
+            drawFloatText();
+
+            loopId = requestAnimationFrame(mainLoop);
+        }
+
+        // Event button handlers
+        function startGame() {
+            initAudio();
+            setupMatch();
+        }
+
+        // Controls input triggers bindings
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'ArrowDown' || e.key === 's') {
+                e.preventDefault();
+                isDiving = true;
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.ArrowLeft = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.ArrowRight = true;
+            initAudio();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === ' ' || e.key === 'ArrowDown' || e.key === 's') {
+                isDiving = false;
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.ArrowLeft = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.ArrowRight = false;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            initAudio();
+            isDiving = true;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDiving = false;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudio();
+            isDiving = true;
+        }, {passive: false});
+
+        canvas.addEventListener('touchend', () => {
+            isDiving = false;
+        });
+
+        // HUD overlay button actions
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // Run Init loop
+        drawBackground();
+        drawWave();
+        mainLoop(0);
+
+    </script>
+</body>
+</html>
