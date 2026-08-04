@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Game Hub - Oyun Seçim Merkezi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --accent-glow: #6366f1;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50px;
+            color: #818cf8;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.8rem;
+        }
+
+        p.subtitle {
+            color: var(--text-sub);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.8rem 1.2rem 0.8rem 2.8rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: var(--text-sub);
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: var(--text-sub);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: #fff;
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .game-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 12px 30px -10px rgba(99, 102, 241, 0.3);
+        }
+
+        .game-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .game-icon {
+            font-size: 2.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            width: 54px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+        }
+
+        .cat-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-sub);
+            text-transform: uppercase;
+        }
+
+        .game-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            color: #fff;
+        }
+
+        .game-desc {
+            font-size: 0.88rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+        }
+
+        .play-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--accent-gradient);
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .play-btn:hover {
+            opacity: 0.9;
+        }
+
+        .play-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            color: var(--text-sub);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <span class="badge">🎮 HTML5 Canvas Arcade</span>
+            <h1>Oyun Seçim Merkezi</h1>
+            <p class="subtitle">50'den fazla eğlenceli HTML5 Canvas mini oyunu arasından seçim yapın ve hemen oynamaya başlayın!</p>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="searchInput" placeholder="Oyun ara... (örn: 2048, Tetris, Basketbol, Yılan)">
+            </div>
+            <div class="category-tabs">
+                <button class="tab-btn active" onclick="filterCategory('all')">Tüm Oyunlar</button>
+                <button class="tab-btn" onclick="filterCategory('spor')">Spor</button>
+                <button class="tab-btn" onclick="filterCategory('aksiyon')">Aksiyon</button>
+                <button class="tab-btn" onclick="filterCategory('bulmaca')">Bulmaca</button>
+                <button class="tab-btn" onclick="filterCategory('klasik')">Klasik</button>
+                <button class="tab-btn" onclick="filterCategory('beceri')">Beceri</button>
+            </div>
+        </div>
+
+        <div class="games-grid" id="gamesGrid">
+            <!-- Oyun kartları JavaScript ile dinamik olarak doldurulacaktır -->
+        </div>
+
+        <footer>
+            <p>HTML5 Canvas Games Suite &bull; chrwx4coffee</p>
+        </footer>
+    </div>
+
+    <script>
+        const games = [
+            { id: "2048", title: "2048", icon: "🔢", category: "bulmaca", file: "2048.html", desc: "Sayı kutularını kaydırarak birleştirin ve 2048 karesine ulaşın." },
+            { id: "altigen", title: "Altıgen Bulmaca", icon: "🛑", category: "bulmaca", file: "altigen.html", desc: "Altıgen blokları boş alanlara yerleştirerek sıraları temizleyin." },
+            { id: "balon", title: "Balon Patlatma", icon: "🎈", category: "beceri", file: "balon.html", desc: "Aynı renkteki balonları patlatarak en yüksek skora ulaşın." },
+            { id: "basketbol", title: "Basketbol Atışı", icon: "🏀", category: "spor", file: "basketbol.html", desc: "Açı ve hızı ayarlayarak basketbol potasına tam isabet atışlar yapın." },
+            { id: "beyzbol", title: "Beyzbol Vuruşu", icon: "⚾", category: "spor", file: "beyzbol.html", desc: "Doğru zamanlamayla topa vurarak home run yapın." },
+            { id: "bilardo", title: "Bilardo 8-Ball", icon: "🎱", category: "spor", file: "bilardo.html", desc: "Istakanız ile topları ceplere sokun, masayı temizleyin." },
+            { id: "bisiklet", title: "Bisiklet Yarışı", icon: "🚴", category: "spor", file: "bisiklet.html", desc: "Zorlu engebeli pistlerde dengede kalarak yarışı bitirin." },
+            { id: "bowling", title: "Bowling 3D", icon: "🎳", category: "spor", file: "bowling.html", desc: "Labutları devirerek strike yapın." },
+            { id: "curling", title: "Buz Curling'i", icon: "🥌", category: "spor", file: "curling.html", desc: "Buz üzerinde taşları hedef merkeze en yakın şekilde kaydırın." },
+            { id: "dart", title: "Dart Hedef", icon: "🎯", category: "spor", file: "dart.html", desc: "Tam merkezdeki hedef noktasına vurarak puan toplayın." },
+            { id: "dilim", title: "Meyve Dilimleme", icon: "🍉", category: "beceri", file: "dilim.html", desc: "Ekranda uçuşan meyveleri dilimleyin, bombalardan kaçının." },
+            { id: "disk", title: "Hava Diski (Air Hockey)", icon: "🏒", category: "spor", file: "disk.html", desc: "Hızlı disk hareketleriyle rakip kaleye gol atın." },
+            { id: "flappy", title: "Flappy Kuş", icon: "🐦", category: "beceri", file: "flappy.html", desc: "Boruların arasından süzülerek kuşunuzu hayatta tutun." },
+            { id: "girdap", title: "Girdap Tüneli", icon: "🌀", category: "aksiyon", file: "girdap.html", desc: "Hızla dönen girdap içindeki engellerden kaçın." },
+            { id: "golf", title: "Mini Golf", icon: "⛳", category: "spor", file: "golf.html", desc: "Engelleri aşarak topu deliğe en az atışta ulaştırın." },
+            { id: "hafiza", title: "Hafıza Kartları", icon: "🧠", category: "bulmaca", file: "hafiza.html", desc: "Kartları çevirerek eşleşen çiftleri bulun." },
+            { id: "hedef", title: "Poligon Hedef", icon: "🎯", category: "beceri", file: "hedef.html", desc: "Hızlı hareket eden hedeflere tam zamanında vurun." },
+            { id: "helikopter", title: "Helikopter Kaçış", icon: "🚁", category: "aksiyon", file: "helikopter.html", desc: "Mağara içindeki engellere çarpmadan ilerleyin." },
+            { id: "helix", title: "Helix Düşüşü", icon: "🌀", category: "beceri", file: "helix.html", desc: "Kuleyi döndürerek topu boşluklardan düşürün." },
+            { id: "hokey", title: "Buz Hokeyi", icon: "🏒", category: "spor", file: "hokey.html", desc: "Buz üzerinde rakip takımı mağlup edin." },
+            { id: "kosu", title: "Sonsuz Koşu", icon: "🏃", category: "aksiyon", file: "kosu.html", desc: "Engellerin üstünden zıplayarak kayın ve altınları toplayın." },
+            { id: "kule", title: "Kule Blok Yığma", icon: "🏢", category: "beceri", file: "kule.html", desc: "Blokları üst üste tam hizalayarak en yüksek kuleyi kurun." },
+            { id: "kurbaga", title: "Karşıya Geçen Kurbağa", icon: "🐸", category: "klasik", file: "kurbaga.html", desc: "Yoğun trafikte ve nehirde araçlara çarpmadan karşıya geçin." },
+            { id: "madenci", title: "Altın Madencisi", icon: "⛏️", category: "beceri", file: "madenci.html", desc: "Kancayı fırlatarak yer altındaki altın ve elmasları çıkartın." },
+            { id: "mayin", title: "Mayın Tarlası", icon: "💣", category: "bulmaca", file: "mayin.html", desc: "Mantık kullanarak mayınlara basmadan tüm kareleri açın." },
+            { id: "obur", title: "Obur Canavar", icon: "👾", category: "aksiyon", file: "obur.html", desc: "Yemleri yiyerek büyüyün ve düşmanları yutun." },
+            { id: "okcu", title: "Okçu Atışı", icon: "🏹", category: "spor", file: "okcu.html", desc: "Rüzgar hızını hesaba katarak oku hedef tahtasına atın." },
+            { id: "otoban", title: "Otoban Araba Yarışı", icon: "🏎️", category: "aksiyon", file: "otoban.html", desc: "Yoğun araç trafiğinde yüksek hızla makas atın." },
+            { id: "oyun", title: "Klasik Yılan Oyunu", icon: "🐍", category: "klasik", file: "oyun.html", desc: "Yemleri yiyerek kuyruğunuzu uzatın, duvarlara çarpmayın." },
+            { id: "pinball", title: "Pinball (Langırt)", icon: "🎰", category: "klasik", file: "pinball.html", desc: "Raketlerle topu fırlatıp tamponlara çarptırarak puan toplayın." },
+            { id: "piyango", title: "Piyango Çarkı", icon: "🎰", category: "beceri", file: "piyango.html", desc: "Şans çarkını döndürün ve büyük ödülleri kazanın." },
+            { id: "pong", title: "Klasik Pong", icon: "🏓", category: "klasik", file: "pong.html", desc: "Efsanevi 2 kişilik masa tenisi raket oyunu." },
+            { id: "ritim", title: "Ritim Kiremitleri", icon: "🎵", category: "beceri", file: "ritim.html", desc: "Müzik ritmine göre siyah kiremitlere zamanında dokunun." },
+            { id: "savunma", title: "Kule Savunması (Tower Defense)", icon: "🏰", category: "aksiyon", file: "savunma.html", desc: "Savunma kuleleri inşa ederek düşman dalgalarını durdurun." },
+            { id: "seker", title: "Şeker Eşleştirme (Match-3)", icon: "🍬", category: "bulmaca", file: "seker.html", desc: "Aynı tip şekerleri yan yana getirip patlatın." },
+            { id: "simon", title: "Simon Renk Hafızası", icon: "🔴", category: "bulmaca", file: "simon.html", desc: "Işık ve ses sırasını aklınızda tutarak tekrarlayın." },
+            { id: "sorfcu", title: "Dalga Sörfçüsü", icon: "🏄", category: "spor", file: "sorfcu.html", desc: "Dev dalgaların üzerinde sörf yapın." },
+            { id: "squash", title: "Duvar Tenisi (Squash)", icon: "🎾", category: "spor", file: "squash.html", desc: "Duvara çarpan topu kaçırmadan sektirin." },
+            { id: "sumo", title: "Sumo Güreşi", icon: "🤼", category: "spor", file: "sumo.html", desc: "Rakip güreşçiyi halkanın dışına itin." },
+            { id: "tank", title: "Tank Savaşı", icon: "🪖", category: "aksiyon", file: "tank.html", desc: "Labirentte düşman tanklarını imha edin." },
+            { id: "tetris", title: "Klasik Tetris", icon: "🧱", category: "klasik", file: "tetris.html", desc: "Düşen blokları yerleştirerek eksiksiz sıralar oluşturun." },
+            { id: "trambolin", title: "Trambolin Zıplama", icon: "🤸", category: "beceri", file: "trambolin.html", desc: "Trambolinde taklalar atarak yüksek puanlar toplayın." },
+            { id: "tugla", title: "Tuğla Kırma (Breakout)", icon: "🧱", category: "klasik", file: "tugla.html", desc: "Topu raketle sektirerek tüm tuğlaları kırın." },
+            { id: "tunel", title: "3D Tünel Koşucusu", icon: "🚀", category: "aksiyon", file: "tunel.html", desc: "Sonsuz 3D tünelde engellerden sıyrılın." },
+            { id: "uzay", title: "Uzay İstilacıları (Space Invaders)", icon: "👾", category: "klasik", file: "uzay.html", desc: "Uzay geminizle uzaylı filolarını yok edin." },
+            { id: "virus", title: "Virüs Temizleyici", icon: "🦠", category: "aksiyon", file: "virus.html", desc: "Laboratuvarı virüs istilasından koruyun." },
+            { id: "voleybol", title: "Plaj Voleybolu", icon: "🏐", category: "spor", file: "voleybol.html", desc: "Kumda voleybol maçı yapın." },
+            { id: "xox", title: "XOX (Tic-Tac-Toe)", icon: "❌", category: "klasik", file: "xox.html", desc: "3'lü sırayı tamamlayan kazanır." },
+            { id: "yigma", title: "Kutu Yığma", icon: "📦", category: "beceri", file: "yigma.html", desc: "Kutuları sallanmadan üste koyun." },
+            { id: "yol", title: "Çapraz Yol Zıplama", icon: "🛣️", category: "beceri", file: "yol.html", desc: "Yollardan geçen arabalara çarpmadan ilerleyin." },
+            { id: "yorunge", title: "Yörünge Zıplama", icon: "🪐", category: "beceri", file: "yorunge.html", desc: "Gezegenlerin yörüngeleri arasında zıplayın." },
+            { id: "zipla", title: "Doodle Zıp Zıp", icon: "🦘", category: "beceri", file: "zipla.html", desc: "Platformlar üstünde zıplayarak en tepeye tırmanın." }
+        ];
+
+        let currentCategory = 'all';
+
+        function renderGames(filterText = '') {
+            const grid = document.getElementById('gamesGrid');
+            grid.innerHTML = '';
+
+            const filtered = games.filter(game => {
+                const matchesCat = currentCategory === 'all' || game.category === currentCategory;
+                const matchesSearch = game.title.toLowerCase().includes(filterText.toLowerCase()) || 
+                                      game.desc.toLowerCase().includes(filterText.toLowerCase());
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-sub); padding: 3rem;">
+                    🔍 Arama kriterinize uygun oyun bulunamadı.
+                </div>`;
+                return;
+            }
+
+            filtered.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.innerHTML = `
+                    <div>
+                        <div class="card-top">
+                            <div class="game-icon">${game.icon}</div>
+                            <span class="cat-tag">${game.category}</span>
+                        </div>
+                        <h3 class="game-title">${game.title}</h3>
+                        <p class="game-desc">${game.desc}</p>
+                    </div>
+                    <a href="${game.file}" target="_blank" class="play-btn">
+                        <span>Oyna</span>
+                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </a>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderGames(document.getElementById('searchInput').value);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderGames(e.target.value);
+        });
+
+        // Illk yükleme
+        renderGames();
+    </script>
+</body>
+</html>
